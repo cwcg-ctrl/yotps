@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分數魔法實驗室 - 全能混合運算</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background: radial-gradient(circle at center, #2e1065, #020617);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        
+        /* 魔法背景粒子感 */
+        .magic-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        /* 磨砂玻璃質感 */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(192, 132, 252, 0.3);
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.2);
+        }
+
+        .magic-card {
+            border-radius: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .magic-card::before {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, rgba(168, 85, 247, 0.4), transparent 30%);
+            animation: rotate 8s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 分數樣式美化 */
+        .fraction-box { 
+            display: inline-flex; 
+            flex-direction: column; 
+            align-items: center; 
+            vertical-align: middle; 
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .fraction-line { 
+            width: 120%; 
+            border-bottom: 3px solid #e879f9; 
+            margin: 4px 0; 
+            box-shadow: 0 0 10px #e879f9;
+        }
+        .mixed-number { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            padding: 8px;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .mixed-number:hover {
+            transform: translateY(-5px);
+            background: rgba(139, 92, 246, 0.4);
+        }
+
+        .whole-number { 
+            font-size: 1.8rem; 
+            font-weight: 900; 
+            color: #fbbf24;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+        }
+        
+        .operator-glow {
+            text-shadow: 0 0 15px currentColor;
+            font-weight: 900;
+        }
+
+        /* 按鈕美化 */
+        .magic-btn-primary {
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+            box-shadow: 0 10px 20px -5px rgba(168, 85, 247, 0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .magic-btn-primary:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(168, 85, 247, 0.7);
+        }
+
+        .input-spell {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid #6366f1;
+            color: #fff;
+            box-shadow: inset 0 0 10px rgba(99, 102, 241, 0.3);
+        }
+        
+        .step-box { 
+            @apply p-3 bg-slate-900/50 rounded-xl border border-purple-500/30 my-2 text-sm text-purple-200 leading-relaxed;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* 底部裝飾 */
+        .cauldron-glow {
+            width: 200px; height: 40px;
+            background: radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.6), transparent 70%);
+            filter: blur(10px);
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center p-4">
+    <div class="magic-bg"></div>
+
+    <!-- 難度選擇畫面 -->
+    <div id="difficulty-screen" class="max-w-md w-full glass-panel magic-card p-10 mt-16 text-center border-t-4 border-purple-400">
+        <div class="mb-6">
+            <span class="text-6xl mb-4 block animate-bounce">🔮</span>
+            <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2">魔法藥水實驗室</h1>
+            <p class="text-purple-300 font-medium">請選擇你的巫師等級...</p>
+        </div>
+        
+        <div class="flex flex-col space-y-5">
+            <button onclick="startGame('easy')" class="difficulty-btn bg-emerald-600/80 hover:bg-emerald-500 text-white border-b-4 border-emerald-900 py-4 text-xl">
+                🧙 初級學徒 (純乘除)
+            </button>
+            <button onclick="startGame('normal')" class="difficulty-btn bg-blue-600/80 hover:bg-blue-500 text-white border-b-4 border-blue-900 py-4 text-xl">
+                ✨ 正式巫師 (帶分數)
+            </button>
+            <button onclick="startGame('hard')" class="difficulty-btn bg-purple-700/80 hover:bg-purple-600 text-white border-b-4 border-purple-900 py-4 text-xl">
+                👑 大魔法師 (四則混合)
+            </button>
+        </div>
+    </div>
+
+    <!-- 遊戲主畫面 -->
+    <div id="game-screen" class="hidden max-w-2xl w-full glass-panel magic-card mt-6">
+        <div class="bg-gradient-to-r from-purple-900/80 to-indigo-900/80 p-5 border-b border-purple-500/30 flex justify-between items-center">
+            <button onclick="location.reload()" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-purple-500/50 transition">
+                ⬅ 逃離實驗室
+            </button>
+            <h2 id="difficulty-label" class="text-xl font-black text-purple-200 tracking-widest">魔法實驗中</h2>
+            <div class="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-yellow-500/50">
+                <span class="text-yellow-400">⭐</span>
+                <span id="score" class="font-black text-yellow-400">0</span>
+            </div>
+        </div>
+
+        <div class="p-8 text-center relative">
+            <div id="game-status" class="mb-6 text-xl font-bold text-cyan-300 drop-shadow-md">調配新的魔藥...</div>
+            
+            <!-- 題目顯示區 -->
+            <div id="question-area" class="flex flex-wrap justify-center items-center text-3xl font-bold mb-10 gap-4 min-h-[100px]">
+                <!-- 動態題目 -->
+            </div>
+
+            <!-- 解析顯示區 -->
+            <div id="explanation-area" class="hidden mb-8 p-6 bg-indigo-950/80 rounded-3xl border-2 border-indigo-500/50 text-left">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-2xl">📜</span>
+                    <p class="text-indigo-200 font-black tracking-wider">古老的魔藥秘笈：</p>
+                </div>
+                <div id="exp-content" class="space-y-3"></div>
+                <button onclick="generateQuestion()" class="mt-6 w-full magic-btn-primary text-white font-black py-3 rounded-2xl shadow-xl">
+                    領悟了！下一張配方
+                </button>
+            </div>
+
+            <!-- 操作提示 -->
+            <div id="hint" class="flex items-center justify-center gap-2 text-sm text-pink-300 mb-8 font-bold bg-pink-900/20 py-2 rounded-full">
+                <span>🪄 提示：</span>
+                <span>先乘除後加減，記得約簡到最精華喔！</span>
+            </div>
+
+            <!-- 答案輸入 -->
+            <div class="flex justify-center items-center gap-6 mb-10">
+                <div class="flex flex-col items-center">
+                    <input type="number" id="ans-num" class="w-24 h-24 text-center text-4xl font-black rounded-3xl input-spell focus:border-pink-500 transition-all outline-none" placeholder="?">
+                    <span class="text-xs mt-2 text-indigo-300 font-bold uppercase tracking-widest">分子 (精華)</span>
+                </div>
+                <div class="text-5xl font-black text-purple-400 drop-shadow-lg">/</div>
+                <div class="flex flex-col items-center">
+                    <input type="number" id="ans-den" class="w-24 h-24 text-center text-4xl font-black rounded-3xl input-spell focus:border-pink-500 transition-all outline-none" placeholder="?">
+                    <span class="text-xs mt-2 text-indigo-300 font-bold uppercase tracking-widest">分母 (基底)</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <button id="submit-btn" onclick="checkAnswer()" class="w-full magic-btn-primary text-white font-black py-5 rounded-3xl text-2xl tracking-widest shadow-2xl">
+                    ✨ 啟動鍊金術 ✨
+                </button>
+                <button id="skip-btn" onclick="skipAndShowAnswer()" class="w-full bg-slate-800/50 hover:bg-slate-700 text-indigo-300 font-bold py-3 rounded-2xl transition text-sm border border-indigo-500/20">
+                    查看魔法卷軸 (不計分)
+                </button>
+            </div>
+            
+            <div class="cauldron-glow"></div>
+        </div>
+
+        <!-- 底部裝飾 -->
+        <div class="bg-black/40 p-4 flex justify-between px-10 text-sm font-bold border-t border-purple-500/20">
+            <span class="text-purple-300">巫師勳章：<span id="level" class="text-purple-100">1</span></span>
+            <span class="text-purple-300">目前等級：<span id="rank-text" class="text-purple-100">見習生</span></span>
+        </div>
+    </div>
+
+    <!-- 訊息提示盒 -->
+    <div id="message-box" class="fixed top-10 transform -translate-y-40 transition-all duration-500 p-6 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] font-black text-center z-50 min-w-[300px] border-2"></div>
+
+    <script>
+        let score = 0;
+        let level = 1;
+        let difficulty = 'easy';
+        let currentParts = []; 
+        let isSkipping = false;
+
+        const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
+        
+        function startGame(mode) {
+            difficulty = mode;
+            document.getElementById('difficulty-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            const labels = { 'easy': '🔮 初級實驗室', 'normal': '✨ 中級實驗室', 'hard': '👑 傳奇實驗室' };
+            document.getElementById('difficulty-label').innerText = labels[mode];
+            document.getElementById('rank-text').innerText = mode === 'easy' ? '見習巫師' : (mode === 'normal' ? '大巫師' : '至尊法師');
+            generateQuestion();
+        }
+
+        function generateQuestion() {
+            isSkipping = false;
+            currentParts = [];
+            const count = difficulty === 'hard' ? 3 : 2;
+            const ops = difficulty === 'hard' ? ['+', '-', '×', '÷'] : ['÷', '×'];
+
+            let isValid = false;
+            while (!isValid) {
+                currentParts = [];
+                let hasMultiplyOrDivide = false;
+
+                for (let i = 0; i < count; i++) {
+                    const op = i < count - 1 ? ops[Math.floor(Math.random() * ops.length)] : null;
+                    if (op === '×' || op === '÷') hasMultiplyOrDivide = true;
+
+                    currentParts.push({
+                        w: (difficulty !== 'easy' && Math.random() > 0.6) ? Math.floor(Math.random() * 2) + 1 : 0,
+                        n: Math.floor(Math.random() * 5) + 1,
+                        d: Math.floor(Math.random() * 5) + 2,
+                        op: op
+                    });
+                }
+                if (difficulty === 'hard' && !hasMultiplyOrDivide) continue;
+                const result = calculateCorrectAnswer();
+                if (result.n >= 0) isValid = true; 
+            }
+
+            const area = document.getElementById('question-area');
+            area.innerHTML = currentParts.map(p => {
+                let html = `<div class="mixed-number">`;
+                if (p.w > 0) html += `<span class="whole-number">${p.w}</span>`;
+                html += `<div class="fraction-box"><span class="text-white">${p.n}</span><div class="fraction-line"></div><span class="text-white">${p.d}</span></div></div>`;
+                if (p.op) {
+                    const opColors = {'+':'text-green-400', '-':'text-orange-400', '×':'text-blue-400', '÷':'text-red-400'};
+                    html += `<span class="operator-glow mx-2 ${opColors[p.op]}">${p.op}</span>`;
+                }
+                return html;
+            }).join('') + `<span class="text-purple-400 ml-2">＝</span>`;
+            
+            document.getElementById('ans-num').value = '';
+            document.getElementById('ans-den').value = '';
+            document.getElementById('explanation-area').classList.add('hidden');
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('game-status').innerText = "準備好調配魔藥了嗎？";
+        }
+
+        function fracOp(f1, f2, op) {
+            if (op === '+') return { n: f1.n * f2.d + f2.n * f1.d, d: f1.d * f2.d };
+            if (op === '-') return { n: f1.n * f2.d - f2.n * f1.d, d: f1.d * f2.d };
+            if (op === '×') return { n: f1.n * f2.n, d: f1.d * f2.d };
+            if (op === '÷') return { n: f1.n * f2.d, d: f1.d * f2.n };
+        }
+
+        function calculateCorrectAnswer() {
+            let parts = currentParts.map(p => ({ n: p.w * p.d + p.n, d: p.d }));
+            let ops = currentParts.filter(p => p.op).map(p => p.op);
+
+            for (let i = 0; i < ops.length; i++) {
+                if (ops[i] === '×' || ops[i] === '÷') {
+                    const res = fracOp(parts[i], parts[i+1], ops[i]);
+                    parts.splice(i, 2, res);
+                    ops.splice(i, 1);
+                    i--;
+                }
+            }
+            let final = parts[0];
+            for (let i = 0; i < ops.length; i++) {
+                final = fracOp(final, parts[i+1], ops[i]);
+            }
+            const common = gcd(final.n, final.d);
+            return { n: final.n / common, d: final.d / common };
+        }
+
+        function skipAndShowAnswer() {
+            if (isSkipping) return;
+            isSkipping = true;
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').classList.add('opacity-50', 'cursor-not-allowed');
+
+            const result = calculateCorrectAnswer();
+            const expContent = document.getElementById('exp-content');
+            document.getElementById('explanation-area').classList.remove('hidden');
+            
+            let steps = [];
+            const improper = currentParts.map(p => `${p.w * p.d + p.n}/${p.d}`);
+            steps.push(`✨ 步驟一：將藥材轉為假分數：${improper.map((f, i) => f + (currentParts[i].op ? ' ' + currentParts[i].op + ' ' : '')).join('')}`);
+
+            if (difficulty === 'hard') {
+                const hasMD = currentParts.some(p => p.op === '×' || p.op === '÷');
+                const hasAS = currentParts.some(p => p.op === '+' || p.op === '-');
+                if (hasMD && hasAS) steps.push(`📜 步驟二：遵循魔法順序：<span class="text-yellow-400 font-black">先乘除，後加減</span>。`);
+                else steps.push(`📜 步驟二：依序調配即可。`);
+            } else {
+                steps.push(`📜 步驟二：將除法翻轉成乘法進行鍊金。`);
+            }
+
+            steps.push(`💎 步驟三：煉成最精華的藥水：<span class="text-2xl text-cyan-400 font-black">${result.n}/${result.d}</span>`);
+
+            expContent.innerHTML = steps.map(s => `<div class="step-box">${s}</div>`).join('');
+            document.getElementById('ans-num').value = result.n;
+            document.getElementById('ans-den').value = result.d;
+            showMessage("魔法卷軸已展開！", true);
+        }
+
+        function checkAnswer() {
+            const uN = parseInt(document.getElementById('ans-num').value);
+            const uD = parseInt(document.getElementById('ans-den').value);
+            if (isNaN(uN) || isNaN(uD)) return showMessage("藥劑成分尚未填寫完整！", false);
+
+            const result = calculateCorrectAnswer();
+            if (uN === result.n && uD === result.d) {
+                if (!isSkipping) score += (difficulty === 'hard' ? 50 : 20);
+                level++;
+                document.getElementById('score').innerText = score;
+                document.getElementById('level').innerText = level;
+                showMessage("✨ 完美的煉成！獲得魔力加成！ ✨", true);
+                setTimeout(generateQuestion, 1500);
+            } else if (uN * result.d === uD * result.n) {
+                showMessage("配方純度不足，請約簡到最精華！", false);
+            } else {
+                showMessage("💥 實驗失敗！藥水比例不對喔！", false);
+            }
+        }
+
+        function showMessage(text, isSuccess) {
+            const box = document.getElementById('message-box');
+            box.innerText = text;
+            box.className = `fixed top-10 transform transition-all duration-500 p-6 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] font-black text-center z-50 min-w-[300px] border-2 ${
+                isSuccess ? 'bg-emerald-600 border-emerald-400 text-white translate-y-0' : 'bg-rose-600 border-rose-400 text-white translate-y-0'
+            }`;
+            setTimeout(() => box.classList.add('-translate-y-40'), 2500);
+        }
+    </script>
+</body>
+</html>
