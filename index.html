@@ -6,70 +6,141 @@
     <title>學習遊戲站</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         body {
-            background-color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
         }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 2rem;
+        }
+
         .link-card {
-            transition: all 0.2s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
+
         .link-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: scale(1.03) translateY(-5px);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .link-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+
+        .link-card:hover::after {
+            left: 100%;
+        }
+
+        .icon-box {
+            transition: transform 0.3s ease;
+        }
+
+        .link-card:hover .icon-box {
+            transform: rotate(12deg) scale(1.1);
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
+<body class="flex items-center justify-center p-4">
 
-    <div class="max-w-3xl mx-auto px-4 py-12 w-full">
-        <!-- 標題區域 -->
-        <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-slate-800 mb-2">學習遊戲站</h1>
-        </header>
-
-        <!-- 連結分類區 -->
-        <div class="max-w-md mx-auto">
+    <div class="max-w-xl w-full">
+        <!-- 主面板 -->
+        <div class="glass-panel shadow-2xl p-8 md:p-12">
             
-            <!-- 分類: 學習遊戲 -->
-            <section>
-                <h2 class="text-xl font-bold text-slate-700 mb-6 flex items-center justify-center gap-2">
-                    <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
-                    精選學習遊戲
-                </h2>
-                <div class="grid grid-cols-1 gap-4">
-                    <a href="https://cwcg-ctrl.github.io/yotps/MATH01.html" target="_blank" class="link-card block bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-amber-100 text-2xl rounded-lg flex items-center justify-center">⚔️</div>
-                        <div>
-                            <div class="font-semibold text-slate-800 text-lg">CodeCombat</div>
-                            <div class="text-sm text-slate-500">數學拔河</div>
-                        </div>
-                    </a>
-                    
-                    <a href="https://www.typingclub.com/" target="_blank" class="link-card block bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-blue-100 text-2xl rounded-lg flex items-center justify-center">⌨️</div>
-                        <div>
-                            <div class="font-semibold text-slate-800 text-lg">TypingClub</div>
-                            <div class="text-sm text-slate-500">趣味打字練習遊戲</div>
-                        </div>
-                    </a>
-
-                    <a href="https://www.duolingo.com/" target="_blank" class="link-card block bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-green-100 text-2xl rounded-lg flex items-center justify-center">🦉</div>
-                        <div>
-                            <div class="font-semibold text-slate-800 text-lg">Duolingo</div>
-                            <div class="text-sm text-slate-500">像玩遊戲一樣學習外語</div>
-                        </div>
-                    </a>
-
-                    <a href="https://scratch.mit.edu/" target="_blank" class="link-card block bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-orange-100 text-2xl rounded-lg flex items-center justify-center">🐱</div>
-                        <div>
-                            <div class="font-semibold text-slate-800 text-lg">Scratch</div>
-                            <div class="text-sm text-slate-500">創造你自己的互動故事與遊戲</div>
-                        </div>
-                    </a>
+            <!-- 標題區域 -->
+            <header class="text-center mb-10">
+                <div class="inline-block p-3 rounded-2xl bg-white/50 mb-4 shadow-sm">
+                    <span class="text-4xl">🎮</span>
                 </div>
-            </section>
+                <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight mb-2">
+                    學習遊戲站
+                </h1>
+                <div class="h-1 w-20 bg-indigo-500 mx-auto rounded-full"></div>
+            </header>
+
+            <!-- 連結列表 -->
+            <div class="space-y-4">
+                
+                <!-- 數學拔河 -->
+                <a href="https://cwcg-ctrl.github.io/yotps/MATH01.html" target="_blank" 
+                   class="link-card flex items-center p-5 rounded-2xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-14 h-14 bg-amber-400 text-white text-2xl rounded-xl flex items-center justify-center shadow-lg shadow-amber-200">
+                        🏆
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-800 text-xl group-hover:text-amber-600 transition-colors">數學拔河</div>
+                        <div class="text-sm text-slate-500">趣味競技，提升心算與邏輯</div>
+                    </div>
+                    <div class="ml-auto text-slate-300 group-hover:text-amber-400 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
+
+                <!-- 空位 1 -->
+                <div class="link-card flex items-center p-5 rounded-2xl bg-white/40 border border-dashed border-slate-300 opacity-60">
+                    <div class="w-14 h-14 bg-slate-200 text-white text-2xl rounded-xl flex items-center justify-center">
+                        🔒
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-400 text-xl">敬請期待</div>
+                        <div class="text-sm text-slate-400">下一個精彩遊戲正在開發中</div>
+                    </div>
+                </div>
+
+                <!-- 空位 2 -->
+                <div class="link-card flex items-center p-5 rounded-2xl bg-white/40 border border-dashed border-slate-300 opacity-60">
+                    <div class="w-14 h-14 bg-slate-200 text-white text-2xl rounded-xl flex items-center justify-center">
+                        🔒
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-400 text-xl">敬請期待</div>
+                        <div class="text-sm text-slate-400">此連結尚未開放</div>
+                    </div>
+                </div>
+
+                <!-- 空位 3 -->
+                <div class="link-card flex items-center p-5 rounded-2xl bg-white/40 border border-dashed border-slate-300 opacity-60">
+                    <div class="w-14 h-14 bg-slate-200 text-white text-2xl rounded-xl flex items-center justify-center">
+                        🔒
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-400 text-xl">敬請期待</div>
+                        <div class="text-sm text-slate-400">此連結目前為空白</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 裝飾元素 -->
+            <div class="mt-10 text-center">
+                <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">
+                    Select a game to start learning
+                </p>
+            </div>
         </div>
     </div>
 
