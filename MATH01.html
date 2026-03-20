@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學拔河大對決 Math Tug of War</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+        
+        body {
+            font-family: 'ZCOOL+KuaiLe', cursive, sans-serif;
+            overflow: hidden;
+            background: #f0f9ff;
+            user-select: none;
+        }
+
+        /* 拔河繩索容器 */
+        .rope-container {
+            position: relative;
+            height: 240px;
+            width: 100%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-top: 6px solid #64748b;
+            border-bottom: 6px solid #64748b;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* 繩子本體 */
+        .rope {
+            position: absolute;
+            height: 14px;
+            width: 300%;
+            background: repeating-linear-gradient(
+                90deg,
+                #8b4513,
+                #8b4513 30px,
+                #a0522d 30px,
+                #a0522d 60px
+            );
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .center-marker {
+            width: 20px;
+            height: 80px;
+            background: #ef4444;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+            border: 2px solid white;
+        }
+
+        /* 角色組容器 - 調整位置讓他們更靠近中央 */
+        .team-container {
+            position: absolute;
+            display: flex;
+            align-items: flex-end;
+            bottom: 15px;
+        }
+
+        /* 將隊伍向中心平移，原本是 420px 改為 350px */
+        .team-p1 { left: calc(50% - 350px); flex-direction: row-reverse; }
+        .team-p2 { right: calc(50% - 350px); transform: scaleX(-1); }
+
+        .char-wrapper {
+            width: 100px;
+            height: 160px;
+            margin: 0 -20px; /* 縮小間距讓隊友更緊湊 */
+            transition: transform 0.3s ease;
+        }
+
+        /* 拉繩動畫 */
+        @keyframes pull-action {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-15px, 5px) rotate(-8deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .pulling .char-wrapper {
+            animation: pull-action 0.4s ease-in-out;
+        }
+
+        /* 隊員位置偏移，營造層次感 */
+        .char-wrapper:nth-child(2) { transform: translateY(-10px) scale(0.95); z-index: 5; }
+        .char-wrapper:nth-child(3) { transform: translateY(-20px) scale(0.9); z-index: 4; }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .choice-btn {
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .choice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .choice-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen select-none">
+
+    <!-- 頂部狀態欄 -->
+    <div class="flex justify-between items-center p-4 bg-white shadow-lg z-30">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 bg-[#2d3282] rounded-full flex items-center justify-center text-white text-2xl border-2 border-white shadow-lg">1</div>
+            <div class="text-[#2d3282] text-2xl font-bold">隊伍一</div>
+        </div>
+        <div class="hidden lg:block bg-yellow-400 px-10 py-2 rounded-full font-bold text-2xl shadow-inner border-2 border-yellow-600">
+            數學拔河大對決
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="text-[#56a8d8] text-2xl font-bold">隊伍二</div>
+            <div class="w-12 h-12 bg-[#56a8d8] rounded-full flex items-center justify-center text-white text-2xl border-2 border-white shadow-lg">2</div>
+        </div>
+    </div>
+
+    <!-- 拔河戰場區域 -->
+    <div class="rope-container relative">
+        <div class="absolute left-1/4 h-full w-2 bg-blue-300/30 border-l-4 border-dashed border-blue-400"></div>
+        <div class="absolute right-1/4 h-full w-2 bg-red-300/30 border-r-4 border-dashed border-red-400"></div>
+        
+        <div id="rope-group" class="absolute inset-0 flex items-center justify-center transition-transform duration-300">
+            <div id="rope-visual" class="rope">
+                <div class="center-marker"></div>
+            </div>
+
+            <!-- 玩家 1 隊伍 (深藍隊) -->
+            <div id="team1" class="team-container team-p1">
+                <div class="char-wrapper" id="char1-1"></div>
+                <div class="char-wrapper" id="char1-2"></div>
+                <div class="char-wrapper" id="char1-3"></div>
+            </div>
+
+            <!-- 玩家 2 隊伍 (淺藍隊) -->
+            <div id="team2" class="team-container team-p2">
+                <div class="char-wrapper" id="char2-1"></div>
+                <div class="char-wrapper" id="char2-2"></div>
+                <div class="char-wrapper" id="char2-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲對戰控制區 -->
+    <div class="flex-1 flex flex-row overflow-hidden">
+        <div id="p1-zone" class="player-zone flex-1 bg-gradient-to-b from-blue-50 to-[#2d3282]/20 flex flex-col items-center justify-center p-6 border-r-4 border-slate-300 relative">
+            <div class="bg-white p-6 rounded-3xl shadow-xl mb-6 border-4 border-[#2d3282]/30 w-full max-w-xs text-center">
+                <div class="text-4xl font-black text-[#2d3282]" id="p1-question">...</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 w-full max-w-sm" id="p1-options"></div>
+            <div class="mt-6 bg-[#2d3282] text-white px-8 py-2 rounded-full font-bold text-xl shadow-lg">得分: <span id="p1-score">0</span></div>
+        </div>
+
+        <div id="p2-zone" class="player-zone flex-1 bg-gradient-to-b from-blue-50 to-[#56a8d8]/20 flex flex-col items-center justify-center p-6 relative">
+            <div class="bg-white p-6 rounded-3xl shadow-xl mb-6 border-4 border-[#56a8d8]/30 w-full max-w-xs text-center">
+                <div class="text-4xl font-black text-[#56a8d8]" id="p2-question">...</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 w-full max-w-sm" id="p2-options"></div>
+            <div class="mt-6 bg-[#56a8d8] text-white px-8 py-2 rounded-full font-bold text-xl shadow-lg">得分: <span id="p2-score">0</span></div>
+        </div>
+    </div>
+
+    <!-- 勝利面板 -->
+    <div id="modal" class="fixed inset-0 bg-slate-900/95 hidden items-center justify-center z-50 p-4 backdrop-blur-md">
+        <div class="bg-white rounded-[3rem] p-10 max-w-lg w-full text-center shadow-2xl border-8 border-yellow-400">
+            <div class="text-7xl mb-4">🏆</div>
+            <h2 id="winner-text" class="text-5xl font-black mb-6 text-gray-800">隊伍獲勝！</h2>
+            <button onclick="resetGame()" class="bg-gradient-to-r from-green-400 to-green-600 text-white font-black py-5 px-12 rounded-2xl text-3xl transition-all shadow-[0_8px_0_rgb(21,128,61)] active:shadow-none active:translate-y-2">
+                重新比賽
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 完全依照角色衣著設計圖片建模
+         * mainColor: 校服主色 (深藍 #2d3282 或 淺藍 #56a8d8)
+         * isGirl: 是否為馬尾女孩
+         */
+        function createAccurateStudentSVG(mainColor, isGirl = false) {
+            const skin = "#ffe4e1";
+            const pantsColor = "#1a1e4d";
+            const hair = isGirl ? "#2d2d2d" : "#5d4037";
+            const schoolBadgeColor = "#2d3282";
+
+            return `
+            <svg viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg">
+                <!-- 腿與襪子 -->
+                <rect x="34" y="115" width="10" height="25" fill="${skin}"/>
+                <rect x="56" y="115" width="10" height="25" fill="${skin}"/>
+                <rect x="34" y="130" width="10" height="10" fill="white"/>
+                <rect x="56" y="130" width="10" height="10" fill="white"/>
+                
+                <!-- 鞋子 -->
+                <path d="M30 140 H48 V152 Q30 152 30 145 Z" fill="white" stroke="#ddd" stroke-width="1"/>
+                <path d="M52 140 H70 V152 Q70 152 52 152 Z" fill="white" stroke="#ddd" stroke-width="1"/>
+
+                <!-- 下著: 深藍色短褲 -->
+                <path d="M30 95 H70 V118 H52 V108 H48 V118 H30 Z" fill="${pantsColor}" />
+
+                <!-- 上身: 校服拼接設計 -->
+                <path d="M30 65 H70 V85 H30 Z" fill="white" />
+                <path d="M30 85 H70 V100 H30 Z" fill="${mainColor}" />
+                <path d="M35 65 L50 78 L65 65" fill="white" stroke="#ddd" stroke-width="1"/>
+                <path d="M42 65 L50 72 L58 65" fill="none" stroke="${mainColor}" stroke-width="1.5"/>
+                <path d="M22 65 L30 65 L30 85 L22 85 Z" fill="white" />
+                <path d="M70 65 L78 65 L78 85 L70 85 Z" fill="white" />
+                <circle cx="62" cy="78" r="3" fill="${schoolBadgeColor}" opacity="0.8"/>
+                
+                <!-- 手臂 -->
+                <path d="M25 80 L10 100 M75 80 L90 100" stroke="${skin}" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+                <!-- 頭部 -->
+                <circle cx="50" cy="40" r="24" fill="${skin}"/>
+                
+                <!-- 髮型 -->
+                ${isGirl ? 
+                    `<circle cx="20" cy="25" r="10" fill="${hair}"/>
+                     <circle cx="80" cy="25" r="10" fill="${hair}"/>
+                     <circle cx="22" cy="25" r="3" fill="#ff69b4"/>
+                     <circle cx="78" cy="25" r="3" fill="#ff69b4"/>
+                     <path d="M26 35 Q26 12 50 12 Q74 12 74 35" fill="${hair}"/>` : 
+                    `<path d="M26 38 Q26 12 50 12 Q74 12 74 38 L74 32 Q50 25 26 32 Z" fill="${hair}"/>`}
+                
+                <!-- 五官 -->
+                <circle cx="42" cy="42" r="2.5" fill="#333"/>
+                <circle cx="58" cy="42" r="2.5" fill="#333"/>
+                <circle cx="38" cy="50" r="5" fill="#ffb6c1" opacity="0.5"/>
+                <circle cx="62" cy="50" r="5" fill="#ffb6c1" opacity="0.5"/>
+                <path d="M46 54 Q50 58 54 54" stroke="#d63031" stroke-width="2" fill="none" class="mouth"/>
+            </svg>`;
+        }
+
+        const ropeGroup = document.getElementById('rope-group');
+        const modal = document.getElementById('modal');
+        const winnerText = document.getElementById('winner-text');
+        
+        let gameState = {
+            position: 0,
+            p1Score: 0,
+            p2Score: 0,
+            isGameOver: false,
+            p1Current: null,
+            p2Current: null
+        };
+
+        function initCharacters() {
+            const p1Main = "#2d3282"; // 隊伍一主色
+            const p2Main = "#56a8d8"; // 隊伍二主色
+
+            // 隊伍 1
+            document.getElementById('char1-1').innerHTML = createAccurateStudentSVG(p1Main, true);
+            document.getElementById('char1-2').innerHTML = createAccurateStudentSVG(p1Main, false);
+            document.getElementById('char1-3').innerHTML = createAccurateStudentSVG(p1Main, true);
+
+            // 隊伍 2
+            document.getElementById('char2-1').innerHTML = createAccurateStudentSVG(p2Main, false);
+            document.getElementById('char2-2').innerHTML = createAccurateStudentSVG(p2Main, true);
+            document.getElementById('char2-3').innerHTML = createAccurateStudentSVG(p2Main, false);
+        }
+
+        function generateQuestion() {
+            const isMultiply = Math.random() > 0.45;
+            let a, b, answer, type;
+            if (isMultiply) {
+                a = Math.floor(Math.random() * 8) + 2;
+                b = Math.floor(Math.random() * 9) + 2;
+                answer = a * b;
+                type = '×';
+            } else {
+                a = Math.floor(Math.random() * 50) + 10;
+                b = Math.floor(Math.random() * 50) + 10;
+                answer = a + b;
+                type = '+';
+            }
+            const options = [answer];
+            while (options.length < 4) {
+                let off = Math.floor(Math.random() * 12) - 6;
+                if (off === 0) off = 2;
+                let wrong = answer + off;
+                if (wrong > 0 && !options.includes(wrong)) options.push(wrong);
+            }
+            return { text: `${a} ${type} ${b}`, answer, options: options.sort(() => Math.random() - 0.5) };
+        }
+
+        function refreshP1() {
+            gameState.p1Current = generateQuestion();
+            document.getElementById('p1-question').innerText = gameState.p1Current.text;
+            const container = document.getElementById('p1-options');
+            container.innerHTML = '';
+            gameState.p1Current.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn bg-white border-b-8 border-[#2d3282] text-[#2d3282] font-black py-5 rounded-2xl shadow-md text-2xl active:border-b-0';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(1, opt);
+                container.appendChild(btn);
+            });
+        }
+
+        function refreshP2() {
+            gameState.p2Current = generateQuestion();
+            document.getElementById('p2-question').innerText = gameState.p2Current.text;
+            const container = document.getElementById('p2-options');
+            container.innerHTML = '';
+            gameState.p2Current.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn bg-white border-b-8 border-[#56a8d8] text-[#56a8d8] font-black py-5 rounded-2xl shadow-md text-2xl active:border-b-0';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(2, opt);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(player, val) {
+            if (gameState.isGameOver) return;
+            const current = player === 1 ? gameState.p1Current : gameState.p2Current;
+            const isCorrect = val === current.answer;
+            const step = 65;
+
+            if (isCorrect) {
+                const team = document.getElementById(player === 1 ? 'team1' : 'team2');
+                team.classList.add('pulling');
+                setTimeout(() => team.classList.remove('pulling'), 400);
+                
+                if (player === 1) { gameState.position -= step; gameState.p1Score++; refreshP1(); }
+                else { gameState.position += step; gameState.p2Score++; refreshP2(); }
+            } else {
+                const zone = document.getElementById(player === 1 ? 'p1-zone' : 'p2-zone');
+                zone.classList.add('shake');
+                setTimeout(() => zone.classList.remove('shake'), 500);
+                
+                if (player === 1) { gameState.position += step/2; refreshP1(); }
+                else { gameState.position -= step/2; refreshP2(); }
+            }
+            updateVisuals();
+            checkWin();
+        }
+
+        function updateVisuals() {
+            ropeGroup.style.transform = `translateX(${gameState.position}px)`;
+            document.getElementById('p1-score').innerText = gameState.p1Score;
+            document.getElementById('p2-score').innerText = gameState.p2Score;
+        }
+
+        function checkWin() {
+            const limit = window.innerWidth * 0.28;
+            if (Math.abs(gameState.position) >= limit) {
+                gameState.isGameOver = true;
+                const isP1 = gameState.position < 0;
+                winnerText.innerText = isP1 ? '隊伍一 獲勝！' : '隊伍二 獲勝！';
+                winnerText.style.color = isP1 ? '#2d3282' : '#56a8d8';
+                modal.classList.replace('hidden', 'flex');
+            }
+        }
+
+        function resetGame() {
+            gameState.position = 0; gameState.p1Score = 0; gameState.p2Score = 0; gameState.isGameOver = false;
+            modal.classList.replace('flex', 'hidden');
+            updateVisuals();
+            refreshP1();
+            refreshP2();
+        }
+
+        window.onload = () => {
+            initCharacters();
+            resetGame();
+        };
+    </script>
+</body>
+</html>
