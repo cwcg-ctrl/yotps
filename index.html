@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學習遊戲站</title>
+    <title>張Sir的學習遊戲站</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes gradientBG {
@@ -25,7 +25,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 2rem;
+            border-radius: 2.5rem;
         }
 
         .link-card {
@@ -54,6 +54,31 @@
             left: 100%;
         }
 
+        .avatar-container {
+            width: 110px;
+            height: 110px;
+            margin: 0 auto;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background-color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        .avatar-container:hover {
+            transform: rotate(5deg) scale(1.05);
+        }
+
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .icon-box {
             transition: transform 0.3s ease;
         }
@@ -71,13 +96,14 @@
             
             <!-- 標題區域 -->
             <header class="text-center mb-10">
-                <div class="inline-block p-3 rounded-2xl bg-white/50 mb-4 shadow-sm">
-                    <span class="text-4xl">🎮</span>
+                <div class="avatar-container mb-6">
+                    <!-- 使用您上傳的圖像作為標題圖示 -->
+                    <img src="IMG_6905.PNG" alt="張Sir">
                 </div>
                 <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight mb-2">
-                    學習遊戲站
+                    張Sir的學習遊戲站
                 </h1>
-                <div class="h-1 w-20 bg-indigo-500 mx-auto rounded-full"></div>
+                <div class="h-1.5 w-24 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
             </header>
 
             <!-- 連結列表 -->
@@ -137,7 +163,7 @@
 
             <!-- 裝飾元素 -->
             <div class="mt-10 text-center">
-                <p class="text-slate-400 text-xs font-medium uppercase tracking-widest">
+                <p class="text-slate-400 text-xs font-semibold uppercase tracking-widest">
                     Select a game to start learning
                 </p>
             </div>
