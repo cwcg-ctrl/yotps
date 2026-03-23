@@ -10,15 +10,15 @@
         @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
 
         :root {
-            --primary: #4f46e5;
-            --secondary: #0ea5e9;
+            --primary: #6366f1;
+            --secondary: #a855f7;
             --accent: #f59e0b;
-            --success: #10b981;
-            --danger: #ef4444;
         }
 
         body {
-            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%);
+            background: #f0f9ff;
+            background-image: radial-gradient(#e0e7ff 1px, transparent 1px);
+            background-size: 20px 20px;
             font-family: 'Segoe UI', system-ui, sans-serif;
             overflow-x: hidden;
             margin: 0;
@@ -29,353 +29,368 @@
             font-family: 'ZCOOL KuaiLe', 'Microsoft JhengHei', sans-serif;
         }
 
-        /* 浮動背景粒子 */
-        .bg-particle {
+        /* 漂浮幾何粒子背景 */
+        .particle {
             position: fixed;
             z-index: -1;
-            opacity: 0.15;
-            animation: float 15s infinite linear;
+            opacity: 0.1;
             pointer-events: none;
+            animation: float 20s infinite linear;
         }
 
         @keyframes float {
-            0% { transform: translateY(0) rotate(0deg); }
-            100% { transform: translateY(-100vh) rotate(360deg); }
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+            50% { opacity: 0.2; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0.1; }
         }
 
         .glass-panel {
             background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
             border: 4px solid #ffffff;
-            max-height: 95vh;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            max-height: 92vh;
             overflow-y: auto;
         }
 
-        /* 隱藏滾動條但保持功能 */
-        .glass-panel::-webkit-scrollbar {
-            width: 4px;
-        }
-        .glass-panel::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
+        /* 導航標籤 */
+        .active-tab {
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
-        .btn-pop {
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            touch-action: manipulation;
-        }
-
-        .btn-pop:hover {
-            transform: scale(1.03) translateY(-3px);
-        }
-
-        .mode-screen { display: none; }
-        .active { display: block; }
-
-        .shape-container {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            max-height: 220px;
-            background: #ffffff;
-            border-radius: 1.5rem;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 1.5rem;
+        /* 按鈕美化 */
+        .btn-main {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            padding: 10px;
+            overflow: hidden;
         }
 
-        /* 優化圖形文字顯示 */
-        svg { width: 100%; height: 100%; }
-        svg text {
-            font-weight: 900;
-            paint-order: stroke;
-            stroke: #ffffff;
-            stroke-width: 5px;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+        .btn-main:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-main:active {
+            transform: scale(0.98);
+        }
+
+        /* 公式卡片 */
+        .formula-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.3s;
+        }
+        
+        .formula-card:hover {
+            border-color: #6366f1;
+        }
+
+        .reverse-formula {
+            background: #f1f5f9;
+            border-left: 4px solid #6366f1;
+            padding: 0.5rem 0.75rem;
+            margin-top: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
+            color: #4338ca;
         }
 
         .option-btn {
             background: white;
-            border: 3px solid #e2e8f0;
-            border-bottom-width: 6px;
-            transition: all 0.1s;
-            touch-action: manipulation;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+            text-align: left;
+            padding: 1rem 1.5rem;
         }
 
-        .option-btn:active {
-            border-bottom-width: 2px;
-            transform: translateY(4px);
+        .option-btn:hover:not(:disabled) {
+            border-color: #6366f1;
+            background: #f5f3ff;
         }
 
-        .option-btn.correct {
-            background-color: #d1fae5;
-            border-color: #10b981;
-            color: #065f46;
-        }
+        .option-btn.correct { background-color: #d1fae5; border-color: #10b981; color: #064e3b; }
+        .option-btn.wrong { background-color: #fee2e2; border-color: #ef4444; color: #7f1d1d; }
 
-        .option-btn.wrong {
-            background-color: #fee2e2;
-            border-color: #ef4444;
-            color: #991b1b;
-        }
-
-        /* 針對窄螢幕的優化 */
-        @media (max-width: 400px) {
-            .comic-font { font-size: 1.5rem; }
-            .option-btn { padding: 0.75rem; font-size: 0.95rem; }
+        .shape-container {
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.03);
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-2 sm:p-4">
+<body class="flex items-center justify-center min-h-screen p-3 sm:p-6">
 
     <!-- 背景粒子 -->
-    <div class="bg-particle" style="top: 80%; left: 10%; width: 50px;">📐</div>
-    <div class="bg-particle" style="top: 20%; left: 80%; width: 40px; animation-delay: -2s;">📏</div>
-    <div class="bg-particle" style="top: 50%; left: 50%; width: 60px; animation-delay: -5s;">✏️</div>
+    <div class="particle text-6xl" style="top: 80%; left: 5%; animation-delay: 0s;">△</div>
+    <div class="particle text-5xl" style="top: 40%; left: 85%; animation-delay: -5s;">□</div>
+    <div class="particle text-4xl" style="top: 20%; left: 15%; animation-delay: -10s;">○</div>
+    <div class="particle text-6xl" style="top: 60%; left: 75%; animation-delay: -15s;">◇</div>
 
-    <div id="game-container" class="glass-panel p-5 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-lg text-center mx-auto relative animate__animated animate__fadeIn">
+    <div id="game-container" class="glass-panel p-6 sm:p-10 rounded-[3rem] w-full max-w-lg text-center mx-auto animate__animated animate__fadeIn">
         
-        <h1 class="text-2xl sm:text-4xl comic-font font-bold text-indigo-600 mb-2 drop-shadow-sm">幾何公式大挑戰</h1>
-        <div class="h-1 w-20 bg-indigo-400 mx-auto mb-6 rounded-full opacity-50"></div>
+        <!-- 頂部標題與裝飾 -->
+        <div class="relative mb-8">
+            <div class="text-5xl mb-2 animate__animated animate__bounceIn">👨‍🏫</div>
+            <h1 class="text-3xl sm:text-4xl comic-font font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                幾何公式大挑戰
+            </h1>
+            <p class="text-gray-500 text-sm mt-1 tracking-widest font-medium uppercase">Geometry Master Quiz</p>
+        </div>
         
-        <!-- 1. 主選單模式 -->
-        <div id="menu-screen" class="mode-screen active animate__animated animate__zoomIn">
-            <div class="mb-6">
-                <div class="text-6xl mb-4 animate__animated animate__bounceIn">🏫</div>
-                <p class="text-gray-600 text-lg font-medium px-4">哈囉！小小數學家，今天想挑戰什麼？</p>
+        <!-- 主選單 -->
+        <div id="menu-screen" class="mode-screen block space-y-6">
+            <div class="bg-white p-6 rounded-[2rem] shadow-inner border border-gray-100 mb-8">
+                <p class="text-gray-600 mb-6 font-medium">歡迎來到數學冒險！<br>選擇一個模式開始學習吧。</p>
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="showMode('study')" class="btn-main group bg-gradient-to-br from-amber-400 to-orange-500 text-white font-bold py-5 rounded-2xl shadow-lg flex items-center justify-between px-8">
+                        <div class="text-left">
+                            <span class="block text-2xl">📖 知識寶庫</span>
+                            <span class="text-xs font-normal opacity-90">溫習所有 P4 & P5 公式</span>
+                        </div>
+                        <span class="text-3xl group-hover:rotate-12 transition-transform">📚</span>
+                    </button>
+                    
+                    <button onclick="showMode('grade-select')" class="btn-main group bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold py-5 rounded-2xl shadow-lg flex items-center justify-between px-8">
+                        <div class="text-left">
+                            <span class="block text-2xl">🚀 開始挑戰</span>
+                            <span class="text-xs font-normal opacity-90">測試你的幾何戰鬥力</span>
+                        </div>
+                        <span class="text-3xl group-hover:scale-125 transition-transform">🎯</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-gray-400 text-xs flex justify-center items-center gap-2">
+                <span>Made for Students</span> • <span>Version 2.0</span>
+            </div>
+        </div>
+
+        <!-- 年級選擇 -->
+        <div id="grade-select-screen" class="mode-screen hidden animate__animated animate__fadeInRight">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 comic-font">選擇級別</h2>
+                <div class="h-1 w-12 bg-indigo-500 mx-auto mt-2 rounded-full"></div>
             </div>
             <div class="flex flex-col gap-4">
-                <button onclick="showMode('study')" class="btn-pop bg-amber-400 hover:bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-[0_6px_0_#d97706] text-xl flex items-center justify-center gap-3">
-                    <span>📖</span> 溫習模式
-                </button>
-                <button onclick="showMode('grade-select')" class="btn-pop bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-[0_6px_0_#4338ca] text-xl flex items-center justify-center gap-3">
-                    <span>🚀</span> 開始挑戰
-                </button>
-            </div>
-        </div>
-
-        <!-- 1.5 年級選擇模式 -->
-        <div id="grade-select-screen" class="mode-screen animate__animated animate__fadeInRight">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-6 comic-font">選擇難度級別</h2>
-            <div class="grid grid-cols-1 gap-4 px-2">
-                <button onclick="startChallenge(4)" class="btn-pop bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-5 rounded-2xl shadow-[0_6px_0_#059669]">
-                    <div class="text-xs opacity-80 mb-1">小學四年級</div>
-                    <div class="text-lg">基礎圖形大賽</div>
-                </button>
-                <button onclick="startChallenge(5)" class="btn-pop bg-violet-500 hover:bg-violet-600 text-white font-bold py-5 rounded-2xl shadow-[0_6px_0_#7c3aed]">
-                    <div class="text-xs opacity-80 mb-1">小學五年級</div>
-                    <div class="text-lg">全能幾何大賽</div>
-                </button>
-                <button onclick="showMode('menu')" class="mt-4 text-gray-500 font-bold hover:text-indigo-600 transition p-2">⬅️ 返回選單</button>
-            </div>
-        </div>
-
-        <!-- 2. 溫習模式 -->
-        <div id="study-screen" class="mode-screen text-left">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 comic-font">📚 知識寶庫</h2>
-                <div class="bg-gray-200 p-1 rounded-xl flex gap-1 w-full sm:w-auto">
-                    <button onclick="switchStudyTab('p4')" id="tab-p4" class="flex-1 sm:flex-none px-6 py-2 rounded-lg bg-indigo-500 text-white font-bold shadow-sm transition-all">P4</button>
-                    <button onclick="switchStudyTab('p5')" id="tab-p5" class="flex-1 sm:flex-none px-6 py-2 rounded-lg bg-transparent text-gray-600 font-bold transition-all">P5</button>
-                </div>
-            </div>
-
-            <div class="max-h-[50vh] overflow-y-auto pr-1 space-y-4">
-                <div id="content-p4" class="space-y-3">
-                    <div class="p-4 bg-blue-50 rounded-2xl border-2 border-blue-200 shadow-sm animate__animated animate__fadeInUp">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="p-2 bg-blue-500 text-white rounded-lg text-xs">📏</span>
-                            <p class="font-bold text-blue-800">長方形周界</p>
-                        </div>
-                        <p class="text-md text-gray-800 bg-white p-2 rounded-xl border border-blue-100 font-bold text-center">(長 + 闊) × 2</p>
+                <button onclick="startChallenge(4)" class="btn-main bg-white border-2 border-emerald-500 text-emerald-600 font-bold py-5 rounded-2xl flex items-center justify-around">
+                    <span class="text-4xl">🌱</span>
+                    <div class="text-left">
+                        <div class="text-xl">四年級 P4</div>
+                        <div class="text-xs text-gray-500 font-normal">周界與基本面積</div>
                     </div>
-                    <div class="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-200 shadow-sm animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="p-2 bg-emerald-500 text-white rounded-lg text-xs">⬛</span>
-                            <p class="font-bold text-emerald-800">正方形周界</p>
-                        </div>
-                        <p class="text-md text-gray-800 bg-white p-2 rounded-xl border border-emerald-100 font-bold text-center">邊長 × 4</p>
-                    </div>
-                </div>
-
-                <div id="content-p5" class="space-y-3 hidden">
-                    <div class="p-4 bg-purple-50 rounded-2xl border-2 border-purple-200 shadow-sm">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="p-2 bg-purple-500 text-white rounded-lg text-xs">📐</span>
-                            <p class="font-bold text-purple-800">平行四邊形面積</p>
-                        </div>
-                        <p class="text-md text-gray-800 bg-white p-2 rounded-xl border border-purple-100 font-bold text-center">底 × 高</p>
-                    </div>
-                    <div class="p-4 bg-rose-50 rounded-2xl border-2 border-rose-200 shadow-sm">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="p-2 bg-rose-500 text-white rounded-lg text-xs">🔺</span>
-                            <p class="font-bold text-rose-800">三角形面積</p>
-                        </div>
-                        <p class="text-md text-gray-800 bg-white p-2 rounded-xl border border-rose-100 font-bold text-center">底 × 高 ÷ 2</p>
-                    </div>
-                </div>
-            </div>
-            
-            <button onclick="showMode('menu')" class="w-full mt-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-2xl transition">
-                記住啦！返回主選單
-            </button>
-        </div>
-
-        <!-- 3. 挑戰模式 -->
-        <div id="quiz-screen" class="mode-screen">
-            <div class="flex justify-between items-center mb-4 bg-white/50 p-2 rounded-2xl border border-white/50 shadow-inner">
-                <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-full shadow-sm">
-                    <span class="text-lg">⭐</span>
-                    <span id="score" class="text-xl font-bold text-amber-500">0</span>
-                </div>
-                <div class="bg-indigo-500 text-white px-4 py-1 rounded-full font-bold text-xs" id="question-count">
-                    1/10
-                </div>
-            </div>
-            
-            <div id="quiz-area" class="animate__animated animate__fadeIn">
-                <!-- 圖形區 -->
-                <div id="shape-display" class="shape-container"></div>
-
-                <div class="mb-6 px-1">
-                    <p id="question-text" class="text-lg sm:text-xl font-bold text-gray-800 leading-tight"></p>
-                </div>
-
-                <div id="options-grid" class="grid grid-cols-1 gap-3"></div>
+                    <span class="bg-emerald-100 p-2 rounded-full text-emerald-600">▶</span>
+                </button>
                 
-                <button id="skip-btn" onclick="skipQuestion()" class="mt-4 w-full text-gray-400 hover:text-gray-600 py-2 text-xs font-bold transition">
-                    ⏩ 跳過這題，查看答案
+                <button onclick="startChallenge(5)" class="btn-main bg-white border-2 border-violet-500 text-violet-600 font-bold py-5 rounded-2xl flex items-center justify-around">
+                    <span class="text-4xl">🌲</span>
+                    <div class="text-left">
+                        <div class="text-xl">五年級 P5</div>
+                        <div class="text-xs text-gray-500 font-normal">多邊形面積與逆向</div>
+                    </div>
+                    <span class="bg-violet-100 p-2 rounded-full text-violet-600">▶</span>
+                </button>
+                
+                <button onclick="showMode('menu')" class="mt-4 text-gray-400 hover:text-indigo-600 font-bold transition flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    返回主頁
                 </button>
             </div>
-            
-            <p id="feedback" class="mt-4 text-xl font-bold min-h-[1.5em] animate__animated"></p>
-            
-            <button id="next-btn" onclick="goToNextQuestion()" class="hidden w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-[0_6px_0_#4338ca] text-xl transition transform active:translate-y-1">
-                下一題 ➡️
-            </button>
+        </div>
 
-            <div class="flex flex-col gap-3 mt-4">
-                <button id="reset-btn" class="hidden bg-emerald-500 text-white font-bold py-3 rounded-2xl shadow-[0_4px_0_#059669] hover:bg-emerald-600 transition">
-                    再試一次 🔄
+        <!-- 知識寶庫 (溫習模式) -->
+        <div id="study-screen" class="mode-screen hidden text-left animate__animated animate__fadeIn">
+            <div class="flex bg-gray-100 p-1.5 rounded-2xl mb-6 shadow-inner">
+                <button onclick="switchStudyTab('p4')" id="tab-p4" class="flex-1 py-3 rounded-xl font-bold transition-all active-tab">P4 公式</button>
+                <button onclick="switchStudyTab('p5')" id="tab-p5" class="flex-1 py-3 rounded-xl font-bold transition-all text-gray-500">P5 公式</button>
+            </div>
+
+            <div id="study-content" class="max-h-[50vh] overflow-y-auto pr-2 space-y-6">
+                <!-- P4 內容 -->
+                <div id="content-p4" class="animate__animated animate__fadeIn">
+                    <section class="mb-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="bg-indigo-100 text-indigo-600 p-1 rounded-md text-xs font-bold">周界</span>
+                            <h3 class="font-bold text-gray-800">周界計算與逆向</h3>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-indigo-800 text-lg mb-1">長方形周界</div>
+                            <div class="text-gray-600 text-sm">公式：(長 + 闊) × 2</div>
+                            <div class="reverse-formula">逆向：周界 ÷ 2 - 長 (或闊) = 闊 (或長)</div>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-emerald-800 text-lg mb-1">正方形周界</div>
+                            <div class="text-gray-600 text-sm">公式：邊長 × 4</div>
+                            <div class="reverse-formula">逆向：周界 ÷ 4 = 邊長</div>
+                        </div>
+                    </section>
+                    <section>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="bg-orange-100 text-orange-600 p-1 rounded-md text-xs font-bold">面積</span>
+                            <h3 class="font-bold text-gray-800">面積計算與逆向</h3>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-orange-800 text-lg mb-1">長方形面積</div>
+                            <div class="text-gray-600 text-sm">公式：長 × 闊</div>
+                            <div class="reverse-formula">逆向：面積 ÷ 長 (或闊) = 闊 (或長)</div>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-rose-800 text-lg mb-1">正方形面積</div>
+                            <div class="text-gray-600 text-sm">公式：邊長 × 邊長</div>
+                            <div class="reverse-formula">逆向：? × ? (同一數字) = 邊長</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- P5 內容 -->
+                <div id="content-p5" class="hidden animate__animated animate__fadeIn">
+                    <section>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="bg-purple-100 text-purple-600 p-1 rounded-md text-xs font-bold">進階</span>
+                            <h3 class="font-bold text-gray-800">多邊形面積</h3>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-purple-800 text-lg mb-1">平行四邊形面積</div>
+                            <div class="text-gray-600 text-sm">公式：底 × 高</div>
+                            <div class="reverse-formula">逆向：面積 ÷ 底 (或高) = 高 (或底)</div>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-rose-800 text-lg mb-1">三角形面積</div>
+                            <div class="text-gray-600 text-sm">公式：底 × 高 ÷ 2</div>
+                            <div class="reverse-formula">逆向：面積 × 2 ÷ 底 (或高) = 高 (或底)</div>
+                        </div>
+                        <div class="formula-card">
+                            <div class="font-bold text-amber-800 text-lg mb-1">梯形面積</div>
+                            <div class="text-gray-600 text-sm font-bold">(上底 + 下底) × 高 ÷ 2</div>
+                            <div class="reverse-formula">逆向 1：面積 × 2 ÷ 高 = (上底 + 下底)</div>
+                            <div class="reverse-formula">逆向 2：面積 × 2 ÷ (上底 + 下底) = 高</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            
+            <button onclick="showMode('menu')" class="btn-main w-full mt-6 bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-lg">
+                記住啦！返回主頁
+            </button>
+        </div>
+
+        <!-- 挑戰模式 -->
+        <div id="quiz-screen" class="mode-screen hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div class="bg-white/50 border border-white px-4 py-2 rounded-2xl shadow-sm">
+                    <span class="text-amber-500 font-bold">⭐ <span id="score">0</span></span>
+                </div>
+                <div class="text-gray-400 font-bold text-sm" id="question-count">1 / 10</div>
+            </div>
+            
+            <!-- 優化：確保圖形容器在小螢幕上不會過大，並保持置中 -->
+            <div id="shape-display" class="shape-container h-32 sm:h-48 w-full max-w-[280px] sm:max-w-sm mx-auto mb-6 flex items-center justify-center p-2 sm:p-4"></div>
+            
+            <!-- 優化：字體在小螢幕自動縮小 -->
+            <h3 id="question-text" class="text-lg sm:text-xl font-bold text-gray-800 mb-6 sm:mb-8 leading-relaxed"></h3>
+            
+            <div id="options-grid" class="grid grid-cols-1 gap-3"></div>
+            
+            <!-- 新增跳過按鈕 -->
+            <button id="skip-btn" onclick="skipQuestion()" class="mt-4 w-full bg-gray-100 text-gray-500 font-bold py-3 rounded-2xl border-2 border-gray-200 hover:bg-gray-200 transition-colors animate__animated animate__fadeInUp">
+                ⏭️ 跳過此題，查看答案
+            </button>
+            
+            <div id="feedback-area" class="mt-6 min-h-[3rem]">
+                <p id="feedback" class="text-xl font-bold animate__animated"></p>
+                <button id="next-btn" onclick="goToNextQuestion()" class="hidden w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-xl animate__animated animate__fadeInUp">
+                    下一題 ❯
                 </button>
-                <button id="home-btn" class="hidden bg-slate-400 text-white font-bold py-3 rounded-2xl shadow-[0_4px_0_#64748b] hover:bg-slate-500 transition">
-                    回主選單 🏠
-                </button>
+            </div>
+
+            <div id="result-btns" class="hidden flex flex-col gap-3 mt-4">
+                <button onclick="showMode('grade-select')" class="bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg">再戰一場 🔄</button>
+                <button onclick="showMode('menu')" class="bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl">返回首頁 🏠</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 文字優化：調整位置確保在所有比例下不被邊框切掉，並增加 stroke-width 提升對比度
+        // 優化：擴大所有 viewBox，確保文字有充足空間不被遮擋或裁切
         const shapes = {
-            rectangle: `<svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
-                <rect x="35" y="35" width="130" height="60" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="4" />
-                <text x="100" y="28" text-anchor="middle" font-size="18" fill="#1e40af">長</text>
-                <text x="175" y="70" text-anchor="start" font-size="18" fill="#1e40af">闊</text>
-            </svg>`,
-            square: `<svg viewBox="0 0 200 140" preserveAspectRatio="xMidYMid meet">
-                <rect x="60" y="35" width="80" height="80" rx="4" fill="#dcfce7" stroke="#22c55e" stroke-width="4" />
-                <text x="100" y="28" text-anchor="middle" font-size="18" fill="#166534">邊長</text>
-                <text x="148" y="80" text-anchor="start" font-size="18" fill="#166534">邊長</text>
-            </svg>`,
-            parallelogram: `<svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
-                <path d="M55 35 L170 35 L145 95 L30 95 Z" fill="#f3e8ff" stroke="#a855f7" stroke-width="4" />
-                <line x1="145" y1="35" x2="145" y2="95" stroke="#a855f7" stroke-width="3" stroke-dasharray="6" />
-                <text x="85" y="112" text-anchor="middle" font-size="18" fill="#6b21a8">底</text>
-                <text x="152" y="70" text-anchor="start" font-size="18" fill="#6b21a8">高</text>
-            </svg>`,
-            triangle: `<svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
-                <path d="M100 25 L175 95 L25 95 Z" fill="#fee2e2" stroke="#ef4444" stroke-width="4" />
-                <line x1="100" y1="25" x2="100" y2="95" stroke="#ef4444" stroke-width="3" stroke-dasharray="6" />
-                <text x="100" y="112" text-anchor="middle" font-size="18" fill="#991b1b">底</text>
-                <text x="110" y="65" text-anchor="start" font-size="18" fill="#991b1b">高</text>
-            </svg>`,
-            trapezium: `<svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
-                <path d="M75 35 L135 35 L175 95 L25 95 Z" fill="#ffedd5" stroke="#f97316" stroke-width="4" />
-                <line x1="135" y1="35" x2="135" y2="95" stroke="#f97316" stroke-width="3" stroke-dasharray="6" />
-                <text x="105" y="28" text-anchor="middle" font-size="18" fill="#9a3412">上底</text>
-                <text x="100" y="112" text-anchor="middle" font-size="18" fill="#9a3412">下底</text>
-                <text x="145" y="70" text-anchor="start" font-size="18" fill="#9a3412">高</text>
-            </svg>`
+            rectangle: `<svg viewBox="0 0 240 140" class="w-full h-full max-h-full"><rect x="60" y="40" width="120" height="60" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="4"/><text x="120" y="28" text-anchor="middle" font-size="16" fill="#4338ca" class="font-bold">長</text><text x="195" y="75" text-anchor="start" font-size="16" fill="#4338ca" class="font-bold">闊</text></svg>`,
+            square: `<svg viewBox="0 0 240 140" class="w-full h-full max-h-full"><rect x="80" y="30" width="80" height="80" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="4"/><text x="120" y="20" text-anchor="middle" font-size="16" fill="#065f46" class="font-bold">邊長</text></svg>`,
+            parallelogram: `<svg viewBox="0 0 240 140" class="w-full h-full max-h-full"><path d="M80 40 L190 40 L160 100 L50 100 Z" fill="#f3e8ff" stroke="#a855f7" stroke-width="4"/><line x1="160" y1="40" x2="160" y2="100" stroke="#a855f7" stroke-dasharray="4"/><text x="105" y="122" text-anchor="middle" font-size="16" fill="#6b21a8" class="font-bold">底</text><text x="172" y="75" text-anchor="start" font-size="16" fill="#6b21a8" class="font-bold">高</text></svg>`,
+            triangle: `<svg viewBox="0 0 240 140" class="w-full h-full max-h-full"><path d="M120 30 L190 100 L50 100 Z" fill="#fee2e2" stroke="#ef4444" stroke-width="4"/><line x1="120" y1="30" x2="120" y2="100" stroke="#ef4444" stroke-dasharray="4"/><text x="120" y="122" text-anchor="middle" font-size="16" fill="#991b1b" class="font-bold">底</text><text x="132" y="70" text-anchor="start" font-size="16" fill="#991b1b" class="font-bold">高</text></svg>`,
+            trapezium: `<svg viewBox="0 0 240 140" class="w-full h-full max-h-full"><path d="M90 40 L150 40 L190 100 L50 100 Z" fill="#ffedd5" stroke="#f97316" stroke-width="4"/><line x1="150" y1="40" x2="150" y2="100" stroke="#f97316" stroke-dasharray="4"/><text x="120" y="28" text-anchor="middle" font-size="14" fill="#9a3412" class="font-bold">上底</text><text x="120" y="122" text-anchor="middle" font-size="14" fill="#9a3412" class="font-bold">下底</text><text x="162" y="75" text-anchor="start" font-size="14" fill="#9a3412" class="font-bold">高</text></svg>`
         };
 
         const quizData = [
-            { level: 4, shape: 'rectangle', q: "長方形周界公式是什麼？", a: "(長 + 闊) × 2", options: ["長 × 闊", "(長 + 闊) × 2", "長 + 闊 × 2", "邊長 × 4"] },
-            { level: 4, shape: 'rectangle', q: "已知周界和長，求闊的公式？", a: "(周界 ÷ 2) - 長", options: ["周界 - 長", "(周界 ÷ 2) - 長", "周界 ÷ 長", "長 × 2 - 周界"] },
-            { level: 4, shape: 'square', q: "已知正方形周界，求邊長？", a: "周界 ÷ 4", options: ["周界 ÷ 4", "周界 × 4", "周界 ÷ 2", "邊長 × 邊長"] },
-            { level: 4, shape: 'rectangle', q: "長方形面積公式是什麼？", a: "長 × 闊", options: ["長 × 闊", "(長 + 闊) × 2", "底 × 高 ÷ 2", "邊長 × 邊長"] },
-            { level: 4, shape: 'square', q: "正方形面積公式是什麼？", a: "邊長 × 邊長", options: ["邊長 × 4", "邊長 × 邊長", "長 × 闊", "邊長 + 邊長"] },
-            { level: 5, shape: 'parallelogram', q: "平行四邊形面積公式？", a: "底 × 高", options: ["底 × 高", "底 × 高 ÷ 2", "(上底 + 下底) × 高 ÷ 2", "長 × 闊"] },
-            { level: 5, shape: 'triangle', q: "三角形面積公式？", a: "底 × 高 ÷ 2", options: ["底 × 高", "底 × 高 ÷ 2", "底 + 高 ÷ 2", "(底 + 高) × 2"] },
-            { level: 5, shape: 'trapezium', q: "梯形面積公式？", a: "(上底 + 下底) × 高 ÷ 2", options: ["(上底 + 下底) × 高 ÷ 2", "底 × 高 ÷ 2", "上底 + 下底 × 高", "面積 × 2"] },
-            { level: 5, shape: 'triangle', q: "已知三角形面積和底，如何求高？", a: "面積 × 2 ÷ 底", options: ["面積 ÷ 底", "面積 × 2 ÷ 底", "面積 ÷ 2 × 底", "底 ÷ 面積"] }
+            // P4
+            { level: 4, shape: 'rectangle', q: "請問長方形「周界」公式是什麼？", a: "(長 + 闊) × 2", options: ["長 × 闊", "(長 + 闊) × 2", "長 + 闊 × 2", "邊長 × 4"] },
+            { level: 4, shape: 'rectangle', q: "已知長方形周界和長，求闊的公式？", a: "周界 ÷ 2 - 長", options: ["周界 ÷ 2 - 長", "周界 - 長", "周界 ÷ 4", "長 × 闊"] },
+            { level: 4, shape: 'square', q: "正方形「周界」公式是什麼？", a: "邊長 × 4", options: ["邊長 × 邊長", "邊長 × 4", "周界 ÷ 4", "邊長 + 4"] },
+            { level: 4, shape: 'square', q: "已知正方形周界，求邊長的公式？", a: "周界 ÷ 4", options: ["周界 ÷ 4", "周界 ÷ 2", "邊長 × 4", "周界 - 4"] },
+            { level: 4, shape: 'rectangle', q: "長方形「面積」公式是什麼？", a: "長 × 闊", options: ["長 × 闊", "(長 + 闊) × 2", "底 × 高 ÷ 2", "邊長 × 邊長"] },
+            { level: 4, shape: 'rectangle', q: "已知長方形面積和長，求闊的公式？", a: "面積 ÷ 長", options: ["面積 ÷ 長", "面積 ÷ 2 - 長", "面積 - 長", "長 × 2"] },
+            { level: 4, shape: 'square', q: "正方形「面積」公式是什麼？", a: "邊長 × 邊長", options: ["邊長 × 4", "邊長 × 邊長", "邊長 + 邊長", "長 × 闊"] },
+            { level: 4, shape: 'square', q: "如果面積是 81，邊長是多少？(? × ? = 81)", a: "9", options: ["9", "18", "40.5", "8.1"] },
+            // P5
+            { level: 5, shape: 'parallelogram', q: "平行四邊形面積公式是什麼？", a: "底 × 高", options: ["底 × 高", "底 × 高 ÷ 2", "(上底 + 下底) × 高 ÷ 2", "長 × 闊"] },
+            { level: 5, shape: 'parallelogram', q: "已知平行四邊形面積和底，求高的公式？", a: "面積 ÷ 底", options: ["面積 ÷ 底", "面積 × 2 ÷ 底", "底 ÷ 面積", "面積 - 底"] },
+            { level: 5, shape: 'triangle', q: "三角形面積公式是什麼？", a: "底 × 高 ÷ 2", options: ["底 × 高", "底 × 高 ÷ 2", "底 + 高 ÷ 2", "(底 + 高) × 2"] },
+            { level: 5, shape: 'triangle', q: "已知三角形面積和底，求高的公式？", a: "面積 × 2 ÷ 底", options: ["面積 ÷ 底", "面積 × 2 ÷ 底", "面積 ÷ 2 ÷ 底", "底 ÷ 面積"] },
+            { level: 5, shape: 'trapezium', q: "梯形面積公式是什麼？", a: "(上底 + 下底) × 高 ÷ 2", options: ["(上底 + 下底) × 高 ÷ 2", "上底 + 下底 × 高 ÷ 2", "底 × 高 ÷ 2", "長 × 闊"] },
+            { level: 5, shape: 'trapezium', q: "梯形逆向：(面積 × 2 ÷ 高) 等於什麼？", a: "上底 + 下底", options: ["上底 + 下底", "上底", "下底", "高的長度"] },
+            { level: 5, shape: 'trapezium', q: "已知梯形面積、上底和下底，如何求高？", a: "面積 × 2 ÷ (上底 + 下底)", options: ["面積 × 2 ÷ (上底 + 下底)", "面積 ÷ (上底 + 下底)", "面積 ÷ 2 ÷ 高", "面積 × 高"] }
         ];
 
         let currentQuizSet = [];
         let currentQuestionIndex = 0;
         let score = 0;
-        let currentLevel = 5;
 
         function showMode(mode) {
-            document.querySelectorAll('.mode-screen').forEach(s => s.classList.remove('active'));
-            const target = document.getElementById(`${mode}-screen`);
-            target.classList.add('active');
-            // 切換模式後將面板捲動回頂部
-            document.getElementById('game-container').scrollTop = 0;
+            document.querySelectorAll('.mode-screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`${mode}-screen`).classList.remove('hidden');
+            if(mode === 'menu') {
+                document.getElementById('result-btns').classList.add('hidden');
+            }
         }
 
         function switchStudyTab(tab) {
             document.getElementById('content-p4').classList.toggle('hidden', tab !== 'p4');
             document.getElementById('content-p5').classList.toggle('hidden', tab !== 'p5');
-            const btn4 = document.getElementById('tab-p4');
-            const btn5 = document.getElementById('tab-p5');
-            if(tab === 'p4') {
-                btn4.className = 'flex-1 sm:flex-none px-6 py-2 rounded-lg bg-indigo-500 text-white font-bold shadow-sm transition-all';
-                btn5.className = 'flex-1 sm:flex-none px-6 py-2 rounded-lg bg-transparent text-gray-600 font-bold transition-all';
-            } else {
-                btn5.className = 'flex-1 sm:flex-none px-6 py-2 rounded-lg bg-indigo-500 text-white font-bold shadow-sm transition-all';
-                btn4.className = 'flex-1 sm:flex-none px-6 py-2 rounded-lg bg-transparent text-gray-600 font-bold transition-all';
-            }
+            document.getElementById('tab-p4').classList.toggle('active-tab', tab === 'p4');
+            document.getElementById('tab-p5').classList.toggle('active-tab', tab === 'p5');
+            document.getElementById('tab-p4').classList.toggle('text-gray-500', tab !== 'p4');
+            document.getElementById('tab-p5').classList.toggle('text-gray-500', tab !== 'p5');
         }
 
         function startChallenge(grade) {
-            currentLevel = grade;
-            currentQuizSet = grade === 4 ? quizData.filter(i => i.level === 4) : [...quizData];
-            currentQuizSet = currentQuizSet.sort(() => Math.random() - 0.5);
-            if (currentQuizSet.length > 10) currentQuizSet = currentQuizSet.slice(0, 10);
+            currentQuizSet = quizData.filter(item => grade === 4 ? item.level === 4 : item.level === 5 || item.level === 4);
+            currentQuizSet = currentQuizSet.sort(() => Math.random() - 0.5).slice(0, 10);
             currentQuestionIndex = 0;
             score = 0;
-            updateScoreDisplay();
-            document.getElementById('reset-btn').classList.add('hidden');
-            document.getElementById('home-btn').classList.add('hidden');
+            updateScore();
             showMode('quiz');
             loadQuestion();
         }
 
         function loadQuestion() {
             const data = currentQuizSet[currentQuestionIndex];
-            const area = document.getElementById('quiz-area');
-            area.classList.remove('animate__fadeIn');
-            void area.offsetWidth; 
-            area.classList.add('animate__fadeIn');
-
             document.getElementById('shape-display').innerHTML = shapes[data.shape] || "";
             document.getElementById('question-text').innerText = data.q;
-            document.getElementById('question-count').innerText = `${currentQuestionIndex + 1}/${currentQuizSet.length}`;
+            document.getElementById('question-count').innerText = `${currentQuestionIndex + 1} / ${currentQuizSet.length}`;
             document.getElementById('feedback').innerText = "";
             document.getElementById('next-btn').classList.add('hidden');
-            document.getElementById('skip-btn').classList.remove('hidden');
+            document.getElementById('skip-btn').classList.remove('hidden'); // 顯示跳過按鈕
 
             const grid = document.getElementById('options-grid');
             grid.innerHTML = "";
             [...data.options].sort(() => Math.random() - 0.5).forEach(opt => {
                 const btn = document.createElement('button');
                 btn.innerText = opt;
-                btn.className = "option-btn p-3 sm:p-4 rounded-2xl text-md sm:text-lg font-bold text-gray-700 shadow-sm";
+                // 優化：加入 break-words 和 whitespace-normal 確保長答案能在手機上換行
+                btn.className = "option-btn rounded-2xl font-bold text-gray-700 shadow-sm animate__animated animate__fadeInUp w-full text-sm sm:text-base break-words whitespace-normal leading-tight";
                 btn.onclick = () => checkAnswer(opt, btn);
                 grid.appendChild(btn);
             });
@@ -383,69 +398,69 @@
 
         function checkAnswer(selected, btn) {
             const correct = currentQuizSet[currentQuestionIndex].a;
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons.forEach(b => b.disabled = true);
-            
-            document.getElementById('skip-btn').classList.add('hidden');
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
             document.getElementById('next-btn').classList.remove('hidden');
+            document.getElementById('skip-btn').classList.add('hidden'); // 隱藏跳過按鈕
 
             const feedback = document.getElementById('feedback');
-            feedback.classList.remove('animate__bounceIn', 'animate__shakeX');
-            void feedback.offsetWidth;
-
             if (selected === correct) {
                 btn.classList.add('correct');
-                feedback.innerText = "正確！你真聰明 🌟";
-                feedback.className = "mt-4 text-xl font-bold text-emerald-500 animate__bounceIn";
-                score += Math.round(100 / currentQuizSet.length);
-                updateScoreDisplay();
+                feedback.innerText = "答對了！你太棒了 ✨";
+                feedback.className = "text-xl font-bold text-emerald-500 animate__bounceIn";
+                score += 10;
+                updateScore();
             } else {
                 btn.classList.add('wrong');
-                feedback.innerText = `正確是：${correct}`;
-                feedback.className = "mt-4 text-xl font-bold text-rose-500 animate__shakeX";
-                buttons.forEach(b => { if(b.innerText === correct) b.classList.add('correct'); });
+                feedback.innerText = `可惜！正確答案是：${correct}`;
+                feedback.className = "text-xl font-bold text-rose-500 animate__shakeX";
+                document.querySelectorAll('.option-btn').forEach(b => {
+                    if(b.innerText === correct) b.classList.add('correct', 'animate__pulse');
+                });
             }
         }
 
+        // 新增：跳過題目的邏輯
         function skipQuestion() {
             const correct = currentQuizSet[currentQuestionIndex].a;
+            
+            // 鎖定所有按鈕，並標示出正確答案
             document.querySelectorAll('.option-btn').forEach(b => {
                 b.disabled = true;
-                if(b.innerText === correct) b.classList.add('correct');
+                if(b.innerText === correct) {
+                    b.classList.add('correct', 'animate__pulse');
+                }
             });
+            
+            // 切換按鈕顯示
             document.getElementById('skip-btn').classList.add('hidden');
             document.getElementById('next-btn').classList.remove('hidden');
+            
+            // 顯示反饋
             const feedback = document.getElementById('feedback');
-            feedback.innerText = `這題的答案是：${correct}`;
-            feedback.className = "mt-4 text-xl font-bold text-indigo-500 animate__fadeIn";
+            feedback.innerText = `已跳過！正確答案是：${correct}`;
+            feedback.className = "text-xl font-bold text-gray-500 animate__fadeIn";
         }
 
-        function updateScoreDisplay() {
-            document.getElementById('score').innerText = score;
-        }
+        function updateScore() { document.getElementById('score').innerText = score; }
 
         function goToNextQuestion() {
             currentQuestionIndex++;
             if (currentQuestionIndex < currentQuizSet.length) {
                 loadQuestion();
             } else {
-                showFinalScore();
+                showFinal();
             }
         }
 
-        function showFinalScore() {
-            if (score > 100) score = 100;
-            document.getElementById('shape-display').innerHTML = `<div class="text-7xl animate__bounceIn">🏆</div>`;
-            document.getElementById('question-text').innerText = `挑戰結束！你獲得了 ${score} 分！`;
+        function showFinal() {
+            document.getElementById('shape-display').innerHTML = `<div class="text-7xl animate__bounceIn">🎊</div>`;
+            document.getElementById('question-text').innerText = `挑戰結束！你的總分是 ${score} 分`;
             document.getElementById('options-grid').innerHTML = "";
-            document.getElementById('skip-btn').classList.add('hidden');
             document.getElementById('next-btn').classList.add('hidden');
-            document.getElementById('feedback').innerText = score >= 80 ? "太厲害了！幾何大師就是你 👑" : "很棒的努力！再多練習幾次吧！💪";
-            document.getElementById('reset-btn').classList.remove('hidden');
-            document.getElementById('home-btn').classList.remove('hidden');
+            document.getElementById('skip-btn').classList.add('hidden'); // 確保結算畫面隱藏跳過按鈕
+            document.getElementById('feedback').innerText = score >= 80 ? "卓越的幾何大師！🏆" : "不錯的嘗試，再多溫習一下公式吧！";
+            document.getElementById('result-btns').classList.remove('hidden');
         }
-
-        document.getElementById('home-btn').onclick = () => showMode('menu');
     </script>
 </body>
 </html>
