@@ -188,19 +188,25 @@
             <!-- 操作提示 -->
             <div id="hint" class="flex items-center justify-center gap-2 text-sm text-pink-300 mb-8 font-bold bg-pink-900/20 py-2 rounded-full">
                 <span>🪄 提示：</span>
-                <span>先乘除後加減，記得約簡到最精華喔！</span>
+                <span>先乘除後加減，若答案是整數，分母填1即可！</span>
             </div>
 
-            <!-- 答案輸入 -->
-            <div class="flex justify-center items-center gap-6 mb-10">
+            <!-- 答案輸入 (新增帶分數輸入) -->
+            <div class="flex justify-center items-end gap-4 mb-10">
+                <!-- 整數部分 -->
                 <div class="flex flex-col items-center">
-                    <input type="number" id="ans-num" class="w-24 h-24 text-center text-4xl font-black rounded-3xl input-spell focus:border-pink-500 transition-all outline-none" placeholder="?">
-                    <span class="text-xs mt-2 text-indigo-300 font-bold uppercase tracking-widest">分子 (精華)</span>
+                    <input type="number" id="ans-whole" class="w-20 h-24 text-center text-4xl font-black rounded-3xl input-spell border-yellow-500/50 focus:border-yellow-400 transition-all outline-none" placeholder="0">
+                    <span class="text-[10px] mt-2 text-yellow-400 font-bold uppercase tracking-widest">整數 (基底)</span>
                 </div>
-                <div class="text-5xl font-black text-purple-400 drop-shadow-lg">/</div>
-                <div class="flex flex-col items-center">
-                    <input type="number" id="ans-den" class="w-24 h-24 text-center text-4xl font-black rounded-3xl input-spell focus:border-pink-500 transition-all outline-none" placeholder="?">
-                    <span class="text-xs mt-2 text-indigo-300 font-bold uppercase tracking-widest">分母 (基底)</span>
+
+                <!-- 分數部分 -->
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-center">
+                        <input type="number" id="ans-num" class="w-20 h-11 text-center text-2xl font-black rounded-2xl input-spell focus:border-pink-500 transition-all outline-none" placeholder="?">
+                        <div class="w-full border-b-4 border-purple-400 my-1 shadow-[0_0_10px_#e879f9]"></div>
+                        <input type="number" id="ans-den" class="w-20 h-11 text-center text-2xl font-black rounded-2xl input-spell focus:border-pink-500 transition-all outline-none" placeholder="?">
+                        <span class="text-[10px] mt-2 text-indigo-300 font-bold uppercase tracking-widest">分數 (精華)</span>
+                    </div>
                 </div>
             </div>
 
@@ -284,6 +290,7 @@
                 return html;
             }).join('') + `<span class="text-purple-400 ml-2">＝</span>`;
             
+            document.getElementById('ans-whole').value = '';
             document.getElementById('ans-num').value = '';
             document.getElementById('ans-den').value = '';
             document.getElementById('explanation-area').classList.add('hidden');
@@ -342,41 +349,79 @@
                 steps.push(`📜 步驟二：將除法翻轉成乘法進行鍊金。`);
             }
 
-            steps.push(`💎 步驟三：煉成最精華的藥水：<span class="text-2xl text-cyan-400 font-black">${result.n}/${result.d}</span>`);
+            // 顯示最簡假分數與帶分數對照
+            let finalStr = `${result.n}/${result.d}`;
+            if (result.n > result.d && result.d !== 1) {
+                const w = Math.floor(result.n / result.d);
+                const n = result.n % result.d;
+                finalStr += ` (即帶分數 ${w} 又 ${n}/${result.d})`;
+            }
+
+            steps.push(`💎 步驟三：煉成最精華的藥水：<span class="text-xl text-cyan-400 font-black">${finalStr}</span>`);
 
             expContent.innerHTML = steps.map(s => `<div class="step-box">${s}</div>`).join('');
+            
+            // 自動填入答案（以假分數形式）
+            document.getElementById('ans-whole').value = '';
             document.getElementById('ans-num').value = result.n;
             document.getElementById('ans-den').value = result.d;
-            showMessage("魔法卷軸已展開！", true);
+            showMessage("魔法卷軸已展開！", true, 2500);
         }
 
         function checkAnswer() {
+            const uW = parseInt(document.getElementById('ans-whole').value) || 0;
             const uN = parseInt(document.getElementById('ans-num').value);
             const uD = parseInt(document.getElementById('ans-den').value);
+            
             if (isNaN(uN) || isNaN(uD)) return showMessage("藥劑成分尚未填寫完整！", false);
+            if (uD === 0) return showMessage("分母不能為 0，這會引發大爆炸！", false);
 
             const result = calculateCorrectAnswer();
-            if (uN === result.n && uD === result.d) {
-                if (!isSkipping) score += (difficulty === 'hard' ? 50 : 20);
-                level++;
-                document.getElementById('score').innerText = score;
-                document.getElementById('level').innerText = level;
-                showMessage("✨ 完美的煉成！獲得魔力加成！ ✨", true);
-                setTimeout(generateQuestion, 1500);
-            } else if (uN * result.d === uD * result.n) {
-                showMessage("配方純度不足，請約簡到最精華！", false);
+            
+            // 將使用者的帶分數換算回假分數進行對比
+            const userTotalN = (uW * uD) + uN;
+            const userTotalD = uD;
+
+            // 檢查數值是否正確（交叉相乘法判斷比例，再檢查是否最簡）
+            const isValueCorrect = (userTotalN * result.d === userTotalD * result.n);
+            const isSimplified = (gcd(uN, uD) === 1); // 基本檢查分數部分是否最簡
+
+            if (isValueCorrect) {
+                // 如果是假分數輸入，檢查整體最簡
+                const isFinalSimplified = (gcd(userTotalN, userTotalD) === 1);
+                
+                if (isFinalSimplified || (uW > 0 && isSimplified)) {
+                    if (!isSkipping) score += (difficulty === 'hard' ? 50 : 20);
+                    level++;
+                    document.getElementById('score').innerText = score;
+                    document.getElementById('level').innerText = level;
+                    
+                    // 判斷是否使用假分數作答 (整數部分為0，分子大於分母，且不是像 3/1 這種整數)
+                    if (uW === 0 && uN > uD && uD > 1) {
+                        showMessage("✨ 煉成成功！下次試試看提煉成「帶分數」會更完美喔！", true);
+                        setTimeout(generateQuestion, 2500); // 延長換題時間讓學生閱讀提示
+                    } else {
+                        showMessage("✨ 完美的煉成！獲得魔力加成！ ✨", true);
+                        setTimeout(generateQuestion, 1500);
+                    }
+                } else {
+                    showMessage("配方純度不足，請將分數部分約簡！", false);
+                }
             } else {
                 showMessage("💥 實驗失敗！藥水比例不對喔！", false);
             }
         }
 
-        function showMessage(text, isSuccess) {
+        let msgTimeout;
+        function showMessage(text, isSuccess, duration = 2500) {
             const box = document.getElementById('message-box');
             box.innerText = text;
             box.className = `fixed top-10 transform transition-all duration-500 p-6 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] font-black text-center z-50 min-w-[300px] border-2 ${
                 isSuccess ? 'bg-emerald-600 border-emerald-400 text-white translate-y-0' : 'bg-rose-600 border-rose-400 text-white translate-y-0'
             }`;
-            setTimeout(() => box.classList.add('-translate-y-40'), 2500);
+            
+            clearTimeout(msgTimeout);
+            msgTimeout = setTimeout(() => box.classList.add('-translate-y-40'), duration);
         }
     </script>
 </body>
