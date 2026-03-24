@@ -171,7 +171,7 @@
         
         <div class="relative bg-white px-6 py-1 rounded-full font-black text-orange-600 shadow-sm border border-orange-100 flex flex-col items-center">
             <span>🪢 數學拔河對決 🪢</span>
-            <div id="difficulty-indicator" class="hidden text-[10px] text-gray-500 uppercase tracking-widest"></div>
+            <div id="difficulty-indicator" class="hidden text-[10px] text-gray-500 uppercase tracking-widest mt-1"></div>
         </div>
 
         <div class="flex items-center space-x-2 text-right">
@@ -232,13 +232,26 @@
 
     <!-- 模式選單 -->
     <div id="menu-overlay">
-        <div class="bg-white p-8 rounded-[3rem] shadow-2xl max-w-sm w-full text-center">
-            <h1 class="text-4xl font-black mb-8 text-blue-900">選擇遊戲模式</h1>
+        <div class="bg-white p-8 rounded-[3rem] shadow-2xl max-w-sm w-full text-center max-h-[95vh] overflow-y-auto">
+            <h1 class="text-4xl font-black mb-6 text-blue-900">選擇遊戲模式</h1>
             <div class="space-y-4">
+                
+                <!-- 新增：專項特訓模式 -->
+                <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p class="text-sm font-bold text-blue-500 mb-2">📚 1-10 乘數表專區</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="startGame('pve', 'normal', 'times_table')" class="py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">單人特訓</button>
+                        <button onclick="startGame('pvp', 'normal', 'times_table')" class="py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">雙人對戰</button>
+                    </div>
+                </div>
+
                 <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p class="text-sm font-bold text-gray-500 mb-3">🤖 電腦對戰難度</p>
-                    <div class="grid grid-cols-3 gap-2 mb-2">
+                    <p class="text-sm font-bold text-gray-500 mb-3">🤖 電腦對戰難度 (混合題型)</p>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <button onclick="startGame('pve', 'ultra_easy')" class="py-3 bg-teal-400 hover:bg-teal-500 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">超簡單</button>
                         <button onclick="startGame('pve', 'easy')" class="py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">簡單</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
                         <button onclick="startGame('pve', 'normal')" class="py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">普通</button>
                         <button onclick="startGame('pve', 'hard')" class="py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">困難</button>
                     </div>
@@ -247,9 +260,9 @@
                         <button onclick="startGame('pve', 'hell')" class="py-3 bg-gray-900 hover:bg-black text-red-500 border border-red-500 font-black rounded-xl text-sm transition-all shadow-md active:scale-95 shadow-red-900/50">地獄</button>
                     </div>
                 </div>
-                <div class="relative py-2 text-gray-400 font-bold">OR</div>
-                <button onclick="startGame('pvp')" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white text-2xl font-black rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
-                    👫 雙人對戰
+                <div class="relative py-1 text-gray-400 font-bold">OR</div>
+                <button onclick="startGame('pvp', 'normal', 'mixed')" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white text-2xl font-black rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                    👫 綜合雙人對戰
                 </button>
             </div>
         </div>
@@ -261,7 +274,7 @@
             <div class="text-6xl mb-4 animate-bounce">👑</div>
             <h2 id="winner-text" class="text-3xl font-black mb-2">隊伍獲勝！</h2>
             
-            <!-- 新增的難度與時間資訊區塊 -->
+            <!-- 難度與時間資訊區塊 -->
             <div id="win-info" class="mb-6 hidden flex-col items-center space-y-2">
                 <div class="bg-gray-100 px-4 py-2 rounded-xl text-sm font-bold shadow-inner">
                     <span id="win-difficulty">難度：</span>
@@ -322,11 +335,13 @@
             p2Current: null,
             mode: 'pvp',
             difficulty: 'normal',
+            questionType: 'mixed', // 'mixed' 或 'times_table'
             aiTimer: null
         };
 
         // 難度設定數據
         const DIFFICULTY_SETTINGS = {
+            ultra_easy: { minTime: 4000, maxTime: 7000, accuracy: 0.6, label: '超簡單 👶' },
             easy: { minTime: 3000, maxTime: 5000, accuracy: 0.7, label: '簡單 🤖' },
             normal: { minTime: 2000, maxTime: 3500, accuracy: 0.85, label: '普通 🤖' },
             hard: { minTime: 1000, maxTime: 1800, accuracy: 0.98, label: '困難 🤖' },
@@ -346,41 +361,102 @@
         }
 
         function generateQuestion() {
-            const isMultiply = Math.random() > 0.5;
             let a, b, answer, type;
-            if (isMultiply) {
-                a = Math.floor(Math.random() * 8) + 2;
-                b = Math.floor(Math.random() * 9) + 2;
+
+            if (gameState.questionType === 'times_table') {
+                // 1-10 乘數表模式
+                a = Math.floor(Math.random() * 10) + 1; // 1 到 10
+                b = Math.floor(Math.random() * 10) + 1; // 1 到 10
                 answer = a * b;
                 type = '×';
             } else {
-                a = Math.floor(Math.random() * 40) + 10;
-                b = Math.floor(Math.random() * 40) + 10;
-                answer = a + b;
-                type = '+';
+                // 混合題型
+                const isMultiply = Math.random() > 0.5;
+                
+                if (gameState.difficulty === 'ultra_easy') {
+                    if (isMultiply) {
+                        // 超簡單：1-10 乘數表
+                        a = Math.floor(Math.random() * 10) + 1;
+                        b = Math.floor(Math.random() * 10) + 1;
+                        answer = a * b;
+                        type = '×';
+                    } else {
+                        // 超簡單：一位數加1位數 和 一位數加2位數
+                        a = Math.floor(Math.random() * 9) + 1; // 1-9
+                        b = Math.floor(Math.random() * 99) + 1; // 1-99
+                        
+                        // 隨機交換順序，增加一點視覺變化
+                        if (Math.random() > 0.5) {
+                            let temp = a;
+                            a = b;
+                            b = temp;
+                        }
+                        answer = a + b;
+                        type = '+';
+                    }
+                } else {
+                    // 原本的混合模式 (大數字加法 / 2-9 乘法)
+                    if (isMultiply) {
+                        a = Math.floor(Math.random() * 8) + 2;
+                        b = Math.floor(Math.random() * 9) + 2;
+                        answer = a * b;
+                        type = '×';
+                    } else {
+                        a = Math.floor(Math.random() * 40) + 10;
+                        b = Math.floor(Math.random() * 40) + 10;
+                        answer = a + b;
+                        type = '+';
+                    }
+                }
             }
+
             const options = [answer];
+            
+            // 生成三個錯誤選項
             while (options.length < 4) {
-                let off = Math.floor(Math.random() * 10) - 5;
-                if (off === 0) off = 2;
-                let wrong = answer + off;
-                if (wrong > 0 && !options.includes(wrong)) options.push(wrong);
+                let wrong;
+                if (gameState.questionType === 'times_table' && Math.random() > 0.4) {
+                    // 為了乘數表特訓，故意生成「背錯」的常見干擾選項（多加或少加一個被乘數）
+                    wrong = answer + (Math.random() > 0.5 ? a : -a);
+                    if (wrong <= 0 || options.includes(wrong)) {
+                        wrong = answer + (Math.floor(Math.random() * 5) + 1);
+                    }
+                } else {
+                    // 一般干擾項
+                    let off = Math.floor(Math.random() * 10) - 5;
+                    if (off === 0) off = 2;
+                    wrong = answer + off;
+                }
+                
+                if (wrong > 0 && !options.includes(wrong)) {
+                    options.push(wrong);
+                }
             }
             return { text: `${a} ${type} ${b}`, answer, options: options.sort(() => Math.random() - 0.5) };
         }
 
-        function startGame(mode, diff = 'normal') {
+        function startGame(mode, diff = 'normal', qType = 'mixed') {
             gameState.mode = mode;
             gameState.difficulty = diff;
+            gameState.questionType = qType;
             menuOverlay.style.display = 'none';
             
             if (mode === 'pve') {
                 document.getElementById('p2-label').innerText = '電腦';
-                difficultyIndicator.innerText = DIFFICULTY_SETTINGS[diff].label;
+                if (qType === 'times_table') {
+                    difficultyIndicator.innerText = "📚 乘數表特訓 (普通)";
+                } else {
+                    difficultyIndicator.innerText = DIFFICULTY_SETTINGS[diff].label;
+                }
                 difficultyIndicator.classList.remove('hidden');
             } else {
                 document.getElementById('p2-label').innerText = '隊伍二';
-                difficultyIndicator.classList.add('hidden');
+                if (qType === 'times_table') {
+                    difficultyIndicator.innerText = "📚 雙人乘數表對戰";
+                    difficultyIndicator.classList.remove('hidden');
+                } else {
+                    difficultyIndicator.classList.add('hidden');
+                }
             }
             
             resetGame();
@@ -478,15 +554,29 @@
                 const winTime = document.getElementById('win-time');
                 
                 if (gameState.mode === 'pve') {
-                    if (isP1) {
-                        winDiff.innerText = `🎉 成功挑戰：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
-                        winDiff.className = "text-green-600";
+                    if (gameState.questionType === 'times_table') {
+                        if (isP1) {
+                            winDiff.innerText = `🎉 成功完成：1-10 乘數表特訓`;
+                            winDiff.className = "text-green-600";
+                        } else {
+                            winDiff.innerText = `💀 特訓失敗：乘數表還不夠熟喔！`;
+                            winDiff.className = "text-red-500";
+                        }
                     } else {
-                        winDiff.innerText = `💀 挑戰失敗：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
-                        winDiff.className = "text-red-500";
+                        if (isP1) {
+                            winDiff.innerText = `🎉 成功挑戰：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
+                            winDiff.className = "text-green-600";
+                        } else {
+                            winDiff.innerText = `💀 挑戰失敗：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
+                            winDiff.className = "text-red-500";
+                        }
                     }
                 } else {
-                    winDiff.innerText = `🎮 遊戲模式：雙人對戰 👫`;
+                    if (gameState.questionType === 'times_table') {
+                        winDiff.innerText = `🎮 遊戲模式：雙人對戰 (乘數表) 👫`;
+                    } else {
+                        winDiff.innerText = `🎮 遊戲模式：雙人對戰 (綜合) 👫`;
+                    }
                     winDiff.className = "text-blue-600";
                 }
                 
