@@ -237,10 +237,14 @@
             <div class="space-y-4">
                 <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <p class="text-sm font-bold text-gray-500 mb-3">🤖 電腦對戰難度</p>
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-3 gap-2 mb-2">
                         <button onclick="startGame('pve', 'easy')" class="py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">簡單</button>
                         <button onclick="startGame('pve', 'normal')" class="py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">普通</button>
                         <button onclick="startGame('pve', 'hard')" class="py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">困難</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="startGame('pve', 'extreme')" class="py-3 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">超困難</button>
+                        <button onclick="startGame('pve', 'hell')" class="py-3 bg-gray-900 hover:bg-black text-red-500 border border-red-500 font-black rounded-xl text-sm transition-all shadow-md active:scale-95 shadow-red-900/50">地獄</button>
                     </div>
                 </div>
                 <div class="relative py-2 text-gray-400 font-bold">OR</div>
@@ -255,8 +259,19 @@
     <div id="modal" class="fixed inset-0 bg-blue-900/80 hidden items-center justify-center z-50 p-6 backdrop-blur-md">
         <div class="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl">
             <div class="text-6xl mb-4 animate-bounce">👑</div>
-            <h2 id="winner-text" class="text-3xl font-black mb-6">隊伍獲勝！</h2>
-            <button onclick="backToMenu()" class="w-full py-4 font-black text-white bg-green-500 rounded-xl text-xl">回選單</button>
+            <h2 id="winner-text" class="text-3xl font-black mb-2">隊伍獲勝！</h2>
+            
+            <!-- 新增的難度與時間資訊區塊 -->
+            <div id="win-info" class="mb-6 hidden flex-col items-center space-y-2">
+                <div class="bg-gray-100 px-4 py-2 rounded-xl text-sm font-bold shadow-inner">
+                    <span id="win-difficulty">難度：</span>
+                </div>
+                <div class="text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100" id="win-time">
+                    時間：
+                </div>
+            </div>
+
+            <button onclick="backToMenu()" class="w-full py-4 font-black text-white bg-green-500 hover:bg-green-600 active:scale-95 transition-all rounded-xl text-xl shadow-md">回選單</button>
         </div>
     </div>
 
@@ -314,7 +329,9 @@
         const DIFFICULTY_SETTINGS = {
             easy: { minTime: 3000, maxTime: 5000, accuracy: 0.7, label: '簡單 🤖' },
             normal: { minTime: 2000, maxTime: 3500, accuracy: 0.85, label: '普通 🤖' },
-            hard: { minTime: 1000, maxTime: 1800, accuracy: 0.98, label: '困難 🤖' }
+            hard: { minTime: 1000, maxTime: 1800, accuracy: 0.98, label: '困難 🤖' },
+            extreme: { minTime: 600, maxTime: 1200, accuracy: 0.99, label: '超困難 👿' },
+            hell: { minTime: 300, maxTime: 700, accuracy: 1.0, label: '地獄 💀' }
         };
 
         function initCharacters() {
@@ -454,6 +471,31 @@
                 
                 const isP1 = gameState.position < 0;
                 winnerText.innerText = isP1 ? '隊伍一獲勝！' : (gameState.mode === 'pve' ? '電腦獲勝！' : '隊伍二獲勝！');
+                
+                // 顯示難度與時間資訊
+                const winInfo = document.getElementById('win-info');
+                const winDiff = document.getElementById('win-difficulty');
+                const winTime = document.getElementById('win-time');
+                
+                if (gameState.mode === 'pve') {
+                    if (isP1) {
+                        winDiff.innerText = `🎉 成功挑戰：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
+                        winDiff.className = "text-green-600";
+                    } else {
+                        winDiff.innerText = `💀 挑戰失敗：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
+                        winDiff.className = "text-red-500";
+                    }
+                } else {
+                    winDiff.innerText = `🎮 遊戲模式：雙人對戰 👫`;
+                    winDiff.className = "text-blue-600";
+                }
+                
+                const now = new Date();
+                winTime.innerText = `完成時間：${now.toLocaleString('zh-TW', { hour12: false })}`;
+                
+                winInfo.classList.remove('hidden');
+                winInfo.classList.add('flex');
+
                 modal.classList.replace('hidden', 'flex');
             }
         }
