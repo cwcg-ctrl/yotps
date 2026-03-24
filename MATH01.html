@@ -166,11 +166,11 @@
     <div class="flex justify-between items-center px-4 sm:px-8 py-2 sm:py-4 bg-white/80 backdrop-blur-md shadow-sm z-30">
         <div class="flex items-center space-x-2">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl font-black shadow rotate-3">1</div>
-            <div class="hidden xs:block text-blue-600 font-black">隊伍一</div>
+            <div id="p1-label" class="hidden xs:block text-blue-600 font-black">隊伍一</div>
         </div>
         
         <div class="relative bg-white px-6 py-1 rounded-full font-black text-orange-600 shadow-sm border border-orange-100 flex flex-col items-center">
-            <span>🪢 數學拔河對決 🪢</span>
+            <span id="top-title">🪢 數學拔河對決 🪢</span>
             <div id="difficulty-indicator" class="hidden text-[10px] text-gray-500 uppercase tracking-widest mt-1"></div>
         </div>
 
@@ -215,7 +215,7 @@
         <!-- 玩家 2 / 電腦 -->
         <div id="p2-zone" class="flex-1 glass-zone flex flex-col items-center justify-center p-4">
             <div id="ai-thinking" class="absolute inset-0 bg-cyan-900/10 backdrop-blur-[2px] rounded-3xl hidden items-center justify-center z-10">
-                <div class="bg-white/90 px-4 py-2 rounded-full font-bold text-cyan-700 animate-pulse">電腦思考中...</div>
+                <div id="ai-thinking-text" class="bg-white/90 px-4 py-2 rounded-full font-bold text-cyan-700 animate-pulse">電腦思考中...</div>
             </div>
             
             <div class="w-full mb-4">
@@ -233,35 +233,36 @@
     <!-- 模式選單 -->
     <div id="menu-overlay">
         <div class="bg-white p-8 rounded-[3rem] shadow-2xl max-w-sm w-full text-center max-h-[95vh] overflow-y-auto">
-            <h1 class="text-4xl font-black mb-6 text-blue-900">選擇遊戲模式</h1>
+            <h1 id="menu-title" class="text-4xl font-black mb-6 text-blue-900">選擇遊戲模式</h1>
             <div class="space-y-4">
                 
                 <!-- 新增：專項特訓模式 -->
                 <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                    <p class="text-sm font-bold text-blue-500 mb-2">📚 1-10 乘數表專區</p>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="startGame('pve', 'normal', 'times_table')" class="py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">單人特訓</button>
-                        <button onclick="startGame('pvp', 'normal', 'times_table')" class="py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">雙人對戰</button>
+                    <p id="zone-times-table" class="text-sm font-bold text-blue-500 mb-2">📚 1-10 乘數表專區</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button id="btn-single-training" onclick="startGame('pve', 'normal', 'times_table')" class="py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">單人特訓</button>
+                        <button id="btn-pvp-times" onclick="startGame('pvp', 'normal', 'times_table')" class="py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">雙人對戰</button>
+                        <button id="btn-endless" onclick="startGame('pve', 'endless', 'times_table')" class="py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95 shadow-red-500/30">無盡挑戰 🔥</button>
                     </div>
                 </div>
 
                 <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p class="text-sm font-bold text-gray-500 mb-3">🤖 電腦對戰難度 (混合題型)</p>
+                    <p id="zone-mixed-pve" class="text-sm font-bold text-gray-500 mb-3">🤖 電腦對戰難度 (混合題型)</p>
                     <div class="grid grid-cols-2 gap-2 mb-2">
-                        <button onclick="startGame('pve', 'ultra_easy')" class="py-3 bg-teal-400 hover:bg-teal-500 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">超簡單</button>
-                        <button onclick="startGame('pve', 'easy')" class="py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">簡單</button>
+                        <button id="btn-ultra-easy" onclick="startGame('pve', 'ultra_easy')" class="py-3 bg-teal-400 hover:bg-teal-500 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">超簡單</button>
+                        <button id="btn-easy" onclick="startGame('pve', 'easy')" class="py-3 bg-green-500 hover:bg-green-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">簡單</button>
                     </div>
                     <div class="grid grid-cols-2 gap-2 mb-2">
-                        <button onclick="startGame('pve', 'normal')" class="py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">普通</button>
-                        <button onclick="startGame('pve', 'hard')" class="py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">困難</button>
+                        <button id="btn-normal" onclick="startGame('pve', 'normal')" class="py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">普通</button>
+                        <button id="btn-hard" onclick="startGame('pve', 'hard')" class="py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">困難</button>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="startGame('pve', 'extreme')" class="py-3 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">超困難</button>
-                        <button onclick="startGame('pve', 'hell')" class="py-3 bg-gray-900 hover:bg-black text-red-500 border border-red-500 font-black rounded-xl text-sm transition-all shadow-md active:scale-95 shadow-red-900/50">地獄</button>
+                        <button id="btn-extreme" onclick="startGame('pve', 'extreme')" class="py-3 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl text-sm transition-all shadow-md active:scale-95">超困難</button>
+                        <button id="btn-hell" onclick="startGame('pve', 'hell')" class="py-3 bg-gray-900 hover:bg-black text-red-500 border border-red-500 font-black rounded-xl text-sm transition-all shadow-md active:scale-95 shadow-red-900/50">地獄</button>
                     </div>
                 </div>
                 <div class="relative py-1 text-gray-400 font-bold">OR</div>
-                <button onclick="startGame('pvp', 'normal', 'mixed')" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white text-2xl font-black rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                <button id="btn-mixed-pvp" onclick="startGame('pvp', 'normal', 'mixed')" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white text-2xl font-black rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
                     👫 綜合雙人對戰
                 </button>
             </div>
@@ -284,9 +285,14 @@
                 </div>
             </div>
 
-            <button onclick="backToMenu()" class="w-full py-4 font-black text-white bg-green-500 hover:bg-green-600 active:scale-95 transition-all rounded-xl text-xl shadow-md">回選單</button>
+            <button id="btn-back-menu" onclick="backToMenu()" class="w-full py-4 font-black text-white bg-green-500 hover:bg-green-600 active:scale-95 transition-all rounded-xl text-xl shadow-md">回選單</button>
         </div>
     </div>
+
+    <!-- 語言切換按鈕 (固定於右下角) -->
+    <button id="lang-toggle-btn" onclick="toggleLanguage()" class="fixed bottom-4 right-4 z-[110] bg-white text-blue-800 font-black py-3 px-5 rounded-full text-sm shadow-xl border-2 border-blue-200 transition-all active:scale-95 flex items-center gap-2">
+        <span>🌐</span> English
+    </button>
 
     <script>
         function createReferenceCharacterSVG(mainColor, isGirl = false) {
@@ -326,6 +332,149 @@
         const aiThinking = document.getElementById('ai-thinking');
         const difficultyIndicator = document.getElementById('difficulty-indicator');
         
+        // 語系設定
+        let currentLang = 'zh';
+        const i18n = {
+            zh: {
+                team1: "隊伍一",
+                team2: "隊伍二",
+                ai: "電腦",
+                title: "🪢 數學拔河對決 🪢",
+                menuTitle: "選擇遊戲模式",
+                timesTableZone: "📚 1-10 乘數表專區",
+                singleTraining: "單人特訓",
+                pvpTimesTable: "雙人對戰",
+                pveMixed: "🤖 電腦對戰難度 (混合題型)",
+                ultraEasy: "超簡單",
+                easy: "簡單",
+                normal: "普通",
+                hard: "困難",
+                extreme: "超困難",
+                hell: "地獄",
+                mixedPvP: "👫 綜合雙人對戰",
+                aiThinking: "電腦思考中...",
+                team1Win: "隊伍一獲勝！",
+                team2Win: "隊伍二獲勝！",
+                aiWin: "電腦獲勝！",
+                backToMenu: "回選單",
+                diffUltraEasy: "超簡單 👶",
+                diffEasy: "簡單 🤖",
+                diffNormal: "普通 🤖",
+                diffHard: "困難 🤖",
+                diffExtreme: "超困難 👿",
+                diffHell: "地獄 💀",
+                winTimesTableSingle: "🎉 成功完成：1-10 乘數表特訓",
+                failTimesTableSingle: "💀 特訓失敗：乘數表還不夠熟喔！",
+                winPvePrefix: "🎉 成功挑戰：",
+                failPvePrefix: "💀 挑戰失敗：",
+                winPvPTimesTable: "🎮 遊戲模式：雙人對戰 (乘數表) 👫",
+                winPvPMixed: "🎮 遊戲模式：雙人對戰 (綜合) 👫",
+                timePrefix: "完成時間：",
+                endlessMode: "無盡挑戰 🔥",
+                gameOver: "遊戲結束！",
+                endlessScore: "🌟 最終分數："
+            },
+            en: {
+                team1: "Team 1",
+                team2: "Team 2",
+                ai: "AI",
+                title: "🪢 Math Tug of War 🪢",
+                menuTitle: "Select Game Mode",
+                timesTableZone: "📚 1-10 Times Table Zone",
+                singleTraining: "Single Training",
+                pvpTimesTable: "PvP Match",
+                pveMixed: "🤖 PvE Difficulty (Mixed)",
+                ultraEasy: "Ultra Easy",
+                easy: "Easy",
+                normal: "Normal",
+                hard: "Hard",
+                extreme: "Extreme",
+                hell: "Hell",
+                mixedPvP: "👫 Mixed PvP Match",
+                aiThinking: "AI Thinking...",
+                team1Win: "Team 1 Wins!",
+                team2Win: "Team 2 Wins!",
+                aiWin: "AI Wins!",
+                backToMenu: "Back to Menu",
+                diffUltraEasy: "Ultra Easy 👶",
+                diffEasy: "Easy 🤖",
+                diffNormal: "Normal 🤖",
+                diffHard: "Hard 🤖",
+                diffExtreme: "Extreme 👿",
+                diffHell: "Hell 💀",
+                winTimesTableSingle: "🎉 Success: 1-10 Times Table Training",
+                failTimesTableSingle: "💀 Failed: Keep practicing!",
+                winPvePrefix: "🎉 Success: ",
+                failPvePrefix: "💀 Failed: ",
+                winPvPTimesTable: "🎮 Mode: PvP (Times Table) 👫",
+                winPvPMixed: "🎮 Mode: PvP (Mixed) 👫",
+                timePrefix: "Time: ",
+                endlessMode: "Endless 🔥",
+                gameOver: "Game Over!",
+                endlessScore: "🌟 Final Score: "
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            applyLanguage();
+        }
+
+        function getDiffLabel(diffKey) {
+            const map = {
+                ultra_easy: 'diffUltraEasy', easy: 'diffEasy', normal: 'diffNormal',
+                hard: 'diffHard', extreme: 'diffExtreme', hell: 'diffHell'
+            };
+            return i18n[currentLang][map[diffKey]];
+        }
+
+        function applyLanguage() {
+            const t = i18n[currentLang];
+            document.getElementById('p1-label').innerText = t.team1;
+            document.getElementById('p2-label').innerText = gameState.mode === 'pve' ? t.ai : t.team2;
+            document.getElementById('top-title').innerText = t.title;
+            document.getElementById('menu-title').innerText = t.menuTitle;
+            document.getElementById('zone-times-table').innerText = t.timesTableZone;
+            document.getElementById('btn-single-training').innerText = t.singleTraining;
+            document.getElementById('btn-pvp-times').innerText = t.pvpTimesTable;
+            document.getElementById('zone-mixed-pve').innerText = t.pveMixed;
+            document.getElementById('btn-ultra-easy').innerText = t.ultraEasy;
+            document.getElementById('btn-easy').innerText = t.easy;
+            document.getElementById('btn-normal').innerText = t.normal;
+            document.getElementById('btn-hard').innerText = t.hard;
+            document.getElementById('btn-extreme').innerText = t.extreme;
+            document.getElementById('btn-hell').innerText = t.hell;
+            document.getElementById('btn-mixed-pvp').innerText = t.mixedPvP;
+            document.getElementById('ai-thinking-text').innerText = t.aiThinking;
+            document.getElementById('btn-back-menu').innerText = t.backToMenu;
+            document.getElementById('btn-endless').innerText = t.endlessMode;
+            
+            const langBtn = document.getElementById('lang-toggle-btn');
+            langBtn.innerHTML = currentLang === 'zh' ? '<span>🌐</span> English' : '<span>🌐</span> 中文';
+            
+            if (menuOverlay.style.display === 'none') {
+                if (gameState.mode === 'pve') {
+                    if (gameState.questionType === 'times_table') {
+                        if (gameState.difficulty === 'endless') {
+                            difficultyIndicator.innerText = t.endlessMode;
+                        } else {
+                            difficultyIndicator.innerText = currentLang === 'zh' ? "📚 乘數表特訓 (普通)" : "📚 Times Table (Normal)";
+                        }
+                    } else {
+                        difficultyIndicator.innerText = getDiffLabel(gameState.difficulty);
+                    }
+                } else {
+                    if (gameState.questionType === 'times_table') {
+                        difficultyIndicator.innerText = currentLang === 'zh' ? "📚 雙人乘數表對戰" : "📚 PvP Times Table";
+                    }
+                }
+            }
+
+            if (gameState.isGameOver) {
+                renderWinInfo();
+            }
+        }
+
         let gameState = { 
             position: 0, 
             p1Score: 0, 
@@ -341,12 +490,12 @@
 
         // 難度設定數據
         const DIFFICULTY_SETTINGS = {
-            ultra_easy: { minTime: 4000, maxTime: 7000, accuracy: 0.6, label: '超簡單 👶' },
-            easy: { minTime: 3000, maxTime: 5000, accuracy: 0.7, label: '簡單 🤖' },
-            normal: { minTime: 2000, maxTime: 3500, accuracy: 0.85, label: '普通 🤖' },
-            hard: { minTime: 1000, maxTime: 1800, accuracy: 0.98, label: '困難 🤖' },
-            extreme: { minTime: 600, maxTime: 1200, accuracy: 0.99, label: '超困難 👿' },
-            hell: { minTime: 300, maxTime: 700, accuracy: 1.0, label: '地獄 💀' }
+            ultra_easy: { minTime: 4000, maxTime: 7000, accuracy: 0.6 },
+            easy: { minTime: 3000, maxTime: 5000, accuracy: 0.7 },
+            normal: { minTime: 2000, maxTime: 3500, accuracy: 0.85 },
+            hard: { minTime: 1000, maxTime: 1800, accuracy: 0.98 },
+            extreme: { minTime: 600, maxTime: 1200, accuracy: 0.99 },
+            hell: { minTime: 300, maxTime: 700, accuracy: 1.0 }
         };
 
         function initCharacters() {
@@ -441,18 +590,23 @@
             gameState.questionType = qType;
             menuOverlay.style.display = 'none';
             
+            const t = i18n[currentLang];
             if (mode === 'pve') {
-                document.getElementById('p2-label').innerText = '電腦';
+                document.getElementById('p2-label').innerText = t.ai;
                 if (qType === 'times_table') {
-                    difficultyIndicator.innerText = "📚 乘數表特訓 (普通)";
+                    if (diff === 'endless') {
+                        difficultyIndicator.innerText = t.endlessMode;
+                    } else {
+                        difficultyIndicator.innerText = currentLang === 'zh' ? "📚 乘數表特訓 (普通)" : "📚 Times Table (Normal)";
+                    }
                 } else {
-                    difficultyIndicator.innerText = DIFFICULTY_SETTINGS[diff].label;
+                    difficultyIndicator.innerText = getDiffLabel(diff);
                 }
                 difficultyIndicator.classList.remove('hidden');
             } else {
-                document.getElementById('p2-label').innerText = '隊伍二';
+                document.getElementById('p2-label').innerText = t.team2;
                 if (qType === 'times_table') {
-                    difficultyIndicator.innerText = "📚 雙人乘數表對戰";
+                    difficultyIndicator.innerText = currentLang === 'zh' ? "📚 雙人乘數表對戰" : "📚 PvP Times Table";
                     difficultyIndicator.classList.remove('hidden');
                 } else {
                     difficultyIndicator.classList.add('hidden');
@@ -496,7 +650,19 @@
             
             aiThinking.classList.replace('hidden', 'flex');
             
-            const settings = DIFFICULTY_SETTINGS[gameState.difficulty];
+            let settings;
+            if (gameState.difficulty === 'endless') {
+                // 無盡模式：隨著分數提升，等級增加，時間縮短，準確率提高
+                const level = Math.floor(gameState.p1Score / 5);
+                settings = {
+                    minTime: Math.max(400, 3500 - level * 300),
+                    maxTime: Math.max(800, 5500 - level * 450),
+                    accuracy: Math.min(1.0, 0.6 + level * 0.05)
+                };
+            } else {
+                settings = DIFFICULTY_SETTINGS[gameState.difficulty];
+            }
+            
             const thinkingTime = settings.minTime + Math.random() * (settings.maxTime - settings.minTime);
             
             gameState.aiTimer = setTimeout(() => {
@@ -528,6 +694,12 @@
                 else gameState.position -= step/2;
             }
             
+            // 無盡模式下，限制玩家不能把繩子拉過勝利線，確保只能一直防守
+            const threshold = window.innerWidth * (window.innerWidth < 640 ? 0.35 : 0.25);
+            if (gameState.difficulty === 'endless' && gameState.position < -threshold + step) {
+                gameState.position = -threshold + step;
+            }
+            
             refreshPlayer(player);
             updateVisuals();
             checkWin();
@@ -541,53 +713,71 @@
 
         function checkWin() {
             const threshold = window.innerWidth * (window.innerWidth < 640 ? 0.35 : 0.25);
-            if (Math.abs(gameState.position) >= threshold) {
-                gameState.isGameOver = true;
-                if (gameState.aiTimer) clearTimeout(gameState.aiTimer);
-                
-                const isP1 = gameState.position < 0;
-                winnerText.innerText = isP1 ? '隊伍一獲勝！' : (gameState.mode === 'pve' ? '電腦獲勝！' : '隊伍二獲勝！');
-                
-                // 顯示難度與時間資訊
-                const winInfo = document.getElementById('win-info');
-                const winDiff = document.getElementById('win-difficulty');
-                const winTime = document.getElementById('win-time');
+            if (gameState.difficulty === 'endless') {
+                if (gameState.position >= threshold) {
+                    gameState.isGameOver = true;
+                    if (gameState.aiTimer) clearTimeout(gameState.aiTimer);
+                    renderWinInfo();
+                    modal.classList.replace('hidden', 'flex');
+                }
+            } else {
+                if (Math.abs(gameState.position) >= threshold) {
+                    gameState.isGameOver = true;
+                    if (gameState.aiTimer) clearTimeout(gameState.aiTimer);
+                    renderWinInfo();
+                    modal.classList.replace('hidden', 'flex');
+                }
+            }
+        }
+
+        function renderWinInfo() {
+            const t = i18n[currentLang];
+            const isP1 = gameState.position < 0;
+            
+            const winInfo = document.getElementById('win-info');
+            const winDiff = document.getElementById('win-difficulty');
+            const winTime = document.getElementById('win-time');
+            
+            if (gameState.difficulty === 'endless') {
+                winnerText.innerText = t.gameOver;
+                winDiff.innerText = `${t.endlessScore} ${gameState.p1Score}`;
+                winDiff.className = "text-red-600 font-black text-xl";
+            } else {
+                winnerText.innerText = isP1 ? t.team1Win : (gameState.mode === 'pve' ? t.aiWin : t.team2Win);
                 
                 if (gameState.mode === 'pve') {
                     if (gameState.questionType === 'times_table') {
                         if (isP1) {
-                            winDiff.innerText = `🎉 成功完成：1-10 乘數表特訓`;
-                            winDiff.className = "text-green-600";
+                            winDiff.innerText = t.winTimesTableSingle;
+                            winDiff.className = "text-green-600 font-bold";
                         } else {
-                            winDiff.innerText = `💀 特訓失敗：乘數表還不夠熟喔！`;
-                            winDiff.className = "text-red-500";
+                            winDiff.innerText = t.failTimesTableSingle;
+                            winDiff.className = "text-red-500 font-bold";
                         }
                     } else {
                         if (isP1) {
-                            winDiff.innerText = `🎉 成功挑戰：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
-                            winDiff.className = "text-green-600";
+                            winDiff.innerText = t.winPvePrefix + getDiffLabel(gameState.difficulty);
+                            winDiff.className = "text-green-600 font-bold";
                         } else {
-                            winDiff.innerText = `💀 挑戰失敗：${DIFFICULTY_SETTINGS[gameState.difficulty].label}`;
-                            winDiff.className = "text-red-500";
+                            winDiff.innerText = t.failPvePrefix + getDiffLabel(gameState.difficulty);
+                            winDiff.className = "text-red-500 font-bold";
                         }
                     }
                 } else {
                     if (gameState.questionType === 'times_table') {
-                        winDiff.innerText = `🎮 遊戲模式：雙人對戰 (乘數表) 👫`;
+                        winDiff.innerText = t.winPvPTimesTable;
                     } else {
-                        winDiff.innerText = `🎮 遊戲模式：雙人對戰 (綜合) 👫`;
+                        winDiff.innerText = t.winPvPMixed;
                     }
-                    winDiff.className = "text-blue-600";
+                    winDiff.className = "text-blue-600 font-bold";
                 }
-                
-                const now = new Date();
-                winTime.innerText = `完成時間：${now.toLocaleString('zh-TW', { hour12: false })}`;
-                
-                winInfo.classList.remove('hidden');
-                winInfo.classList.add('flex');
-
-                modal.classList.replace('hidden', 'flex');
             }
+            
+            const now = new Date();
+            winTime.innerText = `${t.timePrefix}${now.toLocaleString(currentLang === 'zh' ? 'zh-TW' : 'en-US', { hour12: false })}`;
+            
+            winInfo.classList.remove('hidden');
+            winInfo.classList.add('flex');
         }
 
         function resetGame() {
