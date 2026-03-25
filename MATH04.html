@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星際小數大冒險</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: white;
+            font-family: '微軟正黑體', sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        
+        .stars {
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: moveStars 100s linear infinite;
+        }
+
+        .tech-screen {
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.8),
+                rgba(0, 0, 0, 0.8) 2px,
+                rgba(0, 30, 20, 0.9) 2px,
+                rgba(0, 30, 20, 0.9) 4px
+            );
+            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.3);
+            text-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+        }
+
+        #questionDisplay {
+            font-size: clamp(1.2rem, 6.5vw, 3rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap; 
+            width: 100%;
+            line-height: 1.4;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        #spaceship {
+            transition: transform 0.5s ease-in-out, left 0.5s ease-in-out;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+        }
+        
+        @keyframes moveStars {
+            from { background-position: 0 0; }
+            to { background-position: -1000px 1000px; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+        @keyframes fireFlicker {
+            0% { opacity: 0.6; transform: scaleY(0.8) scaleX(0.9); }
+            100% { opacity: 1; transform: scaleY(1.2) scaleX(1.1); }
+        }
+        @keyframes kongAttack {
+            0% { transform: translateY(100px) scale(1); opacity: 0; }
+            20% { transform: translateY(0) scale(1.5) rotate(-15deg); opacity: 1; }
+            40% { transform: translateY(0) scale(1.5) rotate(15deg); opacity: 1; }
+            60% { transform: translateY(0) scale(1.5) rotate(-15deg); opacity: 1; }
+            80% { transform: translateY(0) scale(1.5) rotate(15deg); opacity: 1; }
+            100% { transform: translateY(100px) scale(1); opacity: 0; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+        }
+        
+        .animate-float { animation: float 2s ease-in-out infinite; }
+        .animate-fire { animation: fireFlicker 0.1s infinite alternate; display: inline-block; transform-origin: left; filter: hue-rotate(-10deg); }
+        .animate-kong { animation: kongAttack 1.5s ease-in-out forwards; }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .difficulty-card {
+            background: rgba(15, 23, 42, 0.6);
+            transition: all 0.2s;
+        }
+        .difficulty-card:hover {
+            background: rgba(30, 41, 59, 0.8);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="stars flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
+
+    <!-- 主遊戲介面 -->
+    <div class="text-center glass-panel p-4 sm:p-8 rounded-3xl shadow-[0_0_40px_rgba(79,70,229,0.2)] border-t border-l border-indigo-400/30 max-w-md w-full relative z-10 animate-[pulseGlow_4s_infinite]">
+        
+        <h1 class="text-2xl sm:text-4xl font-extrabold mb-4 sm:mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 tracking-wide filter drop-shadow-md">
+            🚀 星際小數大冒險
+        </h1>
+        
+        <!-- 分數與時間 -->
+        <div class="mb-4 flex justify-between items-center text-md sm:text-xl font-bold px-2 bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-600/50 shadow-inner">
+            <div class="text-emerald-400 flex items-center gap-1 sm:gap-2">
+                ⛽ <span class="hidden xs:inline text-xs text-gray-400 font-normal">燃料</span> <span id="scoreDisplay" class="font-mono text-xl sm:text-2xl text-white">200</span>
+            </div>
+            <div class="text-cyan-400 flex items-center gap-1 sm:gap-2">
+                ⏱️ <span class="hidden xs:inline text-xs text-gray-400 font-normal">生存</span> <span id="liveTimeDisplay" class="font-mono text-lg sm:text-xl text-white">0s</span>
+            </div>
+        </div>
+
+        <!-- 燃料條 -->
+        <div class="w-full bg-slate-900 rounded-full h-6 sm:h-8 mb-4 sm:mb-6 relative overflow-hidden border-2 border-slate-700 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)]">
+            <div id="fuelBar" class="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500 ease-out shadow-[0_0_15px_rgba(52,211,153,0.8)]" style="width: 100%;"></div>
+            
+            <div id="spaceship" class="absolute top-0 h-full flex items-center text-lg sm:text-2xl transition-all duration-500 ease-out" style="left: calc(100% - 3rem);">
+                <div class="animate-float flex items-center text-xl sm:text-3xl filter drop-shadow-lg">
+                    <span class="animate-fire -mr-2 z-0">🔥</span>
+                    <span class="z-10 relative">🚀</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 科技感螢幕 - 題目顯示區 -->
+        <div class="tech-screen p-4 sm:p-6 rounded-2xl mb-4 sm:mb-6 border border-cyan-800/50 relative overflow-hidden flex flex-col items-center">
+            <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-500"></div>
+            <div class="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-500"></div>
+            <div class="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-500"></div>
+            <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-500"></div>
+
+            <p class="text-cyan-600/80 mb-1 text-[10px] sm:text-xs font-bold tracking-widest uppercase">>>> DECODING TARGET:</p>
+            <div class="w-full px-2 min-h-[4rem] flex items-center justify-center">
+                <div id="questionDisplay" class="font-extrabold text-cyan-300 font-mono">
+                    ...
+                </div>
+            </div>
+            <p id="roundingHint" class="text-yellow-400 text-xs sm:text-md font-bold mt-2 min-h-[1rem] sm:min-h-[1.5rem] flex items-center justify-center tracking-wide"></p>
+        </div>
+
+        <!-- 輸入區 -->
+        <div class="flex flex-col gap-3">
+            <input type="number" id="answerInput" inputmode="decimal" placeholder="解碼數值..." 
+                   class="font-mono text-xl sm:text-3xl p-3 sm:p-4 rounded-xl bg-slate-900 text-cyan-300 text-center w-full border-2 border-slate-600 focus:outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/30 transition-all shadow-inner placeholder-slate-600">
+            
+            <div class="flex gap-2 sm:gap-3 w-full">
+                <button id="skipBtn" onclick="skipQuestion()" 
+                        class="flex-1 bg-slate-700 hover:bg-slate-600 text-gray-200 font-bold py-2 sm:py-3 rounded-xl shadow-lg border border-slate-500 group flex flex-col items-center justify-center">
+                    <span class="text-sm sm:text-base">跳過 ⏭️</span>
+                    <span class="text-[9px] sm:text-[10px] text-red-400 font-normal">-10 燃料</span>
+                </button>
+                <button id="actionBtn" onclick="handleButtonClick()" 
+                        class="flex-[2] bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 rounded-xl text-lg sm:text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] border border-cyan-400/50">
+                    發射！ ☄️
+                </button>
+            </div>
+        </div>
+
+        <div id="messageDisplay" class="mt-4 text-sm sm:text-lg font-bold h-6 sm:h-8 transition-colors duration-300"></div>
+    </div>
+
+    <!-- 🦍 太空金剛 -->
+    <div id="kong" class="fixed bottom-0 right-2 sm:right-10 text-6xl sm:text-8xl pointer-events-none z-50 opacity-0 transform translate-y-full filter drop-shadow-2xl">
+        🦍
+    </div>
+
+    <!-- 任務說明與難度 -->
+    <div id="startModal" class="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center backdrop-blur-md p-2 sm:p-4">
+        <div class="glass-panel p-5 sm:p-8 rounded-3xl border border-indigo-500/50 shadow-[0_0_50px_rgba(79,70,229,0.3)] max-w-lg w-full flex flex-col max-h-[95vh]">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-500 mb-4 sm:mb-6 text-center">🛸 任務指揮中心</h2>
+            
+            <div class="bg-slate-800/80 p-3 sm:p-4 rounded-2xl mb-4 sm:mb-6 border border-slate-600 overflow-y-auto flex-shrink shadow-inner text-xs sm:text-sm text-gray-300 space-y-1">
+                <p><strong>⛽ 燃料：</strong> 持續流失，<span class="text-red-400">隨時間越扣越快！</span></p>
+                <p><strong>✅ 獎勵：</strong> 越快答對獎勵越高 (<span class="text-green-400">+30 ~ +15</span>)。</p>
+                <p><strong>⏭️ 跳過：</strong> 遇到難題可跳過，扣除 <span class="text-red-400">10 點燃料</span>。</p>
+                <p><strong>⚠️ 特殊：</strong> 全模式保證含小數。困難以上含<span class="text-yellow-400">捨入指令</span>。</p>
+            </div>
+
+            <h3 class="text-sm sm:text-md font-bold text-gray-300 mb-3 text-center uppercase tracking-widest">選擇難度路線</h3>
+            <div class="grid grid-cols-1 gap-2 overflow-y-auto pb-2 pr-1">
+                <!-- 超簡單 -->
+                <button onclick="selectDifficulty('超簡單')" class="difficulty-card w-full flex flex-col items-start p-3 rounded-xl border border-green-500/30 group">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-green-400 font-bold">超簡單 🟢</span>
+                        <span class="text-[10px] bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full border border-green-500/30">新手級</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 text-left">10 以內加法，固定 1 位小數運算。</p>
+                </button>
+                
+                <!-- 簡單 -->
+                <button onclick="selectDifficulty('簡單')" class="difficulty-card w-full flex flex-col items-start p-3 rounded-xl border border-yellow-500/30 group">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-yellow-400 font-bold">簡單 🟡</span>
+                        <span class="text-[10px] bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full border border-yellow-500/30">入門級</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 text-left">10 以內加減法，隨機出現 1 位小數。</p>
+                </button>
+
+                <!-- 普通 -->
+                <button onclick="selectDifficulty('普通')" class="difficulty-card w-full flex flex-col items-start p-3 rounded-xl border border-orange-500/30 group">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-orange-400 font-bold">普通 🟠</span>
+                        <span class="text-[10px] bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">標準級</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 text-left">10 以內加減乘法，有機率出現 2 位小數。</p>
+                </button>
+
+                <!-- 困難 -->
+                <button onclick="selectDifficulty('困難')" class="difficulty-card w-full flex flex-col items-start p-3 rounded-xl border border-red-500/30 group">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-red-400 font-bold">困難 🔴</span>
+                        <span class="text-[10px] bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full border border-red-500/30">挑戰級</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 text-left">200 以內大數加減乘，含 2 位小數及四捨五入要求。</p>
+                </button>
+
+                <!-- 超困難 -->
+                <button onclick="selectDifficulty('超困難')" class="difficulty-card w-full flex flex-col items-start p-3 rounded-xl border border-purple-500/30 group">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-purple-400 font-bold">超困難 💀</span>
+                        <span class="text-[10px] bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">地獄級</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 text-left">999 以內複雜加減乘，含 3 位小數與隨機進階捨入。</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲結束 -->
+    <div id="gameOverModal" class="hidden fixed inset-0 bg-red-900/90 z-50 flex items-center justify-center backdrop-blur-md p-4">
+        <div class="glass-panel border-2 border-red-500 shadow-[0_0_60px_rgba(239,68,68,0.5)] p-6 sm:p-8 rounded-3xl max-w-sm w-full text-center">
+            <h2 class="text-3xl font-extrabold text-red-400 mb-6">任務失敗</h2>
+            <div class="text-left bg-black/40 border border-red-500/30 p-4 rounded-xl mb-6 space-y-2 text-sm">
+                <div class="flex justify-between"><span>難度</span><span id="difficultyDisplay" class="text-purple-300 font-bold"></span></div>
+                <div class="flex justify-between"><span>生存</span><span id="survivalTimeDisplay" class="text-yellow-400 font-bold"></span></div>
+                <div class="flex justify-between"><span>題數</span><span id="correctAnswersDisplay" class="text-green-400 font-bold"></span></div>
+            </div>
+            <button onclick="closeModalAndRestart()" class="w-full bg-red-600 text-white font-bold py-4 rounded-xl text-xl shadow-lg border border-red-400">重新開始 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        let fuel = 200; 
+        let currentCorrectAnswer = 0;
+        let timer; 
+        let isGameOver = false; 
+        let startTime; 
+        let correctAnswersCount = 0; 
+        let currentDifficulty = '普通';
+
+        const difficulties = {
+            '超簡單': { decimals: 1, ops: ['+'], max: 10, baseDrain: 0.5, accel: 0.003, forceDecimal: true },
+            '簡單': { decimals: 1, randomDecimals: true, ops: ['+', '-'], max: 10, baseDrain: 0.7, accel: 0.008, forceDecimal: true },
+            '普通': { decimals: 1, randomDecimals: true, chanceOfMoreDecimals: 0.3, ops: ['+', '-', '*'], max: 10, baseDrain: 0.8, accel: 0.012, forceDecimal: true },
+            '困難': { decimals: 2, randomDecimals: true, maxDecimals: 2, ops: ['+', '-', '*'], max: 200, baseDrain: 0.82, accel: 0.012, randomRounding: true, forceDecimal: true },
+            '超困難': { decimals: 2, randomDecimals: true, maxDecimals: 3, ops: ['+', '-', '*'], max: 999, baseDrain: 0.9, accel: 0.016, randomRounding: true, forceDecimal: true } 
+        };
+
+        function selectDifficulty(level) {
+            currentDifficulty = level; 
+            document.getElementById('startModal').classList.add('hidden'); 
+            startGame(); 
+        }
+
+        function startGame() {
+            fuel = 200;
+            isGameOver = false;
+            correctAnswersCount = 0; 
+            startTime = new Date(); 
+            document.getElementById('gameOverModal').classList.add('hidden'); 
+            document.getElementById('actionBtn').innerText = "發射！ ☄️";
+            document.getElementById('answerInput').disabled = false;
+            document.getElementById('skipBtn').disabled = false; 
+            document.getElementById('liveTimeDisplay').innerText = "0s"; 
+            document.getElementById('answerInput').value = '';
+            document.getElementById('messageDisplay').innerText = '';
+            
+            updateUI();
+            generateQuestion();
+            
+            if(timer) clearInterval(timer);
+            timer = setInterval(() => {
+                if (isGameOver) return;
+                const currentSeconds = Math.floor((new Date() - startTime) / 1000);
+                document.getElementById('liveTimeDisplay').innerText = `${currentSeconds}s`;
+                const config = difficulties[currentDifficulty];
+                const currentDrain = config.baseDrain + (currentSeconds * config.accel);
+                fuel -= currentDrain; 
+                updateUI();
+                if (fuel <= 0) gameOver();
+            }, 1000); 
+        }
+
+        function updateUI() {
+            const displayFuel = Math.max(0, Math.floor(fuel));
+            document.getElementById('scoreDisplay').innerText = displayFuel;
+            let progress = Math.min(Math.max(fuel, 0), 200); 
+            const percentage = (progress / 200) * 100;
+            document.getElementById('fuelBar').style.width = `${percentage}%`;
+            document.getElementById('spaceship').style.left = `calc(${percentage}% - 3rem)`;
+            
+            const fuelBar = document.getElementById('fuelBar');
+            if (fuel < 40) {
+                fuelBar.className = "h-full bg-gradient-to-r from-red-600 to-red-400 shadow-[0_0_15px_rgba(239,68,68,0.8)]"; 
+            } else if (fuel < 100) {
+                fuelBar.className = "h-full bg-gradient-to-r from-orange-500 to-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.8)]"; 
+            } else {
+                fuelBar.className = "h-full bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_15px_rgba(52,211,153,0.8)]"; 
+            }
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            clearInterval(timer); 
+            document.getElementById('answerInput').disabled = true;
+            document.getElementById('skipBtn').disabled = true; 
+            const survivalSeconds = Math.floor((new Date() - startTime) / 1000); 
+            document.getElementById('difficultyDisplay').innerText = currentDifficulty;
+            document.getElementById('survivalTimeDisplay').innerText = survivalSeconds + " 秒";
+            document.getElementById('correctAnswersDisplay').innerText = correctAnswersCount + " 題"; 
+            document.getElementById('gameOverModal').classList.remove('hidden');
+        }
+
+        function closeModalAndRestart() {
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('startModal').classList.remove('hidden');
+        }
+
+        function skipQuestion() {
+            if (isGameOver) return; 
+            fuel -= 10; 
+            updateUI();
+            if (fuel <= 0) gameOver(); 
+            else generateQuestion(); 
+        }
+
+        function generateQuestion() {
+            if (isGameOver) return;
+            const config = difficulties[currentDifficulty];
+            const type = config.ops[Math.floor(Math.random() * config.ops.length)];
+            
+            let num1, num2;
+            let isValid = false;
+
+            while (!isValid) {
+                let dec1, dec2;
+                
+                if (currentDifficulty === '超簡單') {
+                    dec1 = 1;
+                    dec2 = Math.random() < 0.5 ? 0 : 1;
+                } else if (currentDifficulty === '簡單') {
+                    dec1 = Math.random() < 0.5 ? 0 : 1;
+                    dec2 = Math.random() < 0.5 ? 0 : 1;
+                } else if (currentDifficulty === '普通') {
+                    if (Math.random() < config.chanceOfMoreDecimals) {
+                        const targetIndex = Math.random() < 0.5 ? 1 : 2;
+                        dec1 = (targetIndex === 1) ? Math.floor(Math.random() * 2) + 1 : (Math.random() < 0.5 ? 1 : 0);
+                        dec2 = (targetIndex === 2) ? Math.floor(Math.random() * 2) + 1 : (Math.random() < 0.5 ? 1 : 0);
+                    } else {
+                        dec1 = 1;
+                        dec2 = Math.random() < 0.5 ? 0 : 1;
+                    }
+                } else {
+                    dec1 = config.randomDecimals ? Math.floor(Math.random() * (config.maxDecimals + 1)) : config.decimals;
+                    dec2 = config.randomDecimals ? Math.floor(Math.random() * (config.maxDecimals + 1)) : config.decimals;
+                }
+                
+                num1 = parseFloat((Math.random() * (config.max - 1) + 1).toFixed(dec1));
+                num2 = parseFloat((Math.random() * (config.max - 1) + 1).toFixed(dec2));
+
+                if (config.forceDecimal) {
+                    isValid = (num1 % 1 !== 0 || num2 % 1 !== 0);
+                } else {
+                    isValid = true;
+                }
+            }
+            
+            if (type === '-' && num2 > num1) [num1, num2] = [num2, num1];
+            if (type === '+') currentCorrectAnswer = num1 + num2;
+            else if (type === '-') currentCorrectAnswer = num1 - num2;
+            else if (type === '*') currentCorrectAnswer = num1 * num2;
+
+            const roundingHintEl = document.getElementById('roundingHint');
+            if (config.randomRounding && Math.random() < 0.5) {
+                const roundPlaces = Math.floor(Math.random() * 3); 
+                const multiplier = Math.pow(10, roundPlaces); 
+                currentCorrectAnswer = Math.round(currentCorrectAnswer * multiplier) / multiplier;
+                const labels = ["整數", "小數第一位", "小數第二位"];
+                roundingHintEl.innerHTML = `<span class='animate-pulse text-[10px] sm:text-xs'>⚠️ 四捨五入至: ${labels[roundPlaces]}</span>`;
+            } else {
+                currentCorrectAnswer = parseFloat(currentCorrectAnswer.toFixed(4));
+                roundingHintEl.innerHTML = ""; 
+            }
+
+            let typeColor = type === '*' ? 'text-purple-400' : (type === '+' ? 'text-green-400' : 'text-yellow-400');
+            document.getElementById('questionDisplay').innerHTML = `<span>${num1}</span><span class="${typeColor} mx-2">${type}</span><span>${num2}</span>`;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus(); 
+        }
+
+        function handleButtonClick() {
+            isGameOver ? startGame() : checkAnswer(); 
+        }
+
+        function checkAnswer() {
+            const inputVal = document.getElementById('answerInput').value;
+            if (inputVal === '') return; 
+            const userAnswer = parseFloat(inputVal);
+            const messageEl = document.getElementById('messageDisplay');
+
+            if (Math.abs(userAnswer - currentCorrectAnswer) < 0.0001) {
+                correctAnswersCount++;
+                const reward = Math.max(15, 30 - Math.floor((new Date() - startTime) / 4000));
+                fuel = Math.min(fuel + reward, 200); 
+                updateUI();
+                messageEl.innerText = `>> 成功! +${reward}`;
+                messageEl.className = "mt-4 text-green-400 text-sm sm:text-lg font-bold";
+                generateQuestion(); 
+            } else {
+                fuel -= 5; 
+                updateUI();
+                messageEl.innerText = `>> 錯誤! 應為 ${currentCorrectAnswer}`;
+                messageEl.className = "mt-4 text-red-400 text-sm sm:text-lg font-bold";
+                const kong = document.getElementById('kong');
+                kong.classList.remove('opacity-0', 'translate-y-full'); 
+                kong.classList.add('animate-kong'); 
+                setTimeout(() => {
+                    kong.classList.remove('animate-kong');
+                    kong.classList.add('opacity-0', 'translate-y-full');
+                }, 1500);
+                if (fuel <= 0) gameOver();
+                else setTimeout(generateQuestion, 1500);
+            }
+        }
+
+        document.getElementById('answerInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkAnswer();
+        });
+    </script>
+</body>
+</html>
