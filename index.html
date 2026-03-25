@@ -86,11 +86,23 @@
         .link-card:hover .icon-box {
             transform: rotate(12deg) scale(1.1);
         }
+
+        /* 滾動條美化 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
 
-    <div class="max-w-xl w-full">
+    <div class="max-w-xl w-full my-8">
         <!-- 主面板 -->
         <div class="glass-panel shadow-2xl p-8 md:p-12">
             
@@ -107,7 +119,7 @@
             </header>
 
             <!-- 連結列表 -->
-            <div class="space-y-4">
+            <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                 
                 <!-- 遊戲 01: 數學拔河 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH01.html" target="_blank" 
@@ -160,7 +172,7 @@
                     </div>
                 </a>
 
-                <!-- 遊戲 04: 星際小數大冒險 (已更新標題) -->
+                <!-- 遊戲 04: 星際小數大冒險 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH04.html" target="_blank" 
                    class="link-card flex items-center p-5 rounded-2xl bg-white/60 border border-white shadow-sm group">
                     <div class="icon-box w-14 h-14 bg-indigo-600 text-white text-2xl rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
@@ -176,6 +188,39 @@
                         </svg>
                     </div>
                 </a>
+
+                <!-- 敬請期待 01 -->
+                <div class="link-card flex items-center p-5 rounded-2xl bg-white/40 border border-dashed border-slate-300 opacity-60">
+                    <div class="w-14 h-14 bg-slate-200 text-white text-2xl rounded-xl flex items-center justify-center">
+                        🔒
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-400 text-xl">敬請期待 05</div>
+                        <div class="text-sm text-slate-400">下一個精彩遊戲正在製作中</div>
+                    </div>
+                </div>
+
+                <!-- 敬請期待 02 -->
+                <div class="link-card flex items-center p-5 rounded-2xl bg-white/40 border border-dashed border-slate-300 opacity-60">
+                    <div class="w-14 h-14 bg-slate-200 text-white text-2xl rounded-xl flex items-center justify-center">
+                        🔒
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-400 text-xl">敬請期待 06</div>
+                        <div class="text-sm text-slate-400">新的冒險即將開啟</div>
+                    </div>
+                </div>
+
+                <!-- 敬請期待 03 -->
+                <div class="link-card flex items-center p-5 rounded-2xl bg-white/40 border border-dashed border-slate-300 opacity-60">
+                    <div class="w-14 h-14 bg-slate-200 text-white text-2xl rounded-xl flex items-center justify-center">
+                        🔒
+                    </div>
+                    <div class="ml-5">
+                        <div class="font-bold text-slate-400 text-xl">敬請期待 07</div>
+                        <div class="text-sm text-slate-400">精彩內容 敬請關注</div>
+                    </div>
+                </div>
 
             </div>
 
