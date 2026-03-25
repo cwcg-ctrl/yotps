@@ -202,7 +202,6 @@
                 <p><strong>⛽ 燃料：</strong> 持續流失，<span class="text-red-400">隨時間越扣越快！</span></p>
                 <p><strong>✅ 獎勵：</strong> 越快答對獎勵越高 (<span class="text-green-400">+30 ~ +15</span>)。</p>
                 <p><strong>⏭️ 跳過：</strong> 遇到難題可跳過，扣除 <span class="text-red-400">10 點燃料</span>。</p>
-                <p><strong>📐 難度調整：</strong> 已優化數值範圍，適合各年級小學生挑戰。</p>
             </div>
 
             <h3 class="text-sm sm:text-md font-bold text-gray-300 mb-3 text-center uppercase tracking-widest">選擇難度路線</h3>
@@ -272,7 +271,6 @@
         let correctAnswersCount = 0; 
         let currentDifficulty = '普通';
 
-        // 調整難度配置：縮減 max 範圍以符合小學計算量
         const difficulties = {
             '超簡單': { decimals: 1, ops: ['+'], max: 10, baseDrain: 0.5, accel: 0.003, forceDecimal: true, color: 'text-green-400', border: 'border-green-500/50' },
             '簡單': { decimals: 1, randomDecimals: true, ops: ['+', '-'], max: 10, baseDrain: 0.7, accel: 0.008, forceDecimal: true, color: 'text-yellow-400', border: 'border-yellow-500/50' },
@@ -404,7 +402,6 @@
                     dec2 = config.randomDecimals ? Math.floor(Math.random() * (config.maxDecimals + 1)) : config.decimals;
                 }
                 
-                // 限制數字生成範圍
                 num1 = parseFloat((Math.random() * (config.max - 1) + 1).toFixed(dec1));
                 num2 = parseFloat((Math.random() * (config.max - 1) + 1).toFixed(dec2));
 
