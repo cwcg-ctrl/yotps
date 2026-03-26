@@ -2,7 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 加入 maximum-scale=1.0, user-scalable=no 防止手機上快速點擊時畫面意外放大 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🍲 怪獸廚房：拖曳大挑戰</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -18,6 +19,9 @@
         .ingredient {
             cursor: grab;
             transition: transform 0.2s;
+            /* 防止手機長按選取文字 */
+            user-select: none; 
+            -webkit-user-select: none;
         }
         .ingredient:active {
             cursor: grabbing;
@@ -54,27 +58,27 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center font-sans p-4">
+<body class="min-h-screen flex flex-col items-center justify-center font-sans p-2 md:p-4">
 
     <!-- 遊戲區域白板 -->
-    <div class="bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-2xl max-w-2xl w-full border-8 border-yellow-800 text-center relative overflow-hidden">
+    <div class="bg-white/95 backdrop-blur-sm p-4 md:p-6 rounded-3xl shadow-2xl max-w-2xl w-full border-4 md:border-8 border-yellow-800 text-center relative overflow-hidden">
         
         <!-- 遊戲開始遮罩 (選擇難度與遊戲說明) -->
         <div id="start-screen" class="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center rounded-2xl p-4 overflow-y-auto">
-            <div class="text-7xl mb-2 mt-4">🍲</div>
-            <h2 class="text-4xl font-black text-orange-400 mb-4">怪獸廚房</h2>
+            <div class="text-6xl md:text-7xl mb-2 mt-4">🍲</div>
+            <h2 class="text-3xl md:text-4xl font-black text-orange-400 mb-4">怪獸廚房</h2>
             
-            <!-- 📜 新增的遊戲說明區塊 -->
-            <div class="bg-white/10 border-2 border-orange-300 rounded-2xl p-5 max-w-md text-left mb-6 backdrop-blur-sm shadow-lg">
-                <h3 class="text-2xl font-bold text-yellow-300 mb-3 text-center">📜 遊戲玩法</h3>
-                <ul class="text-lg text-white space-y-3">
+            <!-- 📜 遊戲說明區塊 -->
+            <div class="bg-white/10 border-2 border-orange-300 rounded-2xl p-4 md:p-5 max-w-md text-left mb-6 backdrop-blur-sm shadow-lg w-full">
+                <h3 class="text-xl md:text-2xl font-bold text-yellow-300 mb-3 text-center">📜 遊戲玩法</h3>
+                <ul class="text-base md:text-lg text-white space-y-3">
                     <li class="flex items-start">
                         <span class="text-2xl mr-2">👀</span> 
                         <span><strong>觀察題目：</strong>找出兩個分數的「最小公分母」。</span>
                     </li>
                     <li class="flex items-start">
                         <span class="text-2xl mr-2">🖐️</span> 
-                        <span><strong>餵食怪獸：</strong>將正確數字的食材「拖曳」丟進鍋子裡。</span>
+                        <span><strong>餵食怪獸：</strong>將正確數字的食材<strong>「拖曳」</strong>或<strong>「點擊」</strong>丟進鍋子裡。</span>
                     </li>
                     <li class="flex items-start">
                         <span class="text-2xl mr-2">⏱️</span> 
@@ -83,48 +87,44 @@
                 </ul>
             </div>
 
-            <h3 class="text-xl font-bold text-white mb-4">請選擇挑戰難度：</h3>
-            <div class="flex flex-wrap justify-center gap-4 mb-4">
-                <button onclick="startGame('easy')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full text-xl shadow-lg transform transition hover:scale-105">🟢 簡單</button>
-                <button onclick="startGame('medium')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full text-xl shadow-lg transform transition hover:scale-105">🟡 中等</button>
-                <button onclick="startGame('hard')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full text-xl shadow-lg transform transition hover:scale-105">🔴 困難</button>
-                <!-- 新增：超困難與地獄模式 -->
-                <button onclick="startGame('superHard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full text-xl shadow-lg transform transition hover:scale-105">🟣 超困難</button>
-                <button onclick="startGame('hell')" class="bg-black hover:bg-gray-800 text-red-500 border border-red-500 font-bold py-3 px-6 rounded-full text-xl shadow-lg transform transition hover:scale-105">⚫ 地獄</button>
+            <h3 class="text-lg md:text-xl font-bold text-white mb-4">請選擇挑戰難度：</h3>
+            <div class="flex flex-wrap justify-center gap-3 mb-4 w-full">
+                <button onclick="startGame('easy')" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-full text-lg md:text-xl shadow-lg transform transition hover:scale-105">🟢 簡單</button>
+                <button onclick="startGame('medium')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-full text-lg md:text-xl shadow-lg transform transition hover:scale-105">🟡 中等</button>
+                <button onclick="startGame('hard')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-full text-lg md:text-xl shadow-lg transform transition hover:scale-105">🔴 困難</button>
+                <button onclick="startGame('superHard')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 md:py-3 px-4 md:px-6 rounded-full text-lg md:text-xl shadow-lg transform transition hover:scale-105">🟣 超困難</button>
+                <button onclick="startGame('hell')" class="bg-black hover:bg-gray-800 text-red-500 border border-red-500 font-bold py-2 md:py-3 px-4 md:px-6 rounded-full text-lg md:text-xl shadow-lg transform transition hover:scale-105">⚫ 地獄</button>
             </div>
         </div>
 
         <!-- 遊戲結束遮罩 -->
-        <div id="game-over-screen" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center rounded-2xl">
-            <div id="game-over-icon" class="text-8xl mb-4">💀</div>
-            <h2 id="game-over-title" class="text-4xl font-black text-red-500 mb-4">怪獸餓暈了！</h2>
-            <!-- 新增：顯示挑戰難度 -->
-            <p class="text-2xl text-white mb-2">挑戰難度: <span id="final-level" class="font-bold"></span></p>
-            <!-- 新增：顯示過關時間 -->
-            <p class="text-xl text-gray-300 mb-2">完成時間: <span id="finish-time" class="font-bold text-blue-300"></span></p>
-            <p class="text-2xl text-white mb-6">最終美味度: <span id="final-score" class="text-yellow-400 font-bold">0</span></p>
-            <button onclick="showStartScreen()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-2xl shadow-lg transform transition hover:scale-105">
+        <div id="game-over-screen" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center rounded-2xl p-4">
+            <div id="game-over-icon" class="text-7xl md:text-8xl mb-4">💀</div>
+            <h2 id="game-over-title" class="text-3xl md:text-4xl font-black text-red-500 mb-4 text-center">怪獸餓暈了！</h2>
+            <p class="text-xl md:text-2xl text-white mb-2">挑戰難度: <span id="final-level" class="font-bold"></span></p>
+            <p class="text-lg md:text-xl text-gray-300 mb-2">完成時間: <span id="finish-time" class="font-bold text-blue-300"></span></p>
+            <p class="text-xl md:text-2xl text-white mb-6">最終美味度: <span id="final-score" class="text-yellow-400 font-bold">0</span></p>
+            <button onclick="showStartScreen()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-xl md:text-2xl shadow-lg transform transition hover:scale-105">
                 🔄 回到主選單
             </button>
         </div>
 
+        <!-- 頂部資訊列 -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-4 border-b-4 border-yellow-200 pb-2 gap-2">
-            <div class="flex items-center gap-3">
-                <h1 class="text-3xl font-black text-orange-600">🍲 怪獸廚房</h1>
-                <!-- 新增：顯示當前難度的標籤 -->
-                <span id="current-difficulty-badge" class="hidden text-sm md:text-base font-bold px-3 py-1 rounded-full text-white shadow-sm"></span>
+            <div class="flex items-center gap-2 md:gap-3">
+                <h1 class="text-2xl md:text-3xl font-black text-orange-600">🍲 怪獸廚房</h1>
+                <span id="current-difficulty-badge" class="hidden text-xs md:text-base font-bold px-2 md:px-3 py-1 rounded-full text-white shadow-sm"></span>
             </div>
-            <div class="flex items-center gap-4">
-                <!-- 新增：逃離廚房按鈕 -->
-                <button onclick="flee()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg text-sm shadow transform transition hover:scale-105">🏃 逃離廚房</button>
-                <div class="text-xl font-bold bg-orange-100 px-4 py-2 rounded-xl text-orange-800">
-                    美味度: <span id="score" class="text-3xl text-red-500">0</span>
+            <div class="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between md:justify-end">
+                <button onclick="flee()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1 px-3 rounded-lg text-sm shadow transform transition hover:scale-105 whitespace-nowrap">🏃 逃離</button>
+                <div class="text-lg md:text-xl font-bold bg-orange-100 px-3 md:px-4 py-1 md:py-2 rounded-xl text-orange-800">
+                    美味度: <span id="score" class="text-2xl md:text-3xl text-red-500">0</span>
                 </div>
             </div>
         </div>
 
         <!-- 怪獸飢餓度進度條 -->
-        <div class="text-left mb-2">
+        <div class="text-left mb-2 text-sm md:text-base">
             <span class="font-bold text-red-600">怪獸飢餓度 (快餵牠！):</span>
         </div>
         <div class="hunger-bar-container">
@@ -132,44 +132,43 @@
         </div>
 
         <!-- 題目區 -->
-        <div class="mb-6">
-            <p class="text-xl text-gray-700 font-bold mb-2">怪獸大廚需要 <span class="text-blue-600">最小公分母</span> 來煮湯！</p>
-            <div class="flex items-center justify-center text-5xl font-black text-gray-800">
-                <div class="flex flex-col items-center mx-4">
-                    <span class="border-b-4 border-gray-800 px-2 text-3xl">1</span>
+        <div class="mb-4 md:mb-6">
+            <p class="text-lg md:text-xl text-gray-700 font-bold mb-2">怪獸大廚需要 <span class="text-blue-600">最小公分母</span> 來煮湯！</p>
+            <div class="flex items-center justify-center text-4xl md:text-5xl font-black text-gray-800">
+                <div class="flex flex-col items-center mx-2 md:mx-4">
+                    <span class="border-b-4 border-gray-800 px-2 text-2xl md:text-3xl">1</span>
                     <span id="denom1" class="text-green-600">?</span>
                 </div>
-                <span class="text-orange-400 text-3xl">和</span>
-                <div class="flex flex-col items-center mx-4">
-                    <span class="border-b-4 border-gray-800 px-2 text-3xl">1</span>
+                <span class="text-orange-400 text-2xl md:text-3xl">和</span>
+                <div class="flex flex-col items-center mx-2 md:mx-4">
+                    <span class="border-b-4 border-gray-800 px-2 text-2xl md:text-3xl">1</span>
                     <span id="denom2" class="text-green-600">?</span>
                 </div>
             </div>
         </div>
 
         <!-- 回饋訊息 -->
-        <div id="message" class="h-8 mb-4 font-bold text-2xl text-orange-500">把正確的數字食材丟進鍋裡！</div>
+        <div id="message" class="h-8 mb-4 font-bold text-xl md:text-2xl text-orange-500">拖曳或點擊食材丟進鍋裡！</div>
 
-        <!-- 遊戲互動區：分為桌子(食材) 和 爐子(鍋子) -->
-        <div class="flex flex-col md:flex-row items-center justify-around bg-orange-50 rounded-2xl p-6 border-4 border-dashed border-orange-300">
+        <!-- 遊戲互動區 -->
+        <div class="flex flex-col md:flex-row items-center justify-around bg-orange-50 rounded-2xl p-4 md:p-6 border-4 border-dashed border-orange-300">
             
             <!-- 桌子：放置食材 (三個選項) -->
-            <div class="flex md:flex-col gap-4 mb-8 md:mb-0" id="ingredients-table">
+            <div class="flex flex-wrap justify-center md:flex-col gap-3 md:gap-4 mb-6 md:mb-0" id="ingredients-table">
                 <!-- 食材會透過 JavaScript 產生在這裡 -->
             </div>
 
-            <!-- 爐子：怪獸的鍋子 (接收拖放的區域) -->
-            <!-- 大師魔法：ondragover 允許東西停在上面，ondrop 處理東西掉下來的瞬間 -->
+            <!-- 爐子：怪獸的鍋子 -->
             <div class="flex flex-col items-center">
-                <div id="monster-face" class="text-6xl mb-2">👹</div>
+                <div id="monster-face" class="text-5xl md:text-6xl mb-2">👹</div>
                 <div id="cooking-pot" 
-                     class="w-40 h-40 bg-gray-800 rounded-full flex items-center justify-center text-7xl border-8 border-gray-600 shadow-inner relative"
+                     class="w-32 h-32 md:w-40 md:h-40 bg-gray-800 rounded-full flex items-center justify-center text-6xl md:text-7xl border-8 border-gray-600 shadow-inner relative"
                      ondragover="allowDrop(event)" 
                      ondrop="handleDrop(event)">
                      <div class="absolute inset-2 bg-orange-500 rounded-full opacity-50 blur-md"></div>
                      🍲
                 </div>
-                <p class="mt-4 font-bold text-gray-600">拖曳到鍋子裡</p>
+                <p class="mt-4 font-bold text-gray-600 text-sm md:text-base">拖曳或點擊餵食</p>
             </div>
 
         </div>
@@ -179,90 +178,86 @@
         let score = 0;
         let targetLCM = 0;
         
-        // 我們將原本固定的 denoms 換成可以隨難度改變的 activeDenoms
         const allDenoms = {
             easy: [2, 3, 4, 5, 6, 8, 10],
             medium: [2, 3, 4, 5, 6, 8, 9, 10, 12],
             hard: [3, 4, 6, 7, 8, 9, 11, 12, 14, 15],
-            superHard: [5, 7, 8, 9, 11, 12, 13, 14, 15, 17], // 新增：更大的數字
-            hell: [7, 11, 13, 17, 19, 23] // 新增：全是質數，只能硬乘！
+            superHard: [5, 7, 8, 9, 11, 12, 13, 14, 15, 17],
+            hell: [7, 11, 13, 17, 19, 23] 
         };
         let activeDenoms = allDenoms.medium;
         
-        const foodEmojis = ['🥩', '🧅', '🍄', '🥕', '🥔', '🧀']; // 增加趣味的表情符號
+        const foodEmojis = ['🥩', '🧅', '🍄', '🥕', '🥔', '🧀', '🍗', '🥦']; 
 
         // 緊張機制：飢餓度變數
-        let hunger = 100; // 飢餓度 0~100 (100是最飽)
-        let drainRate = 0.5; // 每次扣除的飢餓度 (控制難度)
-        let drainIncrease = 0.05; // 每次答對後增加的掉血速度
-        let waitTime = 1500; // 答對後換題目的等待時間 (毫秒)
-        let penalty = 10; // 新增：答錯時的扣血懲罰
-        let gameLoop; // 定時器迴圈
+        let hunger = 100; 
+        let drainRate = 0.5; 
+        let drainIncrease = 0.05; 
+        let waitTime = 1500; 
+        let penalty = 10; 
+        let gameLoop; 
         let isGameOver = false;
-        let currentLevelName = ""; // 新增：用來記住當前遊玩的難度名稱
+        let currentLevelName = ""; 
 
         // 數學工具
         function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
         function lcm(a, b) { return (a * b) / gcd(a, b); }
 
-        // 顯示開始畫面
         function showStartScreen() {
             document.getElementById('start-screen').classList.remove('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
-            document.getElementById('current-difficulty-badge').classList.add('hidden'); // 回到主選單時隱藏難度標籤
+            document.getElementById('current-difficulty-badge').classList.add('hidden');
         }
 
-        // 遊戲初始化與重新開始
         function startGame(level) {
             const diffBadge = document.getElementById('current-difficulty-badge');
-            diffBadge.classList.remove('hidden'); // 遊戲開始時顯示難度標籤
+            diffBadge.classList.remove('hidden'); 
 
-            // 根據選擇的難度設定遊戲參數
             if (level === 'easy') {
-                drainRate = 0.15;      // 大幅降低：餓得非常慢，讓同學有充分時間思考
-                drainIncrease = 0.01;  // 大幅降低：難度增加得非常緩慢
-                penalty = 5;           // 新增：簡單模式答錯只扣 5 點飢餓度
+                drainRate = 0.15;      
+                drainIncrease = 0.01;  
+                penalty = 5;           
                 activeDenoms = allDenoms.easy; 
                 waitTime = 1500;       
                 currentLevelName = "🟢 簡單"; 
                 diffBadge.textContent = currentLevelName;
-                diffBadge.className = "text-sm md:text-base font-bold px-3 py-1 rounded-full text-white shadow-sm bg-green-500";
+                diffBadge.className = "text-xs md:text-base font-bold px-2 md:px-3 py-1 rounded-full text-white shadow-sm bg-green-500";
             } else if (level === 'medium') {
-                drainRate = 0.3;       // 降低：適中的掉血速度
-                drainIncrease = 0.03;  // 降低：平緩的難度提升
-                penalty = 10;          // 新增：中等模式答錯扣 10 點
+                drainRate = 0.3;       
+                drainIncrease = 0.03;  
+                penalty = 10;          
                 activeDenoms = allDenoms.medium;
                 waitTime = 1000;       
                 currentLevelName = "🟡 中等"; 
                 diffBadge.textContent = currentLevelName;
-                diffBadge.className = "text-sm md:text-base font-bold px-3 py-1 rounded-full text-white shadow-sm bg-yellow-500";
+                diffBadge.className = "text-xs md:text-base font-bold px-2 md:px-3 py-1 rounded-full text-white shadow-sm bg-yellow-500";
             } else if (level === 'hard') {
-                drainRate = 0.5;       // 降低：比原本的 0.8 慢很多，但依然有挑戰性
-                drainIncrease = 0.06;  // 降低：挑戰難度的成長幅度也調低了
-                penalty = 15;          // 新增：困難模式答錯扣 15 點，懲罰較重
+                drainRate = 0.5;       
+                drainIncrease = 0.06;  
+                penalty = 15;          
                 activeDenoms = allDenoms.hard; 
                 waitTime = 500;        
                 currentLevelName = "🔴 困難"; 
                 diffBadge.textContent = currentLevelName;
-                diffBadge.className = "text-sm md:text-base font-bold px-3 py-1 rounded-full text-white shadow-sm bg-red-500";
+                diffBadge.className = "text-xs md:text-base font-bold px-2 md:px-3 py-1 rounded-full text-white shadow-sm bg-red-500";
             } else if (level === 'superHard') {
-                drainRate = 0.8;       // 非常快
-                drainIncrease = 0.1;   // 難度飆升
-                penalty = 20;          // 答錯扣很重
+                drainRate = 0.8;       
+                drainIncrease = 0.1;   
+                penalty = 20;          
                 activeDenoms = allDenoms.superHard; 
                 waitTime = 300;        
                 currentLevelName = "🟣 超困難"; 
                 diffBadge.textContent = currentLevelName;
-                diffBadge.className = "text-sm md:text-base font-bold px-3 py-1 rounded-full text-white shadow-sm bg-purple-600";
+                diffBadge.className = "text-xs md:text-base font-bold px-2 md:px-3 py-1 rounded-full text-white shadow-sm bg-purple-600";
             } else if (level === 'hell') {
-                drainRate = 1.2;       // 極限速度
-                drainIncrease = 0.2;   // 瞬間暴斃
-                penalty = 30;          // 幾乎不能錯
+                drainRate = 1.2;       
+                drainIncrease = 0.2;   
+                penalty = 30;          
                 activeDenoms = allDenoms.hell; 
-                waitTime = 100;        // 根本沒時間看
+                waitTime = 100;        
                 currentLevelName = "⚫ 地獄"; 
                 diffBadge.textContent = currentLevelName;
-                diffBadge.className = "text-sm md:text-base font-bold px-3 py-1 rounded-full border border-red-500 text-red-500 shadow-sm bg-black";
+                diffBadge.className = "text-xs md:text-base font-bold px-2 md:px-3 py-1 rounded-full border border-red-500 text-red-500 shadow-sm bg-black";
             }
 
             score = 0;
@@ -275,52 +270,46 @@
             document.getElementById('monster-face').textContent = '👹';
             
             clearInterval(gameLoop);
-            // 魔法時鐘：每 0.1 秒 (100毫秒) 自動執行 updateHunger 扣除一次飢餓度
             gameLoop = setInterval(updateHunger, 100); 
             
             nextQuestion();
         }
 
-        // 更新飢餓度的魔法功能
         function updateHunger() {
             if (isGameOver) return;
             
-            hunger -= drainRate; // 飢餓度下降
+            hunger -= drainRate; 
             if (hunger <= 0) {
                 hunger = 0;
-                endGame(); // 餓死啦！遊戲結束
+                endGame(); 
             }
             
             const bar = document.getElementById('hunger-bar');
             bar.style.width = hunger + '%';
             
-            // 根據飢餓度改變進度條顏色和怪獸表情
             const monster = document.getElementById('monster-face');
             if (hunger > 50) {
-                bar.style.backgroundColor = '#2ed573'; // 綠色 (安全)
+                bar.style.backgroundColor = '#2ed573'; 
                 monster.textContent = '👹';
             } else if (hunger > 20) {
-                bar.style.backgroundColor = '#ffa502'; // 橘色 (警告)
-                monster.textContent = '😰'; // 開始緊張
+                bar.style.backgroundColor = '#ffa502'; 
+                monster.textContent = '😰'; 
             } else {
-                bar.style.backgroundColor = '#ff4757'; // 紅色 (危險)
-                monster.textContent = '😱'; // 快餓死了
+                bar.style.backgroundColor = '#ff4757'; 
+                monster.textContent = '😱'; 
             }
         }
 
-        // 遊戲結束的魔法功能
         function endGame() {
             isGameOver = true;
-            clearInterval(gameLoop); // 停止扣血
+            clearInterval(gameLoop); 
             
-            // 恢復原本餓暈的畫面設定 (因為逃離時可能會改掉)
             document.getElementById('game-over-icon').textContent = "💀";
             document.getElementById('game-over-title').textContent = "怪獸餓暈了！";
-            document.getElementById('game-over-title').className = "text-4xl font-black text-red-500 mb-4";
+            document.getElementById('game-over-title').className = "text-3xl md:text-4xl font-black text-red-500 mb-4 text-center";
             
-            document.getElementById('game-over-screen').classList.remove('hidden'); // 顯示結束畫面
+            document.getElementById('game-over-screen').classList.remove('hidden'); 
             
-            // 抓取現在的日期與時間，並格式化為台灣常見的樣式
             const now = new Date();
             const timeString = now.toLocaleString('zh-TW', { 
                 year: 'numeric', 
@@ -331,25 +320,22 @@
                 second: '2-digit'
             });
             
-            // 新增：把記錄下來的難度名稱、時間和最終分數顯示在畫面上
             document.getElementById('final-level').textContent = currentLevelName; 
             document.getElementById('finish-time').textContent = timeString;
             document.getElementById('final-score').textContent = score;
             
-            document.getElementById('ingredients-table').innerHTML = ''; // 清空桌子上的食材
+            document.getElementById('ingredients-table').innerHTML = ''; 
         }
 
-        // 新增：逃離廚房的魔法功能
         function flee() {
-            if (isGameOver) return; // 如果已經結束了就不能逃
+            if (isGameOver) return; 
             
             isGameOver = true;
-            clearInterval(gameLoop); // 停止扣血
+            clearInterval(gameLoop); 
             
-            // 顯示逃跑專屬的畫面設定
             document.getElementById('game-over-icon').textContent = "🏃💨";
             document.getElementById('game-over-title').textContent = "你逃出了廚房！";
-            document.getElementById('game-over-title').className = "text-4xl font-black text-blue-400 mb-4";
+            document.getElementById('game-over-title').className = "text-3xl md:text-4xl font-black text-blue-400 mb-4 text-center";
             
             document.getElementById('game-over-screen').classList.remove('hidden');
             
@@ -363,10 +349,9 @@
             document.getElementById('finish-time').textContent = timeString;
             document.getElementById('final-score').textContent = score;
             
-            document.getElementById('ingredients-table').innerHTML = ''; // 清空食材
+            document.getElementById('ingredients-table').innerHTML = ''; 
         }
 
-        // 開始新題目
         function nextQuestion() {
             let d1 = activeDenoms[Math.floor(Math.random() * activeDenoms.length)];
             let d2 = activeDenoms[Math.floor(Math.random() * activeDenoms.length)];
@@ -377,111 +362,100 @@
             targetLCM = lcm(d1, d2);
             document.getElementById('denom1').textContent = d1;
             document.getElementById('denom2').textContent = d2;
-            document.getElementById('message').textContent = "把正確的數字食材丟進鍋裡！";
-            document.getElementById('message').className = "h-8 mb-4 font-bold text-2xl text-orange-500";
+            document.getElementById('message').textContent = "拖曳或點擊食材丟進鍋裡！";
+            document.getElementById('message').className = "h-8 mb-4 font-bold text-xl md:text-2xl text-orange-500";
 
-            // 產生選項
             generateIngredients(d1, d2);
-            
-            // 讓鍋子恢復平靜
             document.getElementById('cooking-pot').classList.remove('pot-active');
         }
 
-        // 產生三個食材選項 (1個對的，2個錯的)
         function generateIngredients(d1, d2) {
             const table = document.getElementById('ingredients-table');
-            table.innerHTML = ''; // 清空桌子
+            table.innerHTML = ''; 
 
-            // 準備選項陣列
             let options = [targetLCM];
-            // 加入兩個錯誤答案 (例如相乘、加1、減1等常見錯誤)
             let wrong1 = d1 * d2;
             if (wrong1 === targetLCM) wrong1 = targetLCM * 2;
             options.push(wrong1);
             options.push(targetLCM + Math.floor(Math.random() * 5) + 1);
 
-            // 把選項打亂 (洗牌魔法)
             options.sort(() => Math.random() - 0.5);
 
-            // 把選項變成畫面上的食材
             options.forEach(num => {
                 const foodElement = document.createElement('div');
                 const randomFood = foodEmojis[Math.floor(Math.random() * foodEmojis.length)];
                 
-                foodElement.innerHTML = `${randomFood} <span class="bg-white px-2 rounded-full text-2xl">${num}</span>`;
-                foodElement.className = "ingredient bg-yellow-100 border-4 border-yellow-400 p-2 rounded-xl text-4xl font-black text-gray-800 shadow-md flex items-center gap-2 select-none";
+                foodElement.innerHTML = `${randomFood} <span class="bg-white px-2 rounded-full text-xl md:text-2xl">${num}</span>`;
+                foodElement.className = "ingredient bg-yellow-100 border-4 border-yellow-400 p-2 md:p-3 rounded-xl text-3xl md:text-4xl font-black text-gray-800 shadow-md flex items-center gap-2 select-none cursor-pointer transform transition hover:scale-105";
                 
-                // 大師魔法：讓這個元素可以被拖曳！
+                // 大師魔法 1：支援原生拖曳 (給電腦版用)
                 foodElement.draggable = true;
-                
-                // 設定拖曳開始時的「事件 (Event)」
                 foodElement.ondragstart = function(event) {
                     if(isGameOver) {
-                        event.preventDefault(); // 遊戲結束後不准偷丟食物！
+                        event.preventDefault(); 
                         return;
                     }
-                    // 把數字當作包裹放進「資料傳輸 (dataTransfer)」裡帶走
                     event.dataTransfer.setData("number", num);
-                    
-                    // 讓鍋子發光，提示玩家丟來這裡
                     document.getElementById('cooking-pot').classList.add('pot-active');
                 };
-
-                // 拖曳結束時，如果沒丟進鍋子，關閉發光
                 foodElement.ondragend = function() {
                     document.getElementById('cooking-pot').classList.remove('pot-active');
                 }
+
+                // 大師魔法 2：支援點擊 (給手機/平板用)
+                foodElement.onclick = function() {
+                    if(!isGameOver) {
+                        // 點擊後，觸發鍋子發光特效並驗證答案
+                        document.getElementById('cooking-pot').classList.add('pot-active');
+                        setTimeout(() => checkAnswer(num), 150);
+                    }
+                };
 
                 table.appendChild(foodElement);
             });
         }
 
-        // 允許物品掉落在鍋子上 (必須加這行，瀏覽器才允許拖放)
         function allowDrop(event) {
             event.preventDefault(); 
         }
 
-        // 當食材掉進鍋子時發生的事！
         function handleDrop(event) {
-            event.preventDefault(); // 阻止瀏覽器預設行為
+            event.preventDefault(); 
             if (isGameOver) return;
-            
-            // 從包裹裡拿出剛剛存進去的數字
             const droppedNumber = parseInt(event.dataTransfer.getData("number"));
+            checkAnswer(droppedNumber);
+        }
+
+        // 大師魔法 3：將檢查答案的邏輯獨立出來，讓拖曳和點擊都可以共用！
+        function checkAnswer(droppedNumber) {
+            if (isGameOver) return;
             const msg = document.getElementById('message');
             
-            // 檢查答案
             if (droppedNumber === targetLCM) {
-                // 答對了！
                 score += 10;
                 document.getElementById('score').textContent = score;
                 msg.textContent = "✨ 太美味啦！完美的公分母！";
-                msg.className = "h-8 mb-4 font-bold text-2xl text-green-500";
+                msg.className = "h-8 mb-4 font-bold text-xl md:text-2xl text-green-500";
                 
-                // 【動態難度魔法】：答對時補血，但怪獸會變得更貪吃！
-                hunger = Math.min(100, hunger + 30); // 補回 30% 的飢餓度，最高不超過 100
-                drainRate += drainIncrease; // 根據難度增加掉血速度！
+                hunger = Math.min(100, hunger + 30); 
+                drainRate += drainIncrease; 
                 
-                // 鍋子加上特效
                 const pot = document.getElementById('cooking-pot');
                 pot.style.transform = "scale(1.2)";
                 setTimeout(() => pot.style.transform = "scale(1)", 300);
 
-                setTimeout(nextQuestion, waitTime); // 根據難度決定等待時間
+                setTimeout(nextQuestion, waitTime); 
             } else {
-                // 答錯了！
                 score = Math.max(0, score - 5); 
                 document.getElementById('score').textContent = score;
                 msg.textContent = "🤢 嘔...怪獸吐了！數字不對！";
-                msg.className = "h-8 mb-4 font-bold text-2xl text-red-500";
+                msg.className = "h-8 mb-4 font-bold text-xl md:text-2xl text-red-500";
 
-                // 【懲罰魔法】：答錯會根據難度倒扣飢餓度！
                 hunger -= penalty; 
-                updateHunger(); // 立即更新畫面狀態
+                updateHunger(); 
             }
         }
 
-        // 遊戲啟動！改為顯示主選單
         window.onload = showStartScreen;
     </script>
 </body>
