@@ -13,6 +13,15 @@
       gtag('js', new Date());
 
       gtag('config', 'G-NC3C55H2HF');
+
+      // 自定義追蹤函數：點擊遊戲時發送數據給 GA4
+      function trackGameClick(gameName) {
+        gtag('event', 'game_click', {
+          'game_name': gameName,
+          'event_category': 'Engagement',
+          'event_label': 'Game Link Clicked'
+        });
+      }
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -112,7 +121,6 @@
             transform: rotate(12deg) scale(1.1);
         }
 
-        /* 滾動條美化 */
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
         }
@@ -128,10 +136,8 @@
 <body class="p-2 sm:p-4">
 
     <div class="max-w-xl w-full">
-        <!-- 主面板 -->
         <div class="glass-panel shadow-2xl p-6 md:p-10">
             
-            <!-- 標題區域 -->
             <header class="text-center mb-6 md:mb-8 shrink-0">
                 <div class="avatar-container mb-4">
                     <img src="IMG_6905.PNG" alt="張Sir">
@@ -142,11 +148,11 @@
                 <div class="h-1 w-16 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
             </header>
 
-            <!-- 連結列表 -->
             <div class="space-y-3 overflow-y-auto pr-1 custom-scrollbar flex-grow">
                 
                 <!-- 遊戲 01 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH01.html" target="_blank" 
+                   onclick="trackGameClick('數學拔河')"
                    class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
                     <div class="icon-box w-12 h-12 bg-amber-400 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-amber-200">
                         🏆
@@ -164,6 +170,7 @@
 
                 <!-- 遊戲 02 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH02.html" target="_blank" 
+                   onclick="trackGameClick('魔法藥水實驗室')"
                    class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
                     <div class="icon-box w-12 h-12 bg-purple-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-purple-200">
                         🧪
@@ -181,6 +188,7 @@
 
                 <!-- 遊戲 03 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH03.html" target="_blank" 
+                   onclick="trackGameClick('幾何公式大挑戰')"
                    class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
                     <div class="icon-box w-12 h-12 bg-teal-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
                         📐
@@ -198,6 +206,7 @@
 
                 <!-- 遊戲 04 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH04.html" target="_blank" 
+                   onclick="trackGameClick('星際小數大冒險')"
                    class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
                     <div class="icon-box w-12 h-12 bg-indigo-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-indigo-200">
                         🚀
@@ -215,6 +224,7 @@
 
                 <!-- 遊戲 05 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH05.html" target="_blank" 
+                   onclick="trackGameClick('怪獸廚房')"
                    class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
                     <div class="icon-box w-12 h-12 bg-emerald-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-emerald-200">
                         👾
@@ -243,7 +253,6 @@
 
             </div>
 
-            <!-- 裝飾元素 -->
             <div class="mt-6 text-center shrink-0">
                 <p class="text-slate-400 text-[10px] font-semibold uppercase tracking-widest">
                     Start learning now
