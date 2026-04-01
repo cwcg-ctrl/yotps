@@ -49,7 +49,7 @@
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 2rem;
-            max-height: 95vh;
+            max-height: 90vh; /* 稍微縮小高度以確保在不同螢幕上的適應性 */
             display: flex;
             flex-direction: column;
         }
@@ -81,8 +81,8 @@
         }
 
         .avatar-container {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             margin: 0 auto;
             border-radius: 50%;
             border: 3px solid white;
@@ -97,8 +97,8 @@
 
         @media (min-width: 768px) {
             .avatar-container {
-                width: 100px;
-                height: 100px;
+                width: 90px;
+                height: 90px;
             }
         }
 
@@ -121,34 +121,40 @@
             transform: rotate(12deg) scale(1.1);
         }
 
+        /* 優化滾動條外觀 */
         .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
+            width: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.15);
             border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
         }
     </style>
 </head>
-<body class="p-2 sm:p-4">
+<body class="p-4">
 
     <div class="max-w-xl w-full">
-        <div class="glass-panel shadow-2xl p-6 md:p-10">
+        <div class="glass-panel shadow-2xl p-6 md:p-8">
             
-            <header class="text-center mb-6 md:mb-8 shrink-0">
-                <div class="avatar-container mb-4">
+            <header class="text-center mb-6 shrink-0">
+                <div class="avatar-container mb-3">
                     <img src="IMG_6905.PNG" alt="張Sir">
                 </div>
-                <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-2">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mb-2">
                     張Sir的學習遊戲站
                 </h1>
-                <div class="h-1 w-16 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
+                <div class="h-1 w-12 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
             </header>
 
-            <div class="space-y-3 overflow-y-auto pr-1 custom-scrollbar flex-grow">
+            <!-- 內容列表區塊，加入滾動功能以應對更多遊戲 -->
+            <div class="space-y-3 overflow-y-auto px-1 custom-scrollbar flex-grow pb-4">
                 
                 <!-- 遊戲 01 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH01.html" target="_blank" 
@@ -231,7 +237,7 @@
                     </div>
                     <div class="ml-4">
                         <div class="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">怪獸廚房</div>
-                        <div class="text-xs text-slate-500">找出最小公分母，拖曳正確食材入鍋餵食怪獸</div>
+                        <div class="text-xs text-slate-500">找出最小公分母，餵食怪獸</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-emerald-500 transition-colors shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -258,9 +264,31 @@
                     </div>
                 </a>
 
+                <!-- 敬請期待 07 -->
+                <div class="link-card flex items-center p-4 rounded-xl bg-slate-50/50 border border-dashed border-slate-300 opacity-80 cursor-not-allowed">
+                    <div class="icon-box w-12 h-12 bg-slate-300 text-white text-xl rounded-lg flex items-center justify-center shadow-md">
+                        🔒
+                    </div>
+                    <div class="ml-4">
+                        <div class="font-bold text-slate-400 text-lg">敬請期待</div>
+                        <div class="text-xs text-slate-400">全新數學冒險正在開發中...</div>
+                    </div>
+                </div>
+
+                <!-- 敬請期待 08 -->
+                <div class="link-card flex items-center p-4 rounded-xl bg-slate-50/50 border border-dashed border-slate-300 opacity-80 cursor-not-allowed">
+                    <div class="icon-box w-12 h-12 bg-slate-300 text-white text-xl rounded-lg flex items-center justify-center shadow-md">
+                        🔒
+                    </div>
+                    <div class="ml-4">
+                        <div class="font-bold text-slate-400 text-lg">敬請期待</div>
+                        <div class="text-xs text-slate-400">更多好玩的挑戰即將登場</div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="mt-6 text-center shrink-0">
+            <div class="mt-4 text-center shrink-0">
                 <p class="text-slate-400 text-[10px] font-semibold uppercase tracking-widest">
                     Start learning now
                 </p>
