@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>逃出喪屍城 - 終極完整版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -15,8 +15,6 @@
             background-size: 60px 60px;
             background-position: 0 0, 30px 30px;
             user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
         }
 
         /* 遊戲主要舞台：房屋內部木地板 */
@@ -80,7 +78,7 @@
         }
     </style>
 </head>
-<body class="text-white flex flex-col items-center justify-between h-[100dvh] w-screen p-0 m-0 overflow-hidden">
+<body class="text-white flex flex-col items-center justify-between h-screen w-screen p-0 m-0 overflow-hidden">
 
     <!-- 主選單 (Main Menu) -->
     <div id="main-menu" class="fixed inset-0 bg-black bg-opacity-95 z-50 flex flex-col items-center justify-center backdrop-blur-sm overflow-hidden">
@@ -130,11 +128,11 @@
         </div>
 
         <!-- 遊戲主要舞台 -->
-        <div id="game-container" class="w-[95vw] md:w-[90vw] max-w-5xl flex-1 max-h-[40vh] md:max-h-[45vh] min-h-[25vh] md:min-h-[30vh] rounded-sm relative z-0 mt-24 md:mt-20">
+        <div id="game-container" class="w-[90vw] max-w-5xl flex-1 max-h-[45vh] min-h-[30vh] rounded-sm relative z-0 mt-20">
             
             <!-- P1 藍色生存者 -->
             <div id="player1" class="absolute z-10 transition-transform duration-100 ease-out" style="left: 40%; top: 50%; transform: translate(-50%, -50%); filter: drop-shadow(2px 4px 2px rgba(0,0,0,0.5));">
-                <svg viewBox="0 0 120 100" class="w-16 md:w-[85px] h-auto">
+                <svg viewBox="0 0 120 100" width="85" height="75">
                     <rect x="50" y="60" width="60" height="6" fill="#000000" opacity="0.3" rx="2"/>
                     <path d="M 38 50 C 15 42, 10 68, 38 60 Z" fill="#FDE047" stroke="#A16207" stroke-width="2"/>
                     <rect x="25" y="36" width="18" height="38" rx="4" fill="#4B5563" stroke="#1F2937" stroke-width="2"/>
@@ -157,7 +155,7 @@
             
             <!-- P2 紅色生存者 -->
             <div id="player2" class="absolute z-10 transition-transform duration-100 ease-out" style="left: 60%; top: 50%; transform: translate(-50%, -50%); filter: drop-shadow(2px 4px 2px rgba(0,0,0,0.5));">
-                <svg viewBox="0 0 120 100" class="w-16 md:w-[85px] h-auto">
+                <svg viewBox="0 0 120 100" width="85" height="75">
                     <rect x="50" y="60" width="60" height="6" fill="#000000" opacity="0.3" rx="2"/>
                     <path d="M 38 50 C 15 42, 10 68, 38 60 Z" fill="#374151" stroke="#111827" stroke-width="2"/>
                     <rect x="25" y="36" width="18" height="38" rx="4" fill="#7F1D1D" stroke="#450A0A" stroke-width="2"/>
@@ -180,103 +178,43 @@
 
             <div id="bullet-trail-1"></div>
             <div id="bullet-trail-2"></div>
-
-            <!-- SVG 裝飾：老式電視機 -->
-            <div class="absolute top-4 left-8 filter drop-shadow-[0_5px_5px_rgba(0,0,0,0.6)] hidden md:block z-0 opacity-90">
-                <svg viewBox="0 0 64 64" width="60" height="60">
-                    <!-- 天線 -->
-                    <line x1="32" y1="15" x2="15" y2="2" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="32" y1="15" x2="55" y2="5" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="15" cy="2" r="2" fill="#D1D5DB"/>
-                    <circle cx="55" cy="5" r="2" fill="#D1D5DB"/>
-                    <!-- 機身 -->
-                    <rect x="6" y="15" width="52" height="42" rx="4" fill="#374151" stroke="#111827" stroke-width="2"/>
-                    <rect x="10" y="20" width="34" height="28" rx="2" fill="#0F172A" stroke="#111827" stroke-width="2"/>
-                    <!-- 螢幕微光與反光 -->
-                    <rect x="12" y="22" width="30" height="24" rx="1" fill="#1E3A8A"/>
-                    <path d="M 12 22 L 25 22 L 15 46 L 12 46 Z" fill="#60A5FA" opacity="0.3"/>
-                    <!-- 旋鈕與喇叭孔 -->
-                    <circle cx="50" cy="26" r="3.5" fill="#4B5563" stroke="#111827" stroke-width="1"/>
-                    <circle cx="50" cy="36" r="3.5" fill="#4B5563" stroke="#111827" stroke-width="1"/>
-                    <line x1="48" y1="44" x2="52" y2="44" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="48" y1="48" x2="52" y2="48" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="48" y1="52" x2="52" y2="52" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </div>
-
-            <!-- SVG 裝飾：紅色雙人沙發 -->
-            <div class="absolute top-6 left-32 filter drop-shadow-[0_8px_6px_rgba(0,0,0,0.6)] hidden md:block z-0 opacity-95">
-                <svg viewBox="0 0 100 60" width="100" height="60">
-                    <!-- 沙發靠背 -->
-                    <rect x="5" y="5" width="90" height="20" rx="6" fill="#7F1D1D" stroke="#450A0A" stroke-width="2"/>
-                    <rect x="10" y="8" width="80" height="6" rx="2" fill="#991B1B"/> <!-- 靠背亮部 -->
-                    <!-- 沙發扶手 -->
-                    <rect x="2" y="15" width="18" height="40" rx="5" fill="#991B1B" stroke="#450A0A" stroke-width="2"/>
-                    <rect x="80" y="15" width="18" height="40" rx="5" fill="#991B1B" stroke="#450A0A" stroke-width="2"/>
-                    <!-- 沙發坐墊 -->
-                    <rect x="22" y="22" width="27" height="32" rx="4" fill="#B91C1C" stroke="#450A0A" stroke-width="2"/>
-                    <rect x="51" y="22" width="27" height="32" rx="4" fill="#B91C1C" stroke="#450A0A" stroke-width="2"/>
-                    <!-- 坐墊亮部 -->
-                    <rect x="25" y="25" width="21" height="8" rx="2" fill="#DC2626"/>
-                    <rect x="54" y="25" width="21" height="8" rx="2" fill="#DC2626"/>
-                </svg>
-            </div>
-
-            <!-- SVG 裝飾：逃生木門與 EXIT 標示 -->
-            <div class="absolute top-2 right-24 filter drop-shadow-[0_5px_5px_rgba(0,0,0,0.7)] hidden md:block z-0">
-                <svg viewBox="0 0 70 90" width="60" height="80">
-                    <!-- EXIT 標示牌 -->
-                    <rect x="15" y="2" width="40" height="14" rx="2" fill="#064E3B" stroke="#022C22" stroke-width="2"/>
-                    <text x="35" y="13" font-family="sans-serif" font-size="9" font-weight="bold" fill="#34D399" text-anchor="middle" letter-spacing="1">EXIT</text>
-                    <!-- 門框 -->
-                    <rect x="5" y="18" width="60" height="70" fill="#291206" stroke="#170A03" stroke-width="2"/>
-                    <!-- 門板 -->
-                    <rect x="10" y="23" width="50" height="65" fill="#78350F" stroke="#451A03" stroke-width="2"/>
-                    <!-- 門板凹槽造型 -->
-                    <rect x="16" y="29" width="38" height="22" fill="#92400E" stroke="#451A03" stroke-width="2"/>
-                    <rect x="16" y="56" width="38" height="26" fill="#92400E" stroke="#451A03" stroke-width="2"/>
-                    <!-- 門把 -->
-                    <circle cx="52" cy="53" r="4" fill="#FBBF24" stroke="#B45309" stroke-width="1.5"/>
-                    <circle cx="51" cy="52" r="1.5" fill="#FDE68A"/> <!-- 門把反光 -->
-                </svg>
-            </div>
         </div>
 
         <!-- 戰術平板區塊 -->
-        <div id="tablet-container" class="relative mt-2 z-30 flex flex-col md:flex-row items-stretch justify-center w-full max-w-5xl gap-2 md:gap-4 px-2 md:px-4 mb-2 shrink-0">
-            <div id="tactical-tablet-1" class="flex-1 rounded-xl p-2 md:p-3 flex flex-col items-center bg-slate-900/85 border-4 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)] backdrop-blur-sm transition-all duration-300 relative overflow-hidden">
+        <div id="tablet-container" class="relative mt-2 z-30 flex flex-row items-stretch justify-center w-full max-w-5xl gap-4 px-4 mb-2">
+            <div id="tactical-tablet-1" class="flex-1 rounded-xl p-3 flex flex-col items-center bg-slate-900/85 border-4 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)] backdrop-blur-sm transition-all duration-300 relative overflow-hidden">
                 <!-- 玩家1 卡彈遮罩 -->
                 <div id="jam-overlay-1" class="absolute inset-0 bg-red-950/95 z-20 hidden flex-col items-center justify-center">
-                    <span class="text-3xl md:text-5xl mb-1 md:mb-2 animate-bounce">⚠️</span>
-                    <span class="text-white text-xl md:text-3xl font-bold tracking-widest animate-pulse">卡彈冷卻中!</span>
+                    <span class="text-5xl mb-2 animate-bounce">⚠️</span>
+                    <span class="text-white text-3xl font-bold tracking-widest animate-pulse">卡彈冷卻中!</span>
                 </div>
                 <p id="p1-title" class="text-blue-400 text-sm md:text-lg mb-1 font-bold flex items-center gap-2">🔵 玩家 1 (藍) <span class="text-yellow-300 ml-2 text-sm">🔫 LV.<span id="wpn-lv-1">1</span></span></p>
-                <div class="text-2xl md:text-5xl font-bold mb-1 md:mb-2 tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
+                <div class="text-3xl md:text-5xl font-bold mb-2 tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
                     <span id="num1-p1">0</span> <span id="operator-p1" class="text-blue-300">+</span> <span id="num2-p1">0</span> = ?
                 </div>
-                <div class="grid grid-cols-2 gap-1 md:gap-2 w-full px-1 md:px-2">
-                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
-                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
-                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
-                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                <div class="grid grid-cols-2 gap-2 w-full px-2">
+                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-2xl md:text-3xl py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-2xl md:text-3xl py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-2xl md:text-3xl py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                    <button class="choice-btn-p1 bg-gray-800 hover:bg-blue-900 border-2 border-blue-500 text-2xl md:text-3xl py-2 rounded-lg text-blue-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
                 </div>
             </div>
             
-            <div id="tactical-tablet-2" class="flex-1 rounded-xl p-2 md:p-3 flex flex-col items-center bg-slate-900/85 border-4 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] backdrop-blur-sm transition-all duration-300 relative overflow-hidden">
+            <div id="tactical-tablet-2" class="flex-1 rounded-xl p-3 flex flex-col items-center bg-slate-900/85 border-4 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] backdrop-blur-sm transition-all duration-300 relative overflow-hidden">
                 <!-- 玩家2 卡彈遮罩 -->
                 <div id="jam-overlay-2" class="absolute inset-0 bg-red-950/95 z-20 hidden flex-col items-center justify-center">
-                    <span class="text-3xl md:text-5xl mb-1 md:mb-2 animate-bounce">⚠️</span>
-                    <span class="text-white text-xl md:text-3xl font-bold tracking-widest animate-pulse">卡彈冷快中!</span>
+                    <span class="text-5xl mb-2 animate-bounce">⚠️</span>
+                    <span class="text-white text-3xl font-bold tracking-widest animate-pulse">卡彈冷卻中!</span>
                 </div>
                 <p id="p2-title" class="text-red-400 text-sm md:text-lg mb-1 font-bold flex items-center gap-2">🔴 玩家 2 (紅) <span class="text-yellow-300 ml-2 text-sm">🔫 LV.<span id="wpn-lv-2">1</span></span></p>
-                <div class="text-2xl md:text-5xl font-bold mb-1 md:mb-2 tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
+                <div class="text-3xl md:text-5xl font-bold mb-2 tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">
                     <span id="num1-p2">0</span> <span id="operator-p2" class="text-red-300">+</span> <span id="num2-p2">0</span> = ?
                 </div>
-                <div class="grid grid-cols-2 gap-1 md:gap-2 w-full px-1 md:px-2">
-                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
-                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
-                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
-                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-xl md:text-3xl py-1 md:py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                <div class="grid grid-cols-2 gap-2 w-full px-2">
+                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-2xl md:text-3xl py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-2xl md:text-3xl py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-2xl md:text-3xl py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                    <button class="choice-btn-p2 bg-gray-800 hover:bg-red-900 border-2 border-red-500 text-2xl md:text-3xl py-2 rounded-lg text-red-300 font-bold active:scale-95 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"></button>
                 </div>
             </div>
         </div>
@@ -488,21 +426,32 @@
         function generateQuestion(pNum) {
             if (currentMode === 'single' && pNum === 2) return; 
             const pInfo = players[pNum];
-            const operators = ['+', '-'];
+            
+            // 這裡就是我們新加入的魔法：在運算符號盒子裡放入乘號 '×'！
+            const operators = ['+', '-', '×'];
             const op = operators[Math.floor(Math.random() * operators.length)];
+            
             let n1, n2;
+            
             if (op === '+') {
                 n1 = Math.floor(Math.random() * 20) + 1;
                 n2 = Math.floor(Math.random() * 20) + 1;
                 pInfo.currentAnswer = n1 + n2;
-            } else {
+            } else if (op === '-') {
                 n1 = Math.floor(Math.random() * 20) + 10;
                 n2 = Math.floor(Math.random() * n1); 
                 pInfo.currentAnswer = n1 - n2;
+            } else if (op === '×') {
+                // 如果抽到了乘號，我們就使用 1 到 9 的隨機數字，這就是簡單的九九乘法表囉！
+                n1 = Math.floor(Math.random() * 9) + 1;
+                n2 = Math.floor(Math.random() * 9) + 1;
+                pInfo.currentAnswer = n1 * n2;
             }
+
             pInfo.num1El.textContent = n1;
             pInfo.num2El.textContent = n2;
             pInfo.opEl.textContent = op;
+            
             let options = [pInfo.currentAnswer];
             while (options.length < 4) {
                 let offset = Math.floor(Math.random() * 10) - 5; 
@@ -824,8 +773,7 @@
             };
             [1, 2].forEach(pNum => {
                 players[pNum].btns.forEach(btn => {
-                    btn.addEventListener('pointerdown', (e) => {
-                        e.preventDefault(); // 阻止手機端雙擊放大與點擊延遲
+                    btn.addEventListener('click', (e) => {
                         if (currentMode === 'ai' && pNum === 2) return;
                         checkAnswer(e.target.textContent, pNum);
                     });
