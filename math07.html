@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星際物流：空間保衛戰 - 教學系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Orbitron:wght@700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #050814;
+            color: white;
+            overflow: hidden; 
+            touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .sci-fi-text { font-family: 'Orbitron', 'Noto Sans TC', sans-serif; }
+
+        /* ================= 背景與 UI 特效 ================= */
+        .stars-bg {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle var(--duration) infinite alternate;
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px white; }
+        }
+
+        .scanline {
+            width: 100%; height: 150px;
+            background: linear-gradient(0deg, transparent, rgba(6, 182, 212, 0.15), transparent);
+            position: absolute; top: -150px;
+            animation: scan 5s linear infinite;
+            pointer-events: none; z-index: 1;
+        }
+        @keyframes scan { 0% { top: -150px; } 100% { top: 100%; } }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        .float-panel { animation: float 6s ease-in-out infinite; }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #06b6d4;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.1);
+            backdrop-filter: blur(8px);
+        }
+
+        .screen-view {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: scale(0.95);
+            z-index: 10;
+        }
+        .screen-view.active {
+            opacity: 1; pointer-events: auto; transform: scale(1);
+        }
+
+        /* ================= 模式一：裝載與發射動畫 ================= */
+        .pulse-border { animation: pulseCyan 2s infinite; }
+        @keyframes pulseCyan {
+            0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+        }
+
+        @keyframes loadCargo {
+            0% { transform: translate(-150px, -50px) scale(1) rotate(-20deg); opacity: 0; }
+            20% { transform: translate(-80px, -20px) scale(1) rotate(0deg); opacity: 1; }
+            60% { transform: translate(0px, 10px) scale(0.6); opacity: 1; filter: brightness(1.5); }
+            80% { transform: translate(0px, 20px) scale(0); opacity: 0; }
+            100% { transform: translate(0px, 20px) scale(0); opacity: 0; }
+        }
+        .anim-load-cargo { animation: loadCargo 2s forwards ease-in-out; }
+
+        @keyframes launchShip {
+            0%, 60% { transform: translateY(0) scale(1); }
+            70% { transform: translateY(10px) scale(0.95); }
+            80% { transform: translateY(-50px) scale(1.1); filter: drop-shadow(0 20px 20px rgba(239,68,68,0.8)); } 
+            100% { transform: translateY(-800px) scale(0.5); opacity: 0; }
+        }
+        .anim-launch-ship { animation: launchShip 2.5s forwards cubic-bezier(0.4, 0, 0.2, 1); }
+
+        @keyframes crashCargo {
+            0% { transform: translate(-150px, -50px) scale(1) rotate(-20deg); opacity: 0; }
+            30% { transform: translate(-30px, 0px) scale(1) rotate(0deg); opacity: 1; }
+            40% { transform: translate(-30px, 0px) scale(1) rotate(0deg); opacity: 1; } 
+            100% { transform: translate(-200px, 100px) scale(1) rotate(-70deg); opacity: 0; }
+        }
+        .anim-crash-cargo { animation: crashCargo 1.5s forwards ease-in-out; }
+
+        .shake-anim { animation: shakeError 0.5s; border-color: #ef4444 !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important; }
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-12px); filter: hue-rotate(90deg); }
+            20%, 40%, 60%, 80% { transform: translateX(12px); filter: hue-rotate(90deg); }
+        }
+
+        /* ================= 模式二：雙人對決特效與排版 ================= */
+        .player-zone { transition: all 0.3s ease; position: relative; min-height: 0; }
+        .p1-bg { background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); }
+        .p2-bg { background: linear-gradient(225deg, #831843 0%, #0f172a 100%); }
+        
+        .correct-flash { animation: flashS 0.5s; }
+        .wrong-flash { animation: flashE 0.5s; }
+        @keyframes flashS { 50% { background-color: rgba(16, 185, 129, 0.6); box-shadow: inset 0 0 50px rgba(16,185,129,0.8); } }
+        @keyframes flashE { 50% { background-color: rgba(239, 68, 68, 0.6); box-shadow: inset 0 0 50px rgba(239,68,68,0.8); } }
+
+        .buzzer-btn { box-shadow: 0 10px 0 rgba(0,0,0,0.6); transition: all 0.1s; }
+        .buzzer-btn:active, .buzzer-pressed { transform: translateY(10px) scale(0.95); box-shadow: 0 0 0 rgba(0,0,0,0.6); filter: brightness(1.2); }
+        
+        /* 搶答按鈕動態隱藏動畫 */
+        .buzzer-wrapper { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center; }
+        .buzzer-hidden { transform: scale(0); opacity: 0; pointer-events: none; height: 0; flex: 0; margin: 0; padding: 0; }
+
+        /* 核心防遮擋：將中央控制台變為 Flex 排版中的實體區塊，而非絕對定位 */
+        .duel-divider {
+            flex: 0 1 auto; /* 允許在空間不足時自動壓縮或啟動內部捲動 */
+            max-height: 100%; /* 確保高度絕對不超出父容器 (100dvh 範圍內) */
+            overflow-y: auto; /* 若螢幕極小則啟用內部平滑滾動 */
+            scrollbar-width: none; /* 隱藏滾動條 Firefox */
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 8, 20, 0.75);
+            backdrop-filter: blur(16px);
+            border-top: 2px solid rgba(6, 182, 212, 0.4);
+            border-bottom: 2px solid rgba(6, 182, 212, 0.4);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            transition: all 0.3s ease;
+        }
+        .duel-divider::-webkit-scrollbar, #coop-container::-webkit-scrollbar { display: none; /* 隱藏滾動條 Chrome/Safari */ }
+        
+        @media (min-width: 768px) {
+            .duel-divider {
+                border-top: none;
+                border-bottom: none;
+                border-left: 2px solid rgba(6, 182, 212, 0.4);
+                border-right: 2px solid rgba(6, 182, 212, 0.4);
+            }
+        }
+
+        .locked-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.75); z-index: 10; display: none; justify-content: center; align-items: center; }
+
+        @keyframes miniRocketUp {
+            0% { transform: translateY(50px) scale(0.5); opacity: 0; }
+            20% { transform: translateY(0px) scale(1); opacity: 1; }
+            100% { transform: translateY(-400px) scale(2); opacity: 0; filter: drop-shadow(0 10px 10px rgba(255,100,0,0.8)); }
+        }
+        .mini-rocket {
+            position: absolute; left: 50%; top: 40%;
+            margin-left: -2rem; font-size: 4rem;
+            animation: miniRocketUp 1s forwards ease-in;
+            pointer-events: none; z-index: 50;
+        }
+
+        /* ================= 虛擬數字鍵盤樣式 ================= */
+        .numpad-btn {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 0.75rem;
+            padding: 0.3rem 0; /* 極限縮小手機端預設高度 */
+            font-size: 1.15rem; /* 極限縮小手機端字體 */
+            font-weight: 900;
+            color: white;
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        @media (min-height: 700px) { .numpad-btn { padding: 0.5rem 0; font-size: 1.25rem; } }
+        @media (min-width: 640px) { .numpad-btn { padding: 0.75rem 0; font-size: 1.75rem; } }
+        
+        .numpad-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.4);
+            background: rgba(71, 85, 105, 0.9);
+        }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="stars-bg" id="stars-container"></div>
+    <div class="scanline"></div>
+
+    <!-- 導覽列 -->
+    <nav class="fixed top-0 w-full p-2 z-50 flex justify-between items-center bg-slate-900/80 backdrop-blur border-b border-cyan-900 shadow-lg">
+        <div class="text-cyan-400 font-bold sci-fi-text text-sm sm:text-base flex items-center gap-2">
+            <span class="animate-pulse">🚀</span> STAR LOGISTICS
+        </div>
+        <div class="flex gap-2">
+            <button onclick="switchScreen('home-screen')" class="px-3 py-1 text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 rounded border border-slate-600 transition-colors">首頁</button>
+            <button onclick="switchScreen('coop-mode')" class="px-3 py-1 text-xs sm:text-sm bg-cyan-900 hover:bg-cyan-800 rounded border border-cyan-600 transition-colors">全班合作</button>
+            <button onclick="switchScreen('duel-mode')" class="px-3 py-1 text-xs sm:text-sm bg-rose-900 hover:bg-rose-800 rounded border border-rose-600 transition-colors">雙人對決</button>
+        </div>
+    </nav>
+
+    <!-- ==================== 主畫面 ==================== -->
+    <div id="home-screen" class="screen-view active justify-center items-center p-4 pt-16">
+        <div class="text-center mb-12 float-panel">
+            <h1 class="sci-fi-text text-4xl sm:text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 mb-4 drop-shadow-[0_0_15px_rgba(6,182,212,0.5)]">
+                空間保衛戰
+            </h1>
+            <p class="text-xl sm:text-2xl text-cyan-200 tracking-widest font-bold">數學科體積訓練系統</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-6 w-full max-w-3xl px-4 relative z-10">
+            <!-- 合作模式入口 -->
+            <div onclick="switchScreen('coop-mode')" class="flex-1 glass-panel float-panel rounded-2xl p-6 sm:p-8 cursor-pointer hover:scale-105 hover:border-cyan-400 transition-all group text-center" style="animation-delay: 0s;">
+                <div class="text-6xl mb-4 group-hover:-translate-y-2 transition-transform duration-300 drop-shadow-lg">🌍</div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2">階段一：全班對抗</h2>
+                <p class="text-slate-300 text-sm sm:text-base">AI 語音播報太空訂單，全班分組計算總體積，合力發射火箭！</p>
+            </div>
+
+            <!-- 對決模式入口 -->
+            <div onclick="switchScreen('duel-mode')" class="flex-1 glass-panel float-panel rounded-2xl p-6 sm:p-8 cursor-pointer hover:scale-105 hover:border-rose-400 transition-all group border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.2)] text-center" style="animation-delay: 1s;">
+                <div class="text-6xl mb-4 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 drop-shadow-lg">⚔️</div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-rose-400 mb-2">階段二：同桌對決</h2>
+                <p class="text-slate-300 text-sm sm:text-base">無干擾排版分割畫面，內建虛擬鍵盤防遮擋，極限測試運算速度！</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 模式一：全班合作版 ==================== -->
+    <div id="coop-mode" class="screen-view justify-center items-center p-2 sm:p-4 pt-14 sm:pt-16">
+        <div class="w-full max-w-4xl glass-panel float-panel rounded-2xl p-4 sm:p-8 flex flex-col gap-3 sm:gap-4 relative z-10" id="coop-container" style="max-height: 95vh; overflow-y: auto; scrollbar-width: none;">
+            <div class="flex items-center justify-between border-b border-cyan-800 pb-2 sm:pb-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-cyan-900 rounded-full flex items-center justify-center text-xl sm:text-2xl pulse-border animate-[bounce_3s_infinite]">🤖</div>
+                    <div>
+                        <h2 class="text-cyan-400 font-bold text-lg sm:text-xl">AI 物流館長</h2>
+                        <p class="text-xs sm:text-sm text-gray-400" id="coop-status">待命中...</p>
+                    </div>
+                </div>
+                <button onclick="coopSpeak()" class="bg-cyan-700 hover:bg-cyan-500 px-4 py-2 rounded-lg font-bold text-sm sm:text-base flex items-center gap-2 transition-colors">🔊 語音播報</button>
+            </div>
+
+            <div class="flex justify-between items-center w-full px-2 mt-2 -mb-2">
+                <div class="text-yellow-400 font-bold text-lg sm:text-xl tracking-widest">總分: <span id="coop-score" class="text-2xl sm:text-3xl font-black text-white">0</span></div>
+                <div class="text-emerald-400 font-black text-2xl sm:text-3xl drop-shadow-md" id="coop-timer">⏳ 30s</div>
+            </div>
+
+            <div class="bg-slate-900/80 rounded-xl p-4 sm:p-6 border border-cyan-700/50 min-h-[100px] sm:min-h-[120px] flex items-center justify-center text-center shadow-inner mt-2 sm:mt-4">
+                <p id="coop-question" class="text-lg sm:text-3xl leading-relaxed font-bold text-white drop-shadow">準備就緒，請點擊下方按鈕獲取太空任務！</p>
+            </div>
+
+            <div class="flex flex-col items-center justify-center mt-2 hidden w-full max-w-md mx-auto gap-2 sm:gap-3" id="coop-input-sec">
+                <div class="w-full relative group">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/50 text-xl sm:text-2xl font-bold transition-colors">V =</span>
+                    <input type="text" id="coop-input" readonly placeholder="0" class="w-full bg-slate-800 border-2 border-cyan-700 rounded-xl py-2 sm:py-3 pl-16 pr-16 text-2xl sm:text-3xl font-black text-white shadow-inner cursor-default select-none outline-none">
+                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-cyan-500 font-bold text-lg sm:text-xl">cm³</span>
+                </div>
+
+                <!-- 虛擬數字鍵盤 Grid -->
+                <div class="grid grid-cols-3 gap-1 sm:gap-2 w-full">
+                    <button onclick="coopNumPress('1')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">1</button>
+                    <button onclick="coopNumPress('2')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">2</button>
+                    <button onclick="coopNumPress('3')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">3</button>
+                    <button onclick="coopNumPress('4')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">4</button>
+                    <button onclick="coopNumPress('5')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">5</button>
+                    <button onclick="coopNumPress('6')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">6</button>
+                    <button onclick="coopNumPress('7')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">7</button>
+                    <button onclick="coopNumPress('8')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">8</button>
+                    <button onclick="coopNumPress('9')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">9</button>
+                    <button onclick="coopNumPress('C')" class="numpad-btn bg-red-600/80 hover:bg-red-500 border-red-400 text-white shadow-[0_4px_0_#991b1b]">C</button>
+                    <button onclick="coopNumPress('0')" class="numpad-btn border-cyan-700/50 hover:bg-cyan-900/50">0</button>
+                    <button onclick="coopNumPress('DEL')" class="numpad-btn bg-yellow-600/80 hover:bg-yellow-500 border-yellow-400 text-white shadow-[0_4px_0_#ca8a04]">⌫</button>
+                </div>
+
+                <button onclick="coopCheck()" class="w-full bg-gradient-to-t from-blue-700 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-white text-lg sm:text-2xl font-black py-2 sm:py-3 rounded-xl shadow-[0_4px_0_#1e3a8a] active:shadow-[0_0px_0_#1e3a8a] active:translate-y-[4px] transition-all tracking-widest mt-1">發射確認 🚀</button>
+            </div>
+
+            <div class="text-center mt-2 sm:mt-4">
+                <button onclick="coopGenerate()" id="coop-start-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg sm:text-2xl font-bold px-10 py-3 sm:py-4 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] pulse-border transition-all">
+                    獲取新訂單 📦
+                </button>
+            </div>
+        </div>
+
+        <div id="coop-modal" class="fixed inset-0 bg-black/95 z-[60] hidden flex flex-col items-center justify-center backdrop-blur-md p-4">
+            <div id="animation-scene" class="relative w-full max-w-sm h-64 mb-8 flex justify-center items-end border-b-2 border-slate-700 overflow-hidden">
+                <div id="scene-cargo" class="absolute text-6xl drop-shadow-lg z-20 opacity-0">📦</div>
+                <div id="scene-ship" class="absolute text-8xl drop-shadow-[0_0_30px_rgba(6,182,212,0.5)] z-10 bottom-2">🚀</div>
+            </div>
+            <h2 id="coop-modal-title" class="text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider"></h2>
+            <p id="coop-modal-msg" class="text-xl sm:text-3xl text-center mb-10 max-w-2xl text-cyan-100 font-bold"></p>
+            <button id="coop-continue-btn" onclick="document.getElementById('coop-modal').classList.add('hidden')" class="bg-cyan-600 px-10 py-4 rounded-full text-2xl font-black hover:bg-cyan-500 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(6,182,212,0.5)] opacity-0">
+                繼續任務
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== 模式二：雙人對決版 ==================== -->
+    <div id="duel-mode" class="screen-view pt-12 md:pt-14">
+        <!-- 防遮擋核心架構：使用 Flex 行/列將畫面分割，確保永遠不重疊 -->
+        <div class="h-full w-full flex flex-col md:flex-row relative">
+            
+            <!-- 玩家 1 (藍) -->
+            <div id="p1-zone" class="player-zone p1-bg flex-1 flex flex-col justify-between p-3 sm:p-4">
+                <div class="locked-overlay" id="p1-lock"></div>
+                <div class="flex justify-between items-start w-full leading-none">
+                    <h2 class="text-xl sm:text-3xl font-black text-blue-400 drop-shadow-md">玩家 1</h2>
+                    <div class="text-2xl sm:text-4xl font-black text-slate-200">SCORE: <span id="p1-score" class="text-yellow-400">0</span></div>
+                </div>
+                <!-- 按鈕容器：隱藏時高度與彈性都會歸零，騰出空間給虛擬鍵盤 -->
+                <div id="p1-buzzer-container" class="buzzer-wrapper flex-1 flex items-center justify-center relative">
+                    <button id="p1-buzzer" class="buzzer-btn bg-gradient-to-t from-blue-600 to-blue-400 w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-full text-3xl md:text-5xl font-black text-white border-4 border-blue-200 z-20 flex flex-col justify-center items-center shrink-0">
+                        搶答
+                        <span class="text-xs sm:text-sm font-normal mt-1 opacity-70 hidden md:block tracking-widest">(按 A)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 中央任務與鍵盤分割區 (Flex Item) -->
+            <div class="duel-divider w-full md:w-auto md:max-w-[480px] p-2 sm:p-5 flex flex-col justify-center gap-1 sm:gap-3">
+                
+                <div id="duel-question-panel" class="glass-panel border-yellow-500 rounded-2xl p-2 sm:p-5 text-center flex flex-col items-center w-full shadow-[0_0_30px_rgba(234,179,8,0.3)] transition-all duration-300">
+                    <div class="flex justify-between items-center w-full mb-2">
+                        <div class="text-yellow-400 font-black text-xs sm:text-sm tracking-widest sci-fi-text">MISSION LOG</div>
+                        <div class="text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md" id="duel-timer">⏳ 60s</div>
+                        <div class="text-xs sm:text-sm font-bold bg-slate-800 border border-slate-600 px-3 py-1 rounded-full text-cyan-100" id="duel-round">回合 0 / 5</div>
+                    </div>
+                    
+                    <div id="duel-question-box" class="bg-slate-900/80 p-2 sm:p-4 rounded-xl border border-slate-600 w-full mb-2 sm:mb-3 min-h-[60px] sm:min-h-[80px] flex items-center justify-center shadow-inner">
+                        <p class="text-sm sm:text-lg text-slate-200 font-bold tracking-wide" id="duel-question">點擊下方按鈕啟動對決序列</p>
+                    </div>
+
+                    <button id="duel-start-btn" onclick="duelStart()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 px-8 rounded-full text-base sm:text-xl w-full shadow-[0_0_15px_rgba(16,185,129,0.5)] active:scale-95 transition-transform">
+                        啟動回合 🚀
+                    </button>
+                </div>
+
+                <!-- 虛擬數字鍵盤作答面板 (內嵌於排版流，防遮擋) -->
+                <div id="duel-answer-panel" class="glass-panel rounded-2xl p-2 sm:p-5 text-center w-full hidden border-2 transition-colors duration-300 shadow-[0_0_25px_rgba(0,0,0,0.5)]">
+                    <h3 id="duel-answer-title" class="text-base sm:text-xl font-black mb-2 tracking-wider">作答中...</h3>
+                    
+                    <div class="relative w-full mb-2">
+                        <input type="text" id="duel-input" readonly class="w-full text-2xl sm:text-4xl text-center font-black py-1 sm:py-2 px-4 rounded-xl shadow-inner bg-slate-100 cursor-default select-none outline-none" placeholder="0">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg sm:text-xl">cm³</span>
+                    </div>
+
+                    <!-- 虛擬數字鍵盤 Grid -->
+                    <div class="grid grid-cols-3 gap-1 sm:gap-2 mb-2">
+                        <button onclick="duelNumPress('1')" class="numpad-btn">1</button>
+                        <button onclick="duelNumPress('2')" class="numpad-btn">2</button>
+                        <button onclick="duelNumPress('3')" class="numpad-btn">3</button>
+                        <button onclick="duelNumPress('4')" class="numpad-btn">4</button>
+                        <button onclick="duelNumPress('5')" class="numpad-btn">5</button>
+                        <button onclick="duelNumPress('6')" class="numpad-btn">6</button>
+                        <button onclick="duelNumPress('7')" class="numpad-btn">7</button>
+                        <button onclick="duelNumPress('8')" class="numpad-btn">8</button>
+                        <button onclick="duelNumPress('9')" class="numpad-btn">9</button>
+                        <button onclick="duelNumPress('C')" class="numpad-btn bg-red-600/80 hover:bg-red-500 border-red-400 text-white shadow-[0_4px_0_#991b1b]">C</button>
+                        <button onclick="duelNumPress('0')" class="numpad-btn">0</button>
+                        <button onclick="duelNumPress('DEL')" class="numpad-btn bg-yellow-600/80 hover:bg-yellow-500 border-yellow-400 text-white shadow-[0_4px_0_#ca8a04]">⌫</button>
+                    </div>
+
+                    <button onclick="duelSubmit()" id="duel-submit-btn" class="text-white font-black py-2 sm:py-3 px-8 rounded-xl text-lg sm:text-2xl active:scale-95 w-full shadow-[0_4px_0_rgba(0,0,0,0.4)] transition-transform tracking-widest mt-1">
+                        發射確認 🚀
+                    </button>
+                    <p id="duel-feedback" class="text-xs sm:text-base font-bold mt-1 h-4 sm:h-5 text-yellow-400"></p>
+                </div>
+            </div>
+
+            <!-- 玩家 2 (紅) -->
+            <div id="p2-zone" class="player-zone p2-bg flex-1 flex flex-col justify-between p-3 sm:p-4">
+                <div class="locked-overlay" id="p2-lock"></div>
+                <div class="flex justify-between items-end md:items-start w-full flex-row-reverse md:flex-row order-last md:order-first leading-none">
+                    <h2 class="text-xl sm:text-3xl font-black text-rose-400 md:text-right w-full drop-shadow-md">玩家 2</h2>
+                    <div class="text-2xl sm:text-4xl font-black text-slate-200 w-full text-left md:text-left">SCORE: <span id="p2-score" class="text-yellow-400">0</span></div>
+                </div>
+                <div id="p2-buzzer-container" class="buzzer-wrapper flex-1 flex items-center justify-center relative">
+                    <button id="p2-buzzer" class="buzzer-btn bg-gradient-to-t from-rose-600 to-rose-400 w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-full text-3xl md:text-5xl font-black text-white border-4 border-rose-200 z-20 flex flex-col justify-center items-center shrink-0">
+                        搶答
+                        <span class="text-xs sm:text-sm font-normal mt-1 opacity-70 hidden md:block tracking-widest">(按 L)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 對決模式結果 Modal (移出版面外) -->
+    <div id="duel-modal" class="fixed inset-0 bg-black/95 z-[200] hidden flex flex-col items-center justify-center p-4 backdrop-blur-md">
+        <h1 class="text-5xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mb-8 sci-fi-text text-center drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]">MISSION COMPLETE</h1>
+        <div class="text-4xl sm:text-6xl mb-12 text-center font-black drop-shadow-lg" id="duel-winner"></div>
+        
+        <div class="flex gap-6 sm:gap-12 mb-12 w-full max-w-xl justify-center">
+            <div class="text-center bg-blue-900/40 p-6 sm:p-8 rounded-3xl border-2 border-blue-500 flex-1 shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                <div class="text-blue-400 text-xl sm:text-2xl mb-2 font-black tracking-widest">玩家 1</div>
+                <div class="text-5xl sm:text-7xl font-black text-white" id="duel-final-p1">0</div>
+            </div>
+            <div class="text-center bg-rose-900/40 p-6 sm:p-8 rounded-3xl border-2 border-rose-500 flex-1 shadow-[0_0_30px_rgba(244,63,94,0.3)]">
+                <div class="text-rose-400 text-xl sm:text-2xl mb-2 font-black tracking-widest">玩家 2</div>
+                <div class="text-5xl sm:text-7xl font-black text-white" id="duel-final-p2">0</div>
+            </div>
+        </div>
+        <button onclick="duelReset()" class="bg-white text-slate-900 px-10 py-4 rounded-full text-2xl font-black hover:bg-slate-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+            重新進行對決 🔄
+        </button>
+    </div>
+
+    <script>
+        // ==================== 音效引擎 (Web Audio API) ====================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'buzz') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'start') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.2);
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'timeup') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.setValueAtTime(400, now + 0.2);
+                osc.frequency.setValueAtTime(300, now + 0.4);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            } else if (type === 'victory') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(500, now + 0.2);
+                osc.frequency.setValueAtTime(600, now + 0.4);
+                osc.frequency.setValueAtTime(800, now + 0.6);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 1.5);
+                osc.start(now); osc.stop(now + 1.5);
+            }
+        }
+
+        // ==================== 生成背景星星 ====================
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            for(let i=0; i<80; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 3 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.setProperty('--duration', `${Math.random() * 3 + 1}s`);
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
+        // ==================== 系統共用邏輯 ====================
+        const itemsList = [
+            { name: "北京冰糖葫蘆盒", type: "cuboid", minL: 30, maxL: 50, minW: 10, maxW: 20, minH: 5, maxH: 10 },
+            { name: "香港菠蘿包烤箱", type: "cube", minS: 20, maxS: 40 },
+            { name: "四川熊貓玩偶箱", type: "cuboid", minL: 20, maxL: 40, minW: 20, maxW: 30, minH: 10, maxH: 20 },
+            { name: "廣州早茶點心盒", type: "cube", minS: 15, maxS: 30 },
+            { name: "維港渡輪模型箱", type: "cuboid", minL: 40, maxL: 60, minW: 15, maxW: 25, minH: 10, maxH: 15 }
+        ];
+
+        let synth = window.speechSynthesis;
+        let currentVol = 0;
+        let currentMode = 'home-screen';
+        
+        let timerInterval;
+        let timeLeft = 30;
+
+        function startTimer(displayId, duration, callback) {
+            clearInterval(timerInterval);
+            timeLeft = duration;
+            const display = document.getElementById(displayId);
+            display.innerText = `⏳ ${timeLeft}s`;
+            if(displayId === 'coop-timer') {
+                display.className = "text-emerald-400 font-black text-2xl sm:text-3xl drop-shadow-md";
+            } else {
+                display.className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
+            }
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                display.innerText = `⏳ ${timeLeft}s`;
+
+                if (timeLeft <= 10) {
+                    if(displayId === 'coop-timer') {
+                        display.className = "text-red-500 font-black text-2xl sm:text-3xl animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]";
+                    } else {
+                        display.className = "text-red-500 font-black text-lg sm:text-xl animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]";
+                    }
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    callback();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function switchScreen(screenId) {
+            // 喚醒音效引擎 (解決瀏覽器限制)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            document.querySelectorAll('.screen-view').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            currentMode = screenId;
+            if(synth.speaking) synth.cancel();
+            
+            stopTimer();
+            document.getElementById('coop-timer').innerText = "⏳ 30s";
+            document.getElementById('coop-timer').className = "text-emerald-400 font-black text-2xl sm:text-3xl drop-shadow-md";
+            document.getElementById('duel-timer').innerText = "⏳ 60s";
+            document.getElementById('duel-timer').className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
+
+            if (screenId === 'home-screen') {
+                coopScore = 0;
+                document.getElementById('coop-score').innerText = coopScore;
+                duelReset();
+            }
+        }
+
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function generateData() {
+            const i1 = itemsList[Math.floor(Math.random() * itemsList.length)];
+            const i2 = itemsList[Math.floor(Math.random() * itemsList.length)];
+            let v1=0, v2=0, t1="", t2="", plainText="";
+
+            if(i1.type==="cube"){
+                const s = getRandomInt(i1.minS, i1.maxS); v1 = s*s*s;
+                t1 = `<div class="mb-2 text-cyan-200">📦 【${i1.name}】<br><span class="text-cyan-400 font-black text-lg md:text-xl">邊長 ${s} cm 的正方體</span></div>`;
+                plainText += `${i1.name}，邊長 ${s} 公分的正方體；`;
+            } else {
+                const l = getRandomInt(i1.minL, i1.maxL), w = getRandomInt(i1.minW, i1.maxW), h = getRandomInt(i1.minH, i1.maxH); v1 = l*w*h;
+                t1 = `<div class="mb-2 text-cyan-200">📦 【${i1.name}】<br><span class="text-cyan-400 font-black text-lg md:text-xl">長 ${l}, 寬 ${w}, 高 ${h} cm</span></div>`;
+                plainText += `${i1.name}，長 ${l} 寬 ${w} 高 ${h} 公分的長方體；`;
+            }
+
+            if(i2.type==="cube"){
+                const s = getRandomInt(i2.minS, i2.maxS); v2 = s*s*s;
+                t2 = `<div class="text-yellow-200">📦 【${i2.name}】<br><span class="text-yellow-400 font-black text-lg md:text-xl">邊長 ${s} cm 的正方體</span></div>`;
+                plainText += `以及 ${i2.name}，邊長 ${s} 公分的正方體。`;
+            } else {
+                const l = getRandomInt(i2.minL, i2.maxL), w = getRandomInt(i2.minW, i2.maxW), h = getRandomInt(i2.minH, i2.maxH); v2 = l*w*h;
+                t2 = `<div class="text-yellow-200">📦 【${i2.name}】<br><span class="text-yellow-400 font-black text-lg md:text-xl">長 ${l}, 寬 ${w}, 高 ${h} cm</span></div>`;
+                plainText += `以及 ${i2.name}，長 ${l} 寬 ${w} 高 ${h} 公分的長方體。`;
+            }
+            return { vol: v1+v2, html: `${t1} ${t2}`, plain: `收到訂單！${plainText} 請問總體積是多少？` };
+        }
+
+        // ==================== 模式一：全班合作邏輯 ====================
+        let coopSpeechText = "";
+        let coopScore = 0;
+        let coopInputValue = ""; // 新增：合作模式虛擬鍵盤輸入值
+
+        function coopGenerate() {
+            const data = generateData();
+            currentVol = data.vol;
+            coopSpeechText = data.plain;
+            
+            document.getElementById('coop-question').innerHTML = data.html;
+            document.getElementById('coop-status').innerText = "等待裝載指示...";
+            document.getElementById('coop-status').className = "text-sm text-yellow-400 animate-pulse";
+            document.getElementById('coop-input-sec').classList.remove('hidden');
+            document.getElementById('coop-start-btn').innerText = "重新生成訂單 🔄";
+            
+            // 重置輸入值
+            coopInputValue = "";
+            document.getElementById('coop-input').value = "";
+            
+            document.getElementById('coop-container').classList.remove('shake-anim');
+            
+            coopSpeak();
+            startTimer('coop-timer', 30, () => coopCheck(true)); 
+        }
+
+        // 新增：合作模式虛擬鍵盤按鈕事件
+        function coopNumPress(val) {
+            const inp = document.getElementById('coop-input');
+            
+            if (val === 'C') {
+                coopInputValue = "";
+            } else if (val === 'DEL') {
+                coopInputValue = coopInputValue.slice(0, -1);
+            } else {
+                if (coopInputValue.length < 6) { 
+                    coopInputValue += val;
+                }
+            }
+            inp.value = coopInputValue;
+        }
+
+        function coopSpeak() {
+            if(!coopSpeechText) return;
+            if(synth.speaking) synth.cancel();
+            const u = new SpeechSynthesisUtterance(coopSpeechText);
+            u.lang = 'zh-HK'; u.rate = 0.9;
+            synth.speak(u);
+        }
+
+        function coopCheck(isTimeUp = false) {
+            const input = parseInt(coopInputValue); // 改為讀取虛擬鍵盤變數
+            const container = document.getElementById('coop-container');
+            const modal = document.getElementById('coop-modal');
+            const cargo = document.getElementById('scene-cargo');
+            const ship = document.getElementById('scene-ship');
+            const contBtn = document.getElementById('coop-continue-btn');
+            const titleEl = document.getElementById('coop-modal-title');
+            const msgEl = document.getElementById('coop-modal-msg');
+            
+            if(!isTimeUp && isNaN(input)) return;
+            stopTimer();
+
+            cargo.classList.remove('anim-load-cargo', 'anim-crash-cargo');
+            ship.classList.remove('anim-launch-ship', 'shake-anim');
+            contBtn.style.opacity = "0";
+            void cargo.offsetWidth; void ship.offsetWidth;
+
+            if(!isTimeUp && input === currentVol) {
+                coopScore += 100;
+                document.getElementById('coop-score').innerText = coopScore;
+                document.getElementById('coop-status').innerText = "裝載成功！";
+                document.getElementById('coop-status').className = "text-sm text-emerald-400 font-bold";
+                
+                titleEl.innerText = "✨ 裝載成功 ✨";
+                titleEl.className = "text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]";
+                msgEl.innerHTML = `完美計算！總體積為 <span class="text-white text-3xl md:text-5xl">${currentVol} cm³</span>`;
+                
+                modal.classList.remove('hidden');
+                cargo.classList.add('anim-load-cargo');
+                setTimeout(() => { ship.classList.add('anim-launch-ship'); }, 1000);
+                setTimeout(() => { contBtn.style.opacity = "1"; contBtn.style.transition = "opacity 0.5s"; }, 3000);
+
+            } else {
+                coopScore -= 50;
+                document.getElementById('coop-score').innerText = coopScore;
+                container.classList.remove('shake-anim');
+                void container.offsetWidth;
+                container.classList.add('shake-anim');
+                
+                if(isTimeUp) {
+                    titleEl.innerText = "⏰ 任務超時 ⏰";
+                    titleEl.className = "text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]";
+                    msgEl.innerHTML = `太慢了，貨物已經飄走！<br><span class="text-xl font-normal">（正確體積應為 ${currentVol} cm³）</span>`;
+                } else {
+                    titleEl.innerText = "💥 裝載失敗 💥";
+                    titleEl.className = "text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]";
+                    msgEl.innerHTML = `貨物卡住了！<br><span class="text-xl font-normal">（正確體積應為 ${currentVol} cm³）</span>`;
+                }
+                
+                modal.classList.remove('hidden');
+                cargo.classList.add('anim-crash-cargo');
+                setTimeout(() => { ship.classList.add('shake-anim'); }, 400);
+                setTimeout(() => { contBtn.style.opacity = "1"; contBtn.style.transition = "opacity 0.5s"; }, 1500);
+            }
+        }
+
+        // ==================== 模式二：雙人對決邏輯 ====================
+        let duelState = 'wait'; // wait, active, ans
+        let p1S=0, p2S=0, actP=0, rCount=0;
+        const MAX_R = 5;
+        let duelInputValue = ""; 
+
+        function duelStart() {
+            if(rCount >= MAX_R) { duelEnd(); return; }
+            playSound('start'); // 播放開始音效
+            rCount++;
+            document.getElementById('duel-round').innerText = `回合 ${rCount} / ${MAX_R}`;
+            
+            document.getElementById('duel-answer-panel').classList.add('hidden');
+            document.getElementById('duel-start-btn').classList.add('hidden');
+            document.getElementById('p1-lock').style.display = 'none';
+            document.getElementById('p2-lock').style.display = 'none';
+            
+            // 恢復顯示搶答按鈕
+            document.getElementById('p1-buzzer-container').classList.remove('buzzer-hidden');
+            document.getElementById('p2-buzzer-container').classList.remove('buzzer-hidden');
+            
+            const data = generateData();
+            currentVol = data.vol;
+            document.getElementById('duel-question').innerHTML = `<div class="text-left sm:text-center text-sm md:text-base">${data.html}</div>`;
+            
+            duelState = 'active'; actP = 0;
+            startTimer('duel-timer', 60, duelTimeUp);
+        }
+
+        function duelTimeUp() {
+            playSound('timeup'); // 播放超時警報音效
+            if (duelState === 'ans') {
+                const zone = document.getElementById(`p${actP}-zone`);
+                zone.classList.add('wrong-flash'); setTimeout(()=>zone.classList.remove('wrong-flash'), 500);
+                if(actP===1) { p1S-=50; document.getElementById('p1-score').innerText=p1S; }
+                else { p2S-=50; document.getElementById('p2-score').innerText=p2S; }
+            }
+
+            duelState = 'wait'; 
+            document.getElementById('duel-answer-panel').classList.add('hidden');
+            document.getElementById('duel-question').innerHTML = `<div class="text-red-500 font-black text-2xl mb-2">⏰ 任務超時！</div><div class="text-white text-lg">正確體積: ${currentVol} cm³</div>`;
+            
+            const sBtn = document.getElementById('duel-start-btn');
+            sBtn.classList.remove('hidden'); sBtn.innerText = rCount>=MAX_R ? "查看最終賽果 🏆" : "啟動下一回合 🚀";
+            sBtn.className = "bg-yellow-600 hover:bg-yellow-500 text-white font-black py-2 px-8 rounded-full text-lg sm:text-xl w-full shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 transition-transform";
+            
+            document.getElementById('p1-lock').style.display='none'; 
+            document.getElementById('p2-lock').style.display='none';
+            
+            document.getElementById('p1-buzzer-container').classList.remove('buzzer-hidden');
+            document.getElementById('p2-buzzer-container').classList.remove('buzzer-hidden');
+        }
+
+        function duelBuzz(pNum) {
+            if(duelState !== 'active' || currentMode !== 'duel-mode') return;
+            playSound('buzz'); // 播放搶答音效
+            duelState = 'ans'; actP = pNum;
+
+            const btn = document.getElementById(`p${pNum}-buzzer`);
+            btn.classList.add('buzzer-pressed'); setTimeout(() => btn.classList.remove('buzzer-pressed'), 150);
+
+            document.getElementById('p1-lock').style.display = 'flex';
+            document.getElementById('p2-lock').style.display = 'flex';
+            
+            // ★ 防遮擋核心邏輯：將雙方的巨大搶答按鈕動態縮小隱藏
+            document.getElementById('p1-buzzer-container').classList.add('buzzer-hidden');
+            document.getElementById('p2-buzzer-container').classList.add('buzzer-hidden');
+
+            setupDuelPanel(pNum);
+        }
+
+        function duelNumPress(val) {
+            if (duelState !== 'ans') return;
+            playSound('beep'); // 播放按鍵音效
+            const inp = document.getElementById('duel-input');
+            
+            if (val === 'C') {
+                duelInputValue = "";
+            } else if (val === 'DEL') {
+                duelInputValue = duelInputValue.slice(0, -1);
+            } else {
+                if (duelInputValue.length < 6) { 
+                    duelInputValue += val;
+                }
+            }
+            inp.value = duelInputValue;
+        }
+
+        function setupDuelPanel(pNum) {
+            const panel = document.getElementById('duel-answer-panel');
+            const title = document.getElementById('duel-answer-title');
+            const btn = document.getElementById('duel-submit-btn');
+            const inp = document.getElementById('duel-input');
+            
+            duelInputValue = "";
+            inp.value = "";
+
+            if(pNum===1) {
+                panel.className = "glass-panel rounded-2xl p-4 sm:p-5 text-center w-full border-2 transition-colors duration-300 border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.6)]";
+                title.innerText = "▶ 玩家 1 (藍) 作答中 ◀"; title.className = "text-lg sm:text-xl font-black mb-2 tracking-wider text-blue-400";
+                btn.className = "bg-blue-600 hover:bg-blue-500 text-white font-black py-3 px-8 rounded-xl text-xl sm:text-2xl active:scale-95 w-full shadow-[0_4px_0_#1e3a8a] transition-all tracking-widest mt-1";
+                inp.className = "w-full text-3xl sm:text-4xl text-center text-blue-900 font-black py-2 px-4 rounded-xl shadow-inner bg-blue-50 cursor-default select-none outline-none";
+            } else {
+                panel.className = "glass-panel rounded-2xl p-4 sm:p-5 text-center w-full border-2 transition-colors duration-300 border-rose-500 shadow-[0_0_25px_rgba(244,63,94,0.6)]";
+                title.innerText = "▶ 玩家 2 (紅) 作答中 ◀"; title.className = "text-lg sm:text-xl font-black mb-2 tracking-wider text-rose-400";
+                btn.className = "bg-rose-600 hover:bg-rose-500 text-white font-black py-3 px-8 rounded-xl text-xl sm:text-2xl active:scale-95 w-full shadow-[0_4px_0_#9f1239] transition-all tracking-widest mt-1";
+                inp.className = "w-full text-3xl sm:text-4xl text-center text-rose-900 font-black py-2 px-4 rounded-xl shadow-inner bg-rose-50 cursor-default select-none outline-none";
+            }
+            panel.classList.remove('hidden'); 
+            document.getElementById('duel-feedback').innerText='';
+        }
+
+        function spawnMiniRocket(playerNum) {
+            const zone = document.getElementById(`p${playerNum}-zone`);
+            const rocket = document.createElement('div');
+            rocket.className = 'mini-rocket';
+            rocket.innerText = '🚀';
+            zone.appendChild(rocket);
+            setTimeout(() => rocket.remove(), 1100);
+        }
+
+        function duelSubmit() {
+            if(duelState !== 'ans') return;
+            const ans = parseInt(duelInputValue); 
+            const fb = document.getElementById('duel-feedback');
+            const zone = document.getElementById(`p${actP}-zone`);
+
+            if(isNaN(ans)){ fb.innerText = "⚠️ 請輸入數字！"; return; }
+
+            if(ans === currentVol) {
+                playSound('correct'); // 播放正確音效
+                stopTimer();
+                zone.classList.add('correct-flash'); setTimeout(()=>zone.classList.remove('correct-flash'), 500);
+                spawnMiniRocket(actP);
+                
+                if(actP===1) { p1S+=100; document.getElementById('p1-score').innerText=p1S; }
+                else { p2S+=100; document.getElementById('p2-score').innerText=p2S; }
+                
+                duelState = 'wait'; 
+                document.getElementById('duel-answer-panel').classList.add('hidden');
+                document.getElementById('duel-question').innerHTML = `<div class="text-emerald-400 font-black text-2xl mb-2">成功裝載！</div><div class="text-white text-lg">正確體積: ${currentVol} cm³</div>`;
+                const sBtn = document.getElementById('duel-start-btn');
+                sBtn.classList.remove('hidden'); sBtn.innerText = rCount>=MAX_R ? "查看最終賽果 🏆" : "啟動下一回合 🚀";
+                sBtn.className = "bg-yellow-600 hover:bg-yellow-500 text-white font-black py-2 px-8 rounded-full text-lg sm:text-xl w-full shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 transition-transform";
+                
+                document.getElementById('p1-buzzer-container').classList.remove('buzzer-hidden');
+                document.getElementById('p2-buzzer-container').classList.remove('buzzer-hidden');
+
+            } else {
+                playSound('wrong'); // 播放錯誤音效
+                zone.classList.add('wrong-flash'); setTimeout(()=>zone.classList.remove('wrong-flash'), 500);
+                if(actP===1) { p1S-=50; document.getElementById('p1-score').innerText=p1S; }
+                else { p2S-=50; document.getElementById('p2-score').innerText=p2S; }
+                
+                actP = actP===1 ? 2 : 1;
+                fb.innerHTML = "<span class='text-red-400 bg-red-900/50 px-3 py-1 rounded-full'>系統警告：計算錯誤！換對手作答。</span>";
+                
+                if (timeLeft < 10) {
+                    timeLeft = 10;
+                    document.getElementById('duel-timer').innerText = `⏳ ${timeLeft}s`;
+                    document.getElementById('duel-timer').className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
+                }
+
+                setTimeout(() => { 
+                    setupDuelPanel(actP); 
+                    document.getElementById('duel-feedback').innerHTML = "<span class='text-yellow-400 animate-pulse'>對手失誤，把握機會！</span>"; 
+                }, 1000);
+            }
+        }
+
+        function duelEnd() {
+            playSound('victory'); // 播放勝利音效
+            document.getElementById('duel-final-p1').innerText = p1S;
+            document.getElementById('duel-final-p2').innerText = p2S;
+            const wt = document.getElementById('duel-winner');
+            if(p1S>p2S) { wt.innerHTML = '🏆 玩家 1 (藍) 稱霸宇宙！'; wt.className = "text-4xl sm:text-6xl mb-12 text-center font-black text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]"; }
+            else if(p2S>p1S) { wt.innerHTML = '🏆 玩家 2 (紅) 稱霸宇宙！'; wt.className = "text-4xl sm:text-6xl mb-12 text-center font-black text-rose-400 drop-shadow-[0_0_15px_rgba(244,63,94,0.8)]"; }
+            else { wt.innerHTML = '🤝 完美平局！'; wt.className = "text-4xl sm:text-6xl mb-12 text-center font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]"; }
+            document.getElementById('duel-modal').classList.remove('hidden');
+        }
+
+        function duelReset() {
+            p1S=0; p2S=0; rCount=0;
+            document.getElementById('p1-score').innerText='0'; document.getElementById('p2-score').innerText='0';
+            document.getElementById('duel-modal').classList.add('hidden');
+            document.getElementById('duel-round').innerText="回合 0 / 5";
+            document.getElementById('duel-question').innerText="點擊下方按鈕啟動對決序列";
+            
+            document.getElementById('duel-timer').innerText = "⏳ 60s";
+            document.getElementById('duel-timer').className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
+
+            const sBtn = document.getElementById('duel-start-btn'); 
+            sBtn.innerText="啟動回合 🚀"; 
+            sBtn.classList.remove('hidden', 'animate-bounce');
+            sBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 px-8 rounded-full text-lg sm:text-xl w-full shadow-[0_0_15px_rgba(16,185,129,0.5)] active:scale-95 transition-transform";
+            
+            document.getElementById('duel-answer-panel').classList.add('hidden');
+            document.getElementById('p1-lock').style.display='none'; document.getElementById('p2-lock').style.display='none';
+            
+            document.getElementById('p1-buzzer-container').classList.remove('buzzer-hidden');
+            document.getElementById('p2-buzzer-container').classList.remove('buzzer-hidden');
+        }
+
+        // --- 鍵盤與按鈕綁定 (支援實體鍵盤) ---
+        document.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if(currentMode === 'duel-mode') {
+                if(duelState === 'active') { 
+                    if(k==='a') duelBuzz(1); 
+                    if(k==='l') duelBuzz(2); 
+                }
+                else if(duelState === 'ans') {
+                    if (k >= '0' && k <= '9') {
+                        duelNumPress(k);
+                    } else if (k === 'backspace') {
+                        duelNumPress('DEL');
+                    } else if (k === 'escape') {
+                        duelNumPress('C');
+                    } else if (k === 'enter') {
+                        e.preventDefault(); duelSubmit();
+                    }
+                }
+            } else if(currentMode === 'coop-mode') {
+                if(!document.getElementById('coop-input-sec').classList.contains('hidden')) {
+                    if (k >= '0' && k <= '9') {
+                        coopNumPress(k);
+                    } else if (k === 'backspace') {
+                        coopNumPress('DEL');
+                    } else if (k === 'escape') {
+                        coopNumPress('C');
+                    } else if (k === 'enter') {
+                        e.preventDefault(); coopCheck();
+                    }
+                }
+            }
+        });
+
+        const b1 = document.getElementById('p1-buzzer');
+        b1.addEventListener('mousedown', (e) => { e.preventDefault(); duelBuzz(1); });
+        b1.addEventListener('touchstart', (e) => { e.preventDefault(); duelBuzz(1); });
+        
+        const b2 = document.getElementById('p2-buzzer');
+        b2.addEventListener('mousedown', (e) => { e.preventDefault(); duelBuzz(2); });
+        b2.addEventListener('touchstart', (e) => { e.preventDefault(); duelBuzz(2); });
+
+    </script>
+</body>
+</html>
