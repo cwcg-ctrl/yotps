@@ -259,7 +259,6 @@
 
             <div class="flex justify-between items-center w-full px-2 mt-2 -mb-2">
                 <div class="text-yellow-400 font-bold text-lg sm:text-xl tracking-widest">總分: <span id="coop-score" class="text-2xl sm:text-3xl font-black text-white">0</span></div>
-                <div class="text-emerald-400 font-black text-2xl sm:text-3xl drop-shadow-md" id="coop-timer">⏳ 30s</div>
             </div>
 
             <div class="bg-slate-900/80 rounded-xl p-4 sm:p-6 border border-cyan-700/50 min-h-[100px] sm:min-h-[120px] flex items-center justify-center text-center shadow-inner mt-2 sm:mt-4">
@@ -339,7 +338,6 @@
                 <div id="duel-question-panel" class="glass-panel border-yellow-500 rounded-2xl p-2 sm:p-5 text-center flex flex-col items-center w-full shadow-[0_0_30px_rgba(234,179,8,0.3)] transition-all duration-300">
                     <div class="flex justify-between items-center w-full mb-2">
                         <div class="text-yellow-400 font-black text-xs sm:text-sm tracking-widest sci-fi-text">MISSION LOG</div>
-                        <div class="text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md" id="duel-timer">⏳ 60s</div>
                         <div class="text-xs sm:text-sm font-bold bg-slate-800 border border-slate-600 px-3 py-1 rounded-full text-cyan-100" id="duel-round">回合 0 / 5</div>
                     </div>
                     
@@ -505,53 +503,16 @@
 
         // ==================== 系統共用邏輯 ====================
         const itemsList = [
-            { name: "北京冰糖葫蘆盒", type: "cuboid", minL: 30, maxL: 50, minW: 10, maxW: 20, minH: 5, maxH: 10 },
-            { name: "香港菠蘿包烤箱", type: "cube", minS: 20, maxS: 40 },
-            { name: "四川熊貓玩偶箱", type: "cuboid", minL: 20, maxL: 40, minW: 20, maxW: 30, minH: 10, maxH: 20 },
-            { name: "廣州早茶點心盒", type: "cube", minS: 15, maxS: 30 },
-            { name: "維港渡輪模型箱", type: "cuboid", minL: 40, maxL: 60, minW: 15, maxW: 25, minH: 10, maxH: 15 }
+            { name: "北京冰糖葫蘆盒", type: "cuboid", minL: 2, maxL: 9, minW: 2, maxW: 9, minH: 2, maxH: 9 },
+            { name: "香港菠蘿包烤箱", type: "cube", minS: 2, maxS: 6 },
+            { name: "四川熊貓玩偶箱", type: "cuboid", minL: 2, maxL: 8, minW: 2, maxW: 8, minH: 2, maxH: 8 },
+            { name: "廣州早茶點心盒", type: "cube", minS: 2, maxS: 7 },
+            { name: "維港渡輪模型箱", type: "cuboid", minL: 3, maxL: 9, minW: 2, maxW: 7, minH: 2, maxH: 7 }
         ];
 
         let synth = window.speechSynthesis;
         let currentVol = 0;
         let currentMode = 'home-screen';
-        
-        let timerInterval;
-        let timeLeft = 30;
-
-        function startTimer(displayId, duration, callback) {
-            clearInterval(timerInterval);
-            timeLeft = duration;
-            const display = document.getElementById(displayId);
-            display.innerText = `⏳ ${timeLeft}s`;
-            if(displayId === 'coop-timer') {
-                display.className = "text-emerald-400 font-black text-2xl sm:text-3xl drop-shadow-md";
-            } else {
-                display.className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
-            }
-
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                display.innerText = `⏳ ${timeLeft}s`;
-
-                if (timeLeft <= 10) {
-                    if(displayId === 'coop-timer') {
-                        display.className = "text-red-500 font-black text-2xl sm:text-3xl animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]";
-                    } else {
-                        display.className = "text-red-500 font-black text-lg sm:text-xl animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]";
-                    }
-                }
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    callback();
-                }
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
 
         function switchScreen(screenId) {
             // 喚醒音效引擎 (解決瀏覽器限制)
@@ -561,12 +522,6 @@
             document.getElementById(screenId).classList.add('active');
             currentMode = screenId;
             if(synth.speaking) synth.cancel();
-            
-            stopTimer();
-            document.getElementById('coop-timer').innerText = "⏳ 30s";
-            document.getElementById('coop-timer').className = "text-emerald-400 font-black text-2xl sm:text-3xl drop-shadow-md";
-            document.getElementById('duel-timer').innerText = "⏳ 60s";
-            document.getElementById('duel-timer').className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
 
             if (screenId === 'home-screen') {
                 coopScore = 0;
@@ -627,7 +582,6 @@
             document.getElementById('coop-container').classList.remove('shake-anim');
             
             coopSpeak();
-            startTimer('coop-timer', 30, () => coopCheck(true)); 
         }
 
         // 新增：合作模式虛擬鍵盤按鈕事件
@@ -654,8 +608,8 @@
             synth.speak(u);
         }
 
-        function coopCheck(isTimeUp = false) {
-            const input = parseInt(coopInputValue); // 改為讀取虛擬鍵盤變數
+        function coopCheck() {
+            const input = parseInt(coopInputValue); 
             const container = document.getElementById('coop-container');
             const modal = document.getElementById('coop-modal');
             const cargo = document.getElementById('scene-cargo');
@@ -664,15 +618,14 @@
             const titleEl = document.getElementById('coop-modal-title');
             const msgEl = document.getElementById('coop-modal-msg');
             
-            if(!isTimeUp && isNaN(input)) return;
-            stopTimer();
+            if(isNaN(input)) return;
 
             cargo.classList.remove('anim-load-cargo', 'anim-crash-cargo');
             ship.classList.remove('anim-launch-ship', 'shake-anim');
             contBtn.style.opacity = "0";
             void cargo.offsetWidth; void ship.offsetWidth;
 
-            if(!isTimeUp && input === currentVol) {
+            if(input === currentVol) {
                 coopScore += 100;
                 document.getElementById('coop-score').innerText = coopScore;
                 document.getElementById('coop-status').innerText = "裝載成功！";
@@ -694,15 +647,9 @@
                 void container.offsetWidth;
                 container.classList.add('shake-anim');
                 
-                if(isTimeUp) {
-                    titleEl.innerText = "⏰ 任務超時 ⏰";
-                    titleEl.className = "text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]";
-                    msgEl.innerHTML = `太慢了，貨物已經飄走！<br><span class="text-xl font-normal">（正確體積應為 ${currentVol} cm³）</span>`;
-                } else {
-                    titleEl.innerText = "💥 裝載失敗 💥";
-                    titleEl.className = "text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]";
-                    msgEl.innerHTML = `貨物卡住了！<br><span class="text-xl font-normal">（正確體積應為 ${currentVol} cm³）</span>`;
-                }
+                titleEl.innerText = "💥 裝載失敗 💥";
+                titleEl.className = "text-4xl sm:text-6xl font-black mb-4 text-center sci-fi-text tracking-wider text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]";
+                msgEl.innerHTML = `貨物卡住了！<br><span class="text-xl font-normal">（正確體積應為 ${currentVol} cm³）</span>`;
                 
                 modal.classList.remove('hidden');
                 cargo.classList.add('anim-crash-cargo');
@@ -737,31 +684,6 @@
             document.getElementById('duel-question').innerHTML = `<div class="text-left sm:text-center text-sm md:text-base">${data.html}</div>`;
             
             duelState = 'active'; actP = 0;
-            startTimer('duel-timer', 60, duelTimeUp);
-        }
-
-        function duelTimeUp() {
-            playSound('timeup'); // 播放超時警報音效
-            if (duelState === 'ans') {
-                const zone = document.getElementById(`p${actP}-zone`);
-                zone.classList.add('wrong-flash'); setTimeout(()=>zone.classList.remove('wrong-flash'), 500);
-                if(actP===1) { p1S-=50; document.getElementById('p1-score').innerText=p1S; }
-                else { p2S-=50; document.getElementById('p2-score').innerText=p2S; }
-            }
-
-            duelState = 'wait'; 
-            document.getElementById('duel-answer-panel').classList.add('hidden');
-            document.getElementById('duel-question').innerHTML = `<div class="text-red-500 font-black text-2xl mb-2">⏰ 任務超時！</div><div class="text-white text-lg">正確體積: ${currentVol} cm³</div>`;
-            
-            const sBtn = document.getElementById('duel-start-btn');
-            sBtn.classList.remove('hidden'); sBtn.innerText = rCount>=MAX_R ? "查看最終賽果 🏆" : "啟動下一回合 🚀";
-            sBtn.className = "bg-yellow-600 hover:bg-yellow-500 text-white font-black py-2 px-8 rounded-full text-lg sm:text-xl w-full shadow-[0_0_15px_rgba(202,138,4,0.5)] active:scale-95 transition-transform";
-            
-            document.getElementById('p1-lock').style.display='none'; 
-            document.getElementById('p2-lock').style.display='none';
-            
-            document.getElementById('p1-buzzer-container').classList.remove('buzzer-hidden');
-            document.getElementById('p2-buzzer-container').classList.remove('buzzer-hidden');
         }
 
         function duelBuzz(pNum) {
@@ -842,7 +764,6 @@
 
             if(ans === currentVol) {
                 playSound('correct'); // 播放正確音效
-                stopTimer();
                 zone.classList.add('correct-flash'); setTimeout(()=>zone.classList.remove('correct-flash'), 500);
                 spawnMiniRocket(actP);
                 
@@ -867,12 +788,6 @@
                 
                 actP = actP===1 ? 2 : 1;
                 fb.innerHTML = "<span class='text-red-400 bg-red-900/50 px-3 py-1 rounded-full'>系統警告：計算錯誤！換對手作答。</span>";
-                
-                if (timeLeft < 10) {
-                    timeLeft = 10;
-                    document.getElementById('duel-timer').innerText = `⏳ ${timeLeft}s`;
-                    document.getElementById('duel-timer').className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
-                }
 
                 setTimeout(() => { 
                     setupDuelPanel(actP); 
@@ -898,9 +813,6 @@
             document.getElementById('duel-modal').classList.add('hidden');
             document.getElementById('duel-round').innerText="回合 0 / 5";
             document.getElementById('duel-question').innerText="點擊下方按鈕啟動對決序列";
-            
-            document.getElementById('duel-timer').innerText = "⏳ 60s";
-            document.getElementById('duel-timer').className = "text-emerald-400 font-black text-lg sm:text-xl drop-shadow-md";
 
             const sBtn = document.getElementById('duel-start-btn'); 
             sBtn.innerText="啟動回合 🚀"; 
