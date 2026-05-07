@@ -57,6 +57,16 @@
         }
         .animate-attack-p2 { animation: attack-p2 0.4s cubic-bezier(.36,.07,.19,.97); }
 
+        @keyframes spear-thrust {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-15px, 5px) rotate(-15deg); }
+        }
+        .animate-spear { 
+            animation: spear-thrust 0.4s cubic-bezier(.36,.07,.19,.97); 
+            transform-origin: center center; 
+            transform-box: fill-box;
+        }
+
         @keyframes heal-float {
             0% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-30px); opacity: 0; }
@@ -201,8 +211,11 @@
                     <div id="p2-avatar" class="transition-transform will-change-transform drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] w-16 h-16 sm:w-28 sm:h-28">
                         <div class="w-full h-full rotate-180">
                             <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                                <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
-                                <path d="M25,15 L22,4 L28,4 Z" fill="#CFD8DC"/><path d="M25,15 L25,4 L28,4 Z" fill="#90A4AE"/>
+                                <!-- 長矛 -->
+                                <g id="p2-spear-group" class="transition-transform origin-center">
+                                    <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
+                                    <path d="M25,15 L22,4 L28,4 Z" fill="#CFD8DC"/><path d="M25,15 L25,4 L28,4 Z" fill="#90A4AE"/>
+                                </g>
                                 <path d="M50,45 L35,55 L20,50" fill="none" stroke="#FFCCBC" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 <path d="M55,65 L55,90" stroke="#FFCCBC" stroke-width="5" stroke-linecap="round"/><line x1="52" y1="90" x2="58" y2="90" stroke="#4E342E" stroke-width="3" stroke-linecap="round"/>
                                 <path d="M45,65 L40,90" stroke="#FFCCBC" stroke-width="5" stroke-linecap="round"/><line x1="37" y1="90" x2="43" y2="90" stroke="#4E342E" stroke-width="3" stroke-linecap="round"/>
@@ -238,8 +251,11 @@
                     <div id="p1-heal-text" class="absolute -top-8 sm:-top-12 text-green-400 font-bold text-xl sm:text-3xl opacity-0 pointer-events-none drop-shadow-md">+20</div>
                     <div id="p1-avatar" class="transition-transform will-change-transform drop-shadow-[0_0_15px_rgba(37,99,235,0.8)] w-16 h-16 sm:w-28 sm:h-28">
                         <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                            <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
-                            <path d="M25,15 L22,4 L28,4 Z" fill="#CFD8DC"/><path d="M25,15 L25,4 L28,4 Z" fill="#90A4AE"/>
+                            <!-- 長矛 -->
+                            <g id="p1-spear-group" class="transition-transform origin-center">
+                                <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M25,15 L22,4 L28,4 Z" fill="#CFD8DC"/><path d="M25,15 L25,4 L28,4 Z" fill="#90A4AE"/>
+                            </g>
                             <path d="M50,45 L35,55 L20,50" fill="none" stroke="#FFCCBC" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M55,65 L55,90" stroke="#FFCCBC" stroke-width="5" stroke-linecap="round"/><line x1="52" y1="90" x2="58" y2="90" stroke="#4E342E" stroke-width="3" stroke-linecap="round"/>
                             <path d="M45,65 L40,90" stroke="#FFCCBC" stroke-width="5" stroke-linecap="round"/><line x1="37" y1="90" x2="43" y2="90" stroke="#4E342E" stroke-width="3" stroke-linecap="round"/>
@@ -369,9 +385,9 @@
             switchScreen('screen-start');
         }
 
-        // === 單人模式邏輯更動：10題 ===
+        // === 單人模式邏輯 ===
         let currentSingleMode = 1; let singleScore = 0; let singleCombo = 0; let singleCount = 0;
-        const totalSingleQuestions = 10; // 改為 10 題
+        const totalSingleQuestions = 10;
         let singleAnswer = "";
 
         function startSinglePlayer(mode) {
@@ -510,11 +526,13 @@
                     p2HP = Math.max(0, p2HP - damagePerHit); p1Combo++; p2Combo = 0; 
                     if(p1Combo >= 3) { p1HP = Math.min(100, p1HP + healAmount); p1Combo = 0; triggerHeal = true; }
                     document.getElementById('p1-avatar').classList.add('animate-attack-p1');
+                    document.getElementById('p1-spear-group').classList.add('animate-spear');
                     document.getElementById('p2-zone').classList.add('damage-flash', 'animate-shake');
                 } else {
                     p1HP = Math.max(0, p1HP - damagePerHit); p2Combo++; p1Combo = 0;
                     if(p2Combo >= 3) { p2HP = Math.min(100, p2HP + healAmount); p2Combo = 0; triggerHeal = true; }
                     document.getElementById('p2-avatar').classList.add('animate-attack-p2');
+                    document.getElementById('p2-spear-group').classList.add('animate-spear');
                     document.getElementById('p1-zone').classList.add('damage-flash', 'animate-shake');
                 }
                 updateVersusUI();
@@ -535,6 +553,8 @@
                     playerZone.classList.remove('heal-flash');
                     document.getElementById('p1-avatar').classList.remove('animate-attack-p1');
                     document.getElementById('p2-avatar').classList.remove('animate-attack-p2');
+                    document.getElementById('p1-spear-group').classList.remove('animate-spear');
+                    document.getElementById('p2-spear-group').classList.remove('animate-spear');
                     loadVersusQuestion();
                 }, 1500);
             } else {
