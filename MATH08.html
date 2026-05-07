@@ -119,8 +119,8 @@
     </div>
 
     <!-- === 畫面 2: 單人遊戲畫面 === -->
-    <div id="screen-single" class="hidden flex-col items-center w-full max-w-3xl px-4 z-10 relative">
-        <div class="w-full flex justify-between items-center mb-6 bg-black/60 p-4 rounded-2xl border-2 border-gray-600 shadow-xl backdrop-blur-sm">
+    <div id="screen-single" class="hidden flex-col items-center w-full max-w-3xl px-4 z-10 relative -mt-6 md:-mt-0">
+        <div class="w-full flex justify-between items-center mb-4 md:mb-6 bg-black/60 p-4 rounded-2xl border-2 border-gray-600 shadow-xl backdrop-blur-sm">
             <button onclick="backToMenu()" class="text-gray-400 hover:text-white text-2xl game-btn">⬅️</button>
             <div class="flex flex-col items-center">
                 <span id="single-level-title" class="font-bold text-xl text-yellow-400">關卡</span>
@@ -132,7 +132,7 @@
             </div>
         </div>
 
-        <div id="hint-container" class="absolute top-[80px] sm:top-[90px] right-4 sm:right-0 md:-right-16 z-30 hidden">
+        <div id="hint-container" class="absolute top-[70px] sm:top-[90px] right-4 sm:right-0 md:-right-16 z-30 hidden">
             <button onclick="toggleHint()" class="bg-gradient-to-br from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-stone-900 rounded-full w-12 h-12 sm:w-14 sm:h-14 shadow-[0_0_15px_rgba(234,179,8,0.6)] border-2 border-yellow-200 transition-transform hover:scale-110 flex items-center justify-center font-bold text-xl sm:text-2xl">💡</button>
             <div id="hint-box" class="hidden absolute top-16 right-0 w-56 sm:w-64 bg-stone-800 border-2 border-yellow-500 rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.8)] origin-top-right">
                 <p class="text-yellow-400 font-bold mb-2 border-b border-stone-600 pb-1 flex justify-between items-center">
@@ -145,7 +145,7 @@
             </div>
         </div>
 
-        <div class="flex flex-col items-center mb-10 relative">
+        <div class="flex flex-col items-center mb-4 md:mb-8 relative">
             <div id="single-feedback" class="absolute -top-16 text-3xl font-black opacity-0 transition-opacity duration-300 pointer-events-none z-20"></div>
             
             <div class="w-24 h-24 md:w-32 md:h-32 animate-bounce-slow mb-[-10px] drop-shadow-2xl z-0">
