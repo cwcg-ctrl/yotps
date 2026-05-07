@@ -114,7 +114,7 @@
             <button onclick="backToMenu()" class="text-gray-400 hover:text-white text-2xl game-btn">⬅️</button>
             <div class="flex flex-col items-center">
                 <span id="single-level-title" class="font-bold text-xl text-yellow-400">關卡</span>
-                <div class="text-sm text-gray-300">進度: <span id="single-progress">0/5</span></div>
+                <div class="text-sm text-gray-300">進度: <span id="single-progress">0/10</span></div>
             </div>
             <div class="flex flex-col items-end">
                 <span class="text-gray-400 text-sm">連擊分數</span>
@@ -138,7 +138,6 @@
         <div class="flex flex-col items-center mb-10 relative">
             <div id="single-feedback" class="absolute -top-16 text-3xl font-black opacity-0 transition-opacity duration-300 pointer-events-none z-20"></div>
             
-            <!-- 單人模式金甲士兵 (SVG 替換 emoji) -->
             <div class="w-24 h-24 md:w-32 md:h-32 animate-bounce-slow mb-[-10px] drop-shadow-2xl z-0">
                 <svg viewBox="0 0 100 100" class="w-full h-full" style="transform: scaleX(-1);" xmlns="http://www.w3.org/2000/svg">
                     <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
@@ -174,22 +173,14 @@
         </div>
     </div>
 
-    <!-- === 畫面 3: 雙人對決畫面 (加入中場士兵戰鬥) === -->
+    <!-- === 畫面 3: 雙人對決畫面 === -->
     <div id="screen-versus" class="hidden w-full h-[100dvh] flex-col relative bg-gray-900">
-        
-        <!-- 全域退出按鈕 (固定在右上角，不會被戰鬥區遮擋) -->
         <button onclick="backToMenu()" class="absolute top-4 right-4 bg-white/10 hover:bg-white/30 border-2 border-gray-500 p-2 sm:p-3 rounded-full text-lg sm:text-2xl game-btn shadow-lg z-50 transition-all text-white backdrop-blur-sm">🚪</button>
 
-        <!-- 玩家 2 區域 (上方，旋轉 180 度) -->
+        <!-- 玩家 2 區域 -->
         <div id="p2-zone" class="flex-1 min-h-0 bg-gradient-to-b from-rose-950 to-rose-900 flex flex-col items-center rotate-180 p-2 sm:p-4 w-full transition-colors duration-300 relative">
-            
             <div id="p2-feedback" class="text-lg sm:text-3xl font-black text-rose-400 h-6 sm:h-10 opacity-0 transition-opacity flex-none flex items-center justify-center mb-1 sm:mb-2">太慢了！</div>
-            
-            <div id="p2-options" class="grid grid-cols-2 gap-2 sm:gap-4 w-full max-w-md md:max-w-3xl flex-1 min-h-[80px]">
-                <!-- 動態生成 -->
-            </div>
-
-            <!-- 純血量與連擊區 (移除了頭像，改為格鬥遊戲排版) -->
+            <div id="p2-options" class="grid grid-cols-2 gap-2 sm:gap-4 w-full max-w-md md:max-w-3xl flex-1 min-h-[80px]"></div>
             <div class="w-full flex justify-between items-center max-w-md md:max-w-3xl px-2 mt-auto pt-2 sm:pt-4 flex-none gap-4">
                 <div class="flex flex-col items-start w-24 sm:w-32">
                     <h3 class="text-sm sm:text-lg font-bold text-rose-300 whitespace-nowrap">紅方 (P2)</h3>
@@ -202,17 +193,13 @@
             </div>
         </div>
 
-        <!-- 中央分隔帶 (長方形大視野 + 兩側對戰士兵) -->
+        <!-- 中央分隔帶 -->
         <div class="w-full flex-none flex items-center justify-center relative bg-stone-950 border-y-[3px] sm:border-y-8 border-yellow-600 py-2 sm:py-5 z-20 shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-visible">
-            
             <div class="flex items-center justify-between w-full max-w-5xl px-1 sm:px-6 gap-2 sm:gap-6 relative">
-                
-                <!-- P2 士兵 (左側：加上旋轉讓對面的玩家看是正向的) -->
                 <div class="relative flex flex-col items-center justify-center z-30 w-16 sm:w-28 h-full">
                     <div id="p2-heal-text" class="absolute -top-8 sm:-top-12 text-green-400 font-bold text-xl sm:text-3xl opacity-0 pointer-events-none drop-shadow-md">+20</div>
                     <div id="p2-avatar" class="transition-transform will-change-transform drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] w-16 h-16 sm:w-28 sm:h-28">
                         <div class="w-full h-full rotate-180">
-                            <!-- 紅方 SVG 士兵 -->
                             <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                                 <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
                                 <path d="M25,15 L22,4 L28,4 Z" fill="#CFD8DC"/><path d="M25,15 L25,4 L28,4 Z" fill="#90A4AE"/>
@@ -237,25 +224,19 @@
                     </div>
                 </div>
 
-                <!-- 雙重視角題目板 -->
                 <div id="versus-center" class="flex-1 bg-gradient-to-r from-yellow-700 via-yellow-500 to-yellow-700 h-20 sm:h-32 md:h-40 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center border-2 sm:border-[6px] border-gray-900 shadow-[0_0_25px_rgba(234,179,8,0.7)] animate-pulse-glow relative overflow-hidden z-10">
-                    
                     <div class="flex-1 flex items-center justify-center w-full bg-black/20 rotate-180 px-2 sm:px-4">
                         <span id="versus-question-p2" class="text-2xl sm:text-4xl md:text-6xl font-bold text-white drop-shadow-lg leading-none mt-1 tracking-wider text-center w-full truncate">?</span>
                     </div>
-                    
                     <div class="flex-1 flex items-center justify-center w-full bg-black/10 px-2 sm:px-4">
                         <span id="versus-question-p1" class="text-2xl sm:text-4xl md:text-6xl font-bold text-white drop-shadow-lg leading-none mb-1 tracking-wider text-center w-full truncate">?</span>
                     </div>
-                    
                     <div class="absolute top-1/2 left-0 w-full h-[2px] sm:h-[4px] bg-yellow-100 shadow-[0_0_10px_rgba(255,255,255,1)] transform -translate-y-1/2"></div>
                 </div>
 
-                <!-- P1 士兵 (右側) -->
                 <div class="relative flex flex-col items-center justify-center z-30 w-16 sm:w-28 h-full">
                     <div id="p1-heal-text" class="absolute -top-8 sm:-top-12 text-green-400 font-bold text-xl sm:text-3xl opacity-0 pointer-events-none drop-shadow-md">+20</div>
                     <div id="p1-avatar" class="transition-transform will-change-transform drop-shadow-[0_0_15px_rgba(37,99,235,0.8)] w-16 h-16 sm:w-28 sm:h-28">
-                        <!-- 藍方 SVG 士兵 -->
                         <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
                             <line x1="25" y1="15" x2="15" y2="85" stroke="#795548" stroke-width="2.5" stroke-linecap="round"/>
                             <path d="M25,15 L22,4 L28,4 Z" fill="#CFD8DC"/><path d="M25,15 L25,4 L28,4 Z" fill="#90A4AE"/>
@@ -278,20 +259,13 @@
                         </svg>
                     </div>
                 </div>
-
             </div>
         </div>
 
-        <!-- 玩家 1 區域 (下方，正向) -->
+        <!-- 玩家 1 區域 -->
         <div id="p1-zone" class="flex-1 min-h-0 bg-gradient-to-t from-blue-950 to-blue-900 flex flex-col items-center p-2 sm:p-4 w-full transition-colors duration-300 relative">
-            
             <div id="p1-feedback" class="text-lg sm:text-3xl font-black text-blue-400 h-6 sm:h-10 opacity-0 transition-opacity flex-none flex items-center justify-center mb-1 sm:mb-2">答錯！</div>
-            
-            <div id="p1-options" class="grid grid-cols-2 gap-2 sm:gap-4 w-full max-w-md md:max-w-3xl flex-1 min-h-[80px]">
-                <!-- 動態生成 -->
-            </div>
-            
-            <!-- 純血量與連擊區 -->
+            <div id="p1-options" class="grid grid-cols-2 gap-2 sm:gap-4 w-full max-w-md md:max-w-3xl flex-1 min-h-[80px]"></div>
             <div class="w-full flex justify-between items-center max-w-md md:max-w-3xl px-2 mt-auto pt-2 sm:pt-4 flex-none gap-4">
                 <div class="flex-1 bg-gray-900 border-2 sm:border-4 border-gray-700 rounded-full h-5 sm:h-8 md:h-10 relative overflow-hidden shadow-inner max-w-sm">
                     <div id="p1-hp-bar" class="bg-gradient-to-r from-blue-600 to-cyan-400 h-full w-full transition-all duration-300"></div>
@@ -310,19 +284,13 @@
         <div id="result-icon" class="text-6xl md:text-8xl mb-4 animate-bounce-slow">🏆</div>
         <h1 id="result-title" class="text-4xl md:text-5xl font-roman text-yellow-400 mb-2 drop-shadow-lg">完成！</h1>
         <p id="result-subtitle" class="text-lg md:text-xl text-gray-300 mb-6">任務結算報告</p>
-        
         <div class="bg-black/50 p-6 rounded-2xl w-full mb-6 border border-gray-700">
             <p id="result-score-label" class="text-sm md:text-lg text-gray-400 mb-1">獲得分數 / 獲勝者</p>
             <p id="result-main-text" class="text-5xl md:text-6xl font-bold text-white mb-2">0</p>
         </div>
-        
         <div class="flex flex-col sm:flex-row gap-4 w-full">
-            <button onclick="backToMenu()" class="flex-1 game-btn bg-gray-700 text-white font-bold text-lg md:text-xl py-3 md:py-4 rounded-2xl hover:bg-gray-600 border-2 border-gray-500">
-                🏠 回主選單
-            </button>
-            <button id="next-level-btn" onclick="nextLevelOrRestart()" class="flex-1 game-btn bg-gradient-to-r from-yellow-600 to-yellow-400 text-gray-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-2xl shadow-lg border-2 border-yellow-200">
-                繼續挑戰 🚀
-            </button>
+            <button onclick="backToMenu()" class="flex-1 game-btn bg-gray-700 text-white font-bold text-lg md:text-xl py-3 md:py-4 rounded-2xl hover:bg-gray-600 border-2 border-gray-500">🏠 回主選單</button>
+            <button id="next-level-btn" onclick="nextLevelOrRestart()" class="flex-1 game-btn bg-gradient-to-r from-yellow-600 to-yellow-400 text-gray-900 font-bold text-lg md:text-xl py-3 md:py-4 rounded-2xl shadow-lg border-2 border-yellow-200">繼續挑戰 🚀</button>
         </div>
     </div>
 
@@ -401,9 +369,10 @@
             switchScreen('screen-start');
         }
 
-        // === 單人模式 ===
+        // === 單人模式邏輯更動：10題 ===
         let currentSingleMode = 1; let singleScore = 0; let singleCombo = 0; let singleCount = 0;
-        const totalSingleQuestions = 5; let singleAnswer = "";
+        const totalSingleQuestions = 10; // 改為 10 題
+        let singleAnswer = "";
 
         function startSinglePlayer(mode) {
             currentSingleMode = mode; singleScore = 0; singleCombo = 0; singleCount = 0;
@@ -489,9 +458,8 @@
             document.getElementById('single-progress').textContent = `${singleCount}/${totalSingleQuestions}`;
         }
 
-        // === 雙人競技模式 ===
-        let p1HP = 100; let p2HP = 100;
-        let p1Combo = 0; let p2Combo = 0;
+        // === 雙人競技模式邏輯 ===
+        let p1HP = 100; let p2HP = 100; let p1Combo = 0; let p2Combo = 0;
         const damagePerHit = 10; const healAmount = 20;
         let versusAnswer = ""; let versusModeType = 1; let isVersusLocked = false; let versusTimeout;
 
@@ -506,29 +474,22 @@
         function loadVersusQuestion() {
             if (p1HP <= 0 || p2HP <= 0) { showResultScreen('versus'); return; }
             isVersusLocked = false;
-
             versusModeType = Math.random() > 0.5 ? 1 : 2;
             let num = getRandomInt(1, 39); let displayStr = ""; let options = [];
-
             if (versusModeType === 1) { displayStr = num.toString(); versusAnswer = intToRoman(num); options = generateDistractors(num, 1); } 
             else { displayStr = intToRoman(num); versusAnswer = num.toString(); options = generateDistractors(num, 2); }
-
             options.push(versusAnswer);
             let p1Options = shuffleArray([...options]); let p2Options = shuffleArray([...options]);
-
             const qElemP1 = document.getElementById('versus-question-p1'); const qElemP2 = document.getElementById('versus-question-p2');
             qElemP1.textContent = displayStr; qElemP2.textContent = displayStr;
-            
             if(versusModeType === 2) { qElemP1.classList.add('font-roman', 'text-yellow-100'); qElemP2.classList.add('font-roman', 'text-yellow-100'); } 
             else { qElemP1.classList.remove('font-roman', 'text-yellow-100'); qElemP2.classList.remove('font-roman', 'text-yellow-100'); }
-
             renderVersusOptions('p1', p1Options); renderVersusOptions('p2', p2Options);
         }
 
         function renderVersusOptions(player, options) {
             const container = document.getElementById(`${player}-options`); container.innerHTML = '';
             const btnColor = player === 'p1' ? 'bg-blue-800 border-blue-500 hover:bg-blue-700' : 'bg-rose-800 border-rose-500 hover:bg-rose-700';
-
             options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = `game-btn flex items-center justify-center ${btnColor} border-2 sm:border-4 rounded-xl sm:rounded-2xl h-full min-h-[50px] text-2xl sm:text-4xl md:text-5xl font-bold shadow-lg w-full text-white leading-none`;
@@ -545,80 +506,54 @@
             if (selected === versusAnswer) {
                 isVersusLocked = true;
                 let triggerHeal = false;
-
-                // 戰鬥邏輯：攻擊、連擊與回血
                 if (isP1) {
-                    p2HP = Math.max(0, p2HP - damagePerHit); 
-                    p1Combo++; p2Combo = 0; 
-                    if(p1Combo >= 3) {
-                        p1HP = Math.min(100, p1HP + healAmount);
-                        p1Combo = 0; triggerHeal = true;
-                    }
-                    document.getElementById('p1-avatar').classList.add('animate-attack-p1'); // 藍方士兵向左撞擊
+                    p2HP = Math.max(0, p2HP - damagePerHit); p1Combo++; p2Combo = 0; 
+                    if(p1Combo >= 3) { p1HP = Math.min(100, p1HP + healAmount); p1Combo = 0; triggerHeal = true; }
+                    document.getElementById('p1-avatar').classList.add('animate-attack-p1');
                     document.getElementById('p2-zone').classList.add('damage-flash', 'animate-shake');
                 } else {
-                    p1HP = Math.max(0, p1HP - damagePerHit);
-                    p2Combo++; p1Combo = 0;
-                    if(p2Combo >= 3) {
-                        p2HP = Math.min(100, p2HP + healAmount);
-                        p2Combo = 0; triggerHeal = true;
-                    }
-                    document.getElementById('p2-avatar').classList.add('animate-attack-p2'); // 紅方士兵向右撞擊
+                    p1HP = Math.max(0, p1HP - damagePerHit); p2Combo++; p1Combo = 0;
+                    if(p2Combo >= 3) { p2HP = Math.min(100, p2HP + healAmount); p2Combo = 0; triggerHeal = true; }
+                    document.getElementById('p2-avatar').classList.add('animate-attack-p2');
                     document.getElementById('p1-zone').classList.add('damage-flash', 'animate-shake');
                 }
-                
                 updateVersusUI();
                 btn.classList.add('bg-green-500', 'border-green-300');
-                
                 if(triggerHeal) {
-                    feedback.textContent = "✨ 連擊爆發！回血！";
-                    playerZone.classList.add('heal-flash');
+                    feedback.textContent = "✨ 連擊爆發！回血！"; playerZone.classList.add('heal-flash');
                     const healText = document.getElementById(`${player}-heal-text`);
                     healText.classList.remove('opacity-0'); healText.classList.add('animate-heal-float');
                     setTimeout(() => { healText.classList.remove('animate-heal-float'); healText.classList.add('opacity-0'); }, 1000);
-                } else {
-                    feedback.textContent = "⚔️ 攻擊成功！";
-                }
-                
+                } else { feedback.textContent = "⚔️ 攻擊成功！"; }
                 feedback.className = `text-lg sm:text-3xl font-black text-green-400 h-6 sm:h-10 ${isP1?'mb-1 sm:mb-2':'mt-1 sm:mt-2'} opacity-100 transition-opacity flex items-center justify-center`;
                 document.getElementById(`${otherPlayer}-zone`).classList.add('disabled-zone');
                 document.getElementById(`${otherPlayer}-feedback`).textContent = "💥 -10 HP";
                 document.getElementById(`${otherPlayer}-feedback`).className = `text-lg sm:text-3xl font-black text-red-400 h-6 sm:h-10 ${isP1?'mt-1 sm:mt-2':'mb-1 sm:mb-2'} opacity-100 transition-opacity flex items-center justify-center`;
-
                 versusTimeout = setTimeout(() => {
-                    feedback.style.opacity = "0";
-                    document.getElementById(`${otherPlayer}-feedback`).style.opacity = "0";
+                    feedback.style.opacity = "0"; document.getElementById(`${otherPlayer}-feedback`).style.opacity = "0";
                     document.getElementById(`${otherPlayer}-zone`).classList.remove('disabled-zone', 'damage-flash', 'animate-shake');
                     playerZone.classList.remove('heal-flash');
                     document.getElementById('p1-avatar').classList.remove('animate-attack-p1');
                     document.getElementById('p2-avatar').classList.remove('animate-attack-p2');
                     loadVersusQuestion();
                 }, 1500);
-
             } else {
                 if(isP1) p1Combo = 0; else p2Combo = 0;
                 updateVersusUI();
-                
                 btn.classList.add('bg-gray-600', 'border-gray-800'); playerZone.classList.add('disabled-zone');
                 feedback.textContent = "❌ 失誤！連擊中斷";
                 feedback.className = `text-lg sm:text-3xl font-black text-gray-400 h-6 sm:h-10 ${isP1?'mb-1 sm:mb-2':'mt-1 sm:mt-2'} opacity-100 transition-opacity flex items-center justify-center`;
-
-                setTimeout(() => {
-                    playerZone.classList.remove('disabled-zone'); feedback.style.opacity = "0"; btn.classList.remove('bg-gray-600', 'border-gray-800');
-                }, 2000); 
+                setTimeout(() => { playerZone.classList.remove('disabled-zone'); feedback.style.opacity = "0"; btn.classList.remove('bg-gray-600', 'border-gray-800'); }, 2000); 
             }
         }
 
         function updateVersusUI() {
             document.getElementById('p1-hp-text').textContent = p1HP; document.getElementById('p2-hp-text').textContent = p2HP;
             document.getElementById('p1-hp-bar').style.width = `${p1HP}%`; document.getElementById('p2-hp-bar').style.width = `${p2HP}%`;
-            
             if (p1HP <= 30) document.getElementById('p1-hp-bar').classList.replace('from-blue-600', 'from-red-600');
             else document.getElementById('p1-hp-bar').classList.replace('from-red-600', 'from-blue-600');
-            
             if (p2HP <= 30) document.getElementById('p2-hp-bar').classList.replace('from-rose-500', 'from-red-600');
             else document.getElementById('p2-hp-bar').classList.replace('from-red-600', 'from-rose-500');
-
             document.getElementById('p1-combo-dots').textContent = '🟡'.repeat(p1Combo) + '⚪'.repeat(3 - p1Combo);
             document.getElementById('p2-combo-dots').textContent = '🟡'.repeat(p2Combo) + '⚪'.repeat(3 - p2Combo);
         }
@@ -628,7 +563,6 @@
             const title = document.getElementById('result-title'); const sub = document.getElementById('result-subtitle');
             const mainText = document.getElementById('result-main-text'); const label = document.getElementById('result-score-label');
             const nextBtn = document.getElementById('next-level-btn'); const icon = document.getElementById('result-icon');
-
             if (type === 'single') {
                 title.textContent = currentSingleMode === 1 ? "關卡一 通過！" : "關卡二 達成！"; sub.textContent = "太棒了，你的解碼能力越來越強！";
                 label.textContent = "最終得分"; mainText.textContent = singleScore; mainText.className = "text-5xl md:text-6xl font-roman font-bold text-yellow-400 mb-2";
@@ -654,7 +588,6 @@
                 conf.animate([ { transform: `translate3d(0,0,0) rotate(0deg)`, opacity: 1 }, { transform: `translate3d(${Math.random()*300 - 150}px, 100vh, 0) rotate(${Math.random()*720}deg)`, opacity: 0 } ], { duration: (Math.random() * 3 + 2) * 1000, easing: 'cubic-bezier(.37,0,.63,1)', fill: 'forwards' });
             }
         }
-
         switchScreen('screen-start');
     </script>
 </body>
