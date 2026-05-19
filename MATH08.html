@@ -109,11 +109,14 @@
                 <button class="mt-auto bg-gradient-to-r from-fuchsia-700 to-purple-600 text-white font-bold py-2 px-6 rounded-full group-hover:from-yellow-600 group-hover:to-yellow-500 w-full shadow-md">開始挑戰</button>
             </div>
             
-            <div onclick="startVersusMode()" class="mode-card cursor-pointer bg-gradient-to-b from-red-900 to-red-950 p-6 rounded-3xl border-4 border-yellow-500 shadow-[0_10px_25px_rgba(220,38,38,0.6)] flex flex-col items-center group hover:border-white animate-pulse-glow">
+            <div class="mode-card bg-gradient-to-b from-red-900 to-red-950 p-6 rounded-3xl border-4 border-yellow-500 shadow-[0_10px_25px_rgba(220,38,38,0.6)] flex flex-col items-center group hover:border-white animate-pulse-glow">
                 <div class="text-6xl mb-4 group-hover:scale-110 transition-transform text-white">⚔️</div>
                 <h3 class="text-xl md:text-2xl font-bold text-yellow-400 mb-2">競技：雙人對戰</h3>
                 <p class="text-red-200 text-xs md:text-sm mb-4">攻防戰！連對3題可回血</p>
-                <button class="mt-auto bg-gradient-to-r from-yellow-600 to-red-600 text-white font-bold py-2 px-6 rounded-full w-full shadow-[0_0_15px_rgba(234,179,8,0.4)] hover:shadow-[0_0_20px_rgba(234,179,8,0.8)] border border-yellow-400">進入決鬥場</button>
+                <div class="mt-auto flex flex-col sm:flex-row gap-2 w-full">
+                    <button onclick="startVersusMode(false)" class="flex-1 game-btn bg-gradient-to-r from-yellow-600 to-red-600 text-white font-bold py-2 px-2 rounded-xl shadow-[0_0_15px_rgba(234,179,8,0.4)] hover:shadow-[0_0_20px_rgba(234,179,8,0.8)] border border-yellow-400 text-sm">PVP 雙人</button>
+                    <button onclick="startVersusMode(true)" class="flex-1 game-btn bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-2 px-2 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_20px_rgba(99,102,241,0.8)] border border-blue-400 text-sm">PVE 打電腦</button>
+                </div>
             </div>
         </div>
     </div>
@@ -193,7 +196,7 @@
             <div id="p2-options" class="grid grid-cols-2 gap-2 sm:gap-4 w-full max-w-md md:max-w-3xl flex-1 min-h-[80px]"></div>
             <div class="w-full flex justify-between items-center max-w-md md:max-w-3xl px-2 mt-auto pt-2 sm:pt-4 flex-none gap-4">
                 <div class="flex flex-col items-start w-24 sm:w-32">
-                    <h3 class="text-sm sm:text-lg font-bold text-rose-300 whitespace-nowrap">紅方 (P2)</h3>
+                    <h3 id="p2-name-label" class="text-sm sm:text-lg font-bold text-rose-300 whitespace-nowrap">紅方 (P2)</h3>
                     <div id="p2-combo-dots" class="flex gap-1 mt-1 text-[10px] sm:text-xs">⚪⚪⚪</div>
                 </div>
                 <div class="flex-1 bg-gray-900 border-2 sm:border-4 border-gray-700 rounded-full h-5 sm:h-8 md:h-10 relative overflow-hidden shadow-inner max-w-sm">
@@ -381,6 +384,7 @@
 
         function backToMenu() {
             clearTimeout(versusTimeout);
+            clearTimeout(cpuTimer);
             document.querySelectorAll('.confetti').forEach(e => e.remove());
             switchScreen('screen-start');
         }
@@ -474,22 +478,60 @@
             document.getElementById('single-progress').textContent = `${singleCount}/${totalSingleQuestions}`;
         }
 
-        // === 雙人競技模式邏輯 ===
+        // === 雙人競技/電腦對戰模式邏輯 ===
         let p1HP = 100; let p2HP = 100; let p1Combo = 0; let p2Combo = 0;
         const damagePerHit = 10; const healAmount = 20;
         let versusAnswer = ""; let versusModeType = 1; let isVersusLocked = false; let versusTimeout;
+        
+        // PVE 專用變數
+        let isCpuMode = false;
+        let cpuTimer = null;
+        let questionStartTime = 0;
+        let currentCpuReactionTime = 6000; // 初始電腦反應時間拉長至 6 秒
+        let pveEnemiesDefeated = 0;
 
-        function startVersusMode() {
+        function startVersusMode(cpuMode = false) {
+            isCpuMode = cpuMode;
+            currentCpuReactionTime = 6000; // 重置電腦難度為最弱 (6秒)
+            pveEnemiesDefeated = 0;
             p1HP = 100; p2HP = 100; p1Combo = 0; p2Combo = 0; isVersusLocked = false;
             updateVersusUI();
+
+            document.getElementById('p2-name-label').textContent = isCpuMode ? "帝國守衛 (第 1 波)" : "紅方 (P2)";
+            if (isCpuMode) {
+                document.getElementById('p2-options').classList.add('pointer-events-none');
+            } else {
+                document.getElementById('p2-options').classList.remove('pointer-events-none');
+            }
+
             document.getElementById('p1-zone').classList.remove('disabled-zone', 'damage-flash', 'heal-flash');
             document.getElementById('p2-zone').classList.remove('disabled-zone', 'damage-flash', 'heal-flash');
             switchScreen('screen-versus'); loadVersusQuestion();
         }
 
         function loadVersusQuestion() {
-            if (p1HP <= 0 || p2HP <= 0) { showResultScreen('versus'); return; }
+            if (p1HP <= 0) { showResultScreen('versus'); return; }
+            if (p2HP <= 0) {
+                if (isCpuMode) {
+                    // PVE 無限模式：進入下一波
+                    pveEnemiesDefeated++;
+                    p2HP = 100;
+                    p2Combo = 0;
+                    // 根據擊退敵人數目增加難度 (每波縮短 0.8 秒，最快 1.2 秒)
+                    currentCpuReactionTime = Math.max(1200, 6000 - (pveEnemiesDefeated * 800)); 
+                    document.getElementById('p2-name-label').textContent = `帝國守衛 (第 ${pveEnemiesDefeated + 1} 波)`;
+                    const p2Feedback = document.getElementById('p2-feedback');
+                    p2Feedback.textContent = "⚠️ 新敵人出現！";
+                    p2Feedback.className = "text-lg sm:text-3xl font-black text-yellow-400 h-6 sm:h-10 opacity-100 transition-opacity flex-none flex items-center justify-center mb-1 sm:mb-2";
+                    setTimeout(() => { p2Feedback.style.opacity = "0"; }, 1500);
+                    updateVersusUI();
+                } else {
+                    showResultScreen('versus'); return; 
+                }
+            }
+            clearTimeout(cpuTimer);
             isVersusLocked = false;
+            
             versusModeType = Math.random() > 0.5 ? 1 : 2;
             let num = getRandomInt(1, 39); let displayStr = ""; let options = [];
             if (versusModeType === 1) { displayStr = num.toString(); versusAnswer = intToRoman(num); options = generateDistractors(num, 1); } 
@@ -501,6 +543,25 @@
             if(versusModeType === 2) { qElemP1.classList.add('font-roman', 'text-yellow-100'); qElemP2.classList.add('font-roman', 'text-yellow-100'); } 
             else { qElemP1.classList.remove('font-roman', 'text-yellow-100'); qElemP2.classList.remove('font-roman', 'text-yellow-100'); }
             renderVersusOptions('p1', p1Options); renderVersusOptions('p2', p2Options);
+
+            questionStartTime = Date.now();
+
+            if (isCpuMode && !isVersusLocked) {
+                // 加入一點隨機浮動，讓電腦不會每次都超級準時
+                let randomVariance = (Math.random() * 0.2 - 0.1) * currentCpuReactionTime; 
+                let actualCpuTime = currentCpuReactionTime + randomVariance;
+
+                cpuTimer = setTimeout(() => {
+                    if (!isVersusLocked) {
+                        const p2Btns = document.querySelectorAll('#p2-options button');
+                        let correctBtn = null;
+                        p2Btns.forEach(b => { if (b.textContent === versusAnswer) correctBtn = b; });
+                        if (correctBtn) {
+                            checkVersusAnswer('p2', versusAnswer, correctBtn);
+                        }
+                    }
+                }, actualCpuTime);
+            }
         }
 
         function renderVersusOptions(player, options) {
@@ -516,11 +577,16 @@
 
         function checkVersusAnswer(player, selected, btn) {
             if (isVersusLocked) return;
+            
+            clearTimeout(cpuTimer); // 如果有人作答，先清除電腦的倒數
+
             const isP1 = player === 'p1'; const otherPlayer = isP1 ? 'p2' : 'p1';
             const playerZone = document.getElementById(`${player}-zone`); const feedback = document.getElementById(`${player}-feedback`);
+            let reactionTime = Date.now() - questionStartTime;
 
             if (selected === versusAnswer) {
                 isVersusLocked = true;
+
                 let triggerHeal = false;
                 if (isP1) {
                     p2HP = Math.max(0, p2HP - damagePerHit); p1Combo++; p2Combo = 0; 
@@ -559,6 +625,21 @@
                 }, 1500);
             } else {
                 if(isP1) p1Combo = 0; else p2Combo = 0;
+                
+                // PVE模式下，如果玩家答錯被懲罰，但題目還在，必須重啟電腦的答題倒數器
+                if (isCpuMode && isP1) {
+                    let remainingTime = currentCpuReactionTime - reactionTime;
+                    if (remainingTime < 500) remainingTime = 500; // 最少給 0.5 秒緩衝
+                    cpuTimer = setTimeout(() => {
+                        if (!isVersusLocked) {
+                            const p2Btns = document.querySelectorAll('#p2-options button');
+                            let correctBtn = null;
+                            p2Btns.forEach(b => { if (b.textContent === versusAnswer) correctBtn = b; });
+                            if (correctBtn) checkVersusAnswer('p2', versusAnswer, correctBtn);
+                        }
+                    }, remainingTime);
+                }
+
                 updateVersusUI();
                 btn.classList.add('bg-gray-600', 'border-gray-800'); playerZone.classList.add('disabled-zone');
                 feedback.textContent = "❌ 失誤！連擊中斷";
@@ -589,10 +670,26 @@
                 if (currentSingleMode === 1) { icon.textContent = "🛡️"; nextBtn.textContent = "挑戰關卡二 🚀"; nextBtn.onclick = () => { document.getElementById('screen-start').style.filter='none'; startSinglePlayer(2); }; } 
                 else { icon.textContent = "👑"; nextBtn.textContent = "再玩一次 🔄"; nextBtn.onclick = () => { document.getElementById('screen-start').style.filter='none'; startSinglePlayer(2); }; createConfetti(); }
             } else if (type === 'versus') {
-                title.textContent = "決鬥結束！"; label.textContent = "最終勝出部隊"; icon.textContent = "⚔️";
-                if (p2HP <= 0) { sub.textContent = "藍方士兵成功擊破了敵軍防線！"; mainText.textContent = "藍方 獲勝 🔵"; mainText.className = "text-4xl md:text-5xl font-bold text-blue-400 mb-2"; } 
-                else { sub.textContent = "紅方士兵成功擊破了敵軍防線！"; mainText.textContent = "紅方 獲勝 🔴"; mainText.className = "text-4xl md:text-5xl font-bold text-rose-400 mb-2"; }
-                nextBtn.textContent = "再來一局 🔄"; nextBtn.onclick = () => { document.getElementById('screen-start').style.filter='none'; startVersusMode(); };
+                title.textContent = "決鬥結束！"; icon.textContent = "⚔️";
+                if (isCpuMode) {
+                    label.textContent = "生存紀錄";
+                    sub.textContent = "你已經盡力了，羅馬會銘記你的英勇！";
+                    mainText.textContent = `擊退 ${pveEnemiesDefeated} 名敵人`;
+                    mainText.className = "text-4xl md:text-5xl font-bold text-yellow-400 mb-2";
+                } else {
+                    label.textContent = "最終勝出部隊";
+                    if (p2HP <= 0) { 
+                        sub.textContent = "藍方士兵成功擊破了敵軍防線！"; 
+                        mainText.textContent = "藍方 獲勝 🔵"; 
+                        mainText.className = "text-4xl md:text-5xl font-bold text-blue-400 mb-2"; 
+                    } 
+                    else { 
+                        sub.textContent = "紅方士兵成功擊破了敵軍防線！"; 
+                        mainText.textContent = "紅方 獲勝 🔴"; 
+                        mainText.className = "text-4xl md:text-5xl font-bold text-rose-400 mb-2"; 
+                    }
+                }
+                nextBtn.textContent = "再來一局 🔄"; nextBtn.onclick = () => { document.getElementById('screen-start').style.filter='none'; startVersusMode(isCpuMode); };
                 createConfetti();
             }
         }
