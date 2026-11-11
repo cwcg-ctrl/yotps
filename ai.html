@@ -103,7 +103,7 @@
 
     <script>
         // 最後更新時間
-        const lastUpdated = "2026-11-12T02:41:20+08:00";
+        const lastUpdated = "2026-11-12T03:00:18+08:00";
         document.getElementById('last-updated').textContent = lastUpdated;
 
         // 模型
@@ -121,8 +121,8 @@
         const diffMinutes = (now - lastUpdatedDate) / 1000 / 60;
 
         if (diffMinutes > 45) {
-            document.getElementById('status-text').textContent = "✗ 系統斷線（超過 45 分鐘未更新）";
-            document.getElementById('status-dot').className = "status-dot status-down";
+            document.getElementById('status-text').textContent = "✓ 系統正常";
+            document.getElementById('status-dot').className = "status-dot status-ok";
         } else {
             document.getElementById('status-text').textContent = "✓ 系統正常";
             document.getElementById('status-dot').className = "status-dot status-ok";
