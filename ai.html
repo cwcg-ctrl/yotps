@@ -110,12 +110,12 @@
 
         <div class="mt-6 text-center">
             <p class="text-slate-400 text-[10px] font-semibold uppercase tracking-widest">
-                Powered by Hermes AI · 每 30 分鐘自動更新
+                Powered by Hermes AI · 每 1 小時自動更新
             </p>
         </div>
     </div>
 
-    <script type="application/json" id="status-data">{"last_updated": "2026-11-12T04:30:18+08:00", "model": "meituan/longcat-2.5:free", "gateway": "running（1 個 agent 活躍）", "backup": "2026-11-12_0133（2046 MB，2 小時前）", "disk": "C: 84% 用咗，剩 10.6 GB\nE: 4% 用咗，剩 102.5 GB", "errors": "Rate limit（429） 181 次\n找不到資源（404） 2 次\n連線協議錯誤 1 次\nstate.db 被替換，gateway 拒絕寫入 ×1969", "recent_work": "• evolution/KNOWLEDGE.md（41 分鐘前）\n• evolution/CHANGELOG.md（41 分鐘前）\n• phase2：docs: add AGENTS.md project conventions（8 小時前）\n• 排程 8/8 啟用，6 個上次正常"}</script>
+    <script type="application/json" id="status-data">{"last_updated": "2026-11-12T04:41:39+08:00", "model": "meituan/longcat-2.5:free", "gateway": "running（1 個 agent 活躍）", "backup": "2026-11-12_0133（2046 MB，3 小時前）", "disk": "C: 84% 用咗，剩 10.6 GB\nE: 4% 用咗，剩 102.5 GB", "errors": "Rate limit（429） 181 次\n找不到資源（404） 2 次\n連線協議錯誤 1 次\nstate.db 被替換，gateway 拒絕寫入 ×1969", "recent_work": "• evolution/SKILL-HEALTH.md（49 分鐘前）\n• evolution/KNOWLEDGE.md（52 分鐘前）\n• phase2：docs: add AGENTS.md project conventions（9 小時前）\n• 排程 8/8 啟用，6 個上次正常"}</script>
     <script>
         let d = {};
         try {
@@ -137,14 +137,14 @@
         set('recent-work', d.recent_work);
         set('last-updated', d.last_updated);
 
-        // 系統狀態：最後更新超過 45 分鐘 → 判為斷線
+        // 系統狀態：最後更新超過 90 分鐘 → 判為斷線
         const dot = document.getElementById('status-dot');
         const txt = document.getElementById('status-text');
         const t = d.last_updated ? new Date(d.last_updated) : null;
         const valid = t && !isNaN(t.getTime());
         const ageMin = valid ? (Date.now() - t.getTime()) / 60000 : Infinity;
 
-        if (!valid || ageMin > 45) {
+        if (!valid || ageMin > 90) {
             const hrs = valid ? (ageMin / 60).toFixed(1) : '未知';
             txt.textContent = valid
                 ? '✗ 系統斷線（已 ' + hrs + ' 小時冇更新）'

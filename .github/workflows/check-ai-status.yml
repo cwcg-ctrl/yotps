@@ -30,9 +30,9 @@ jobs:
           
           echo "Diff: $DIFF seconds ($((DIFF / 3600)) hours)"
           
-          if [ $DIFF -gt 2700 ]; then
+          if [ $DIFF -gt 5400 ]; then
             echo "status=down" >> $GITHUB_OUTPUT
-            echo "::warning::AI status page has not been updated for more than 45 minutes"
+            echo "::warning::AI status page has not been updated for more than 90 minutes"
           else
             echo "status=ok" >> $GITHUB_OUTPUT
           fi
@@ -45,6 +45,6 @@ jobs:
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: '⚠️ AI 系統狀態：超過 45 分鐘未更新',
-              body: 'ai.html 嘅「最後更新時間」已超過 45 分鐘，可能系統斷線。請檢查。\n\n最後更新時間：' + new Date().toISOString()
+              title: '⚠️ AI 系統狀態：超過 90 分鐘未更新',
+              body: 'ai.html 嘅「最後更新時間」已超過 90 分鐘，可能系統斷線。請檢查。\n\n最後更新時間：' + new Date().toISOString()
             })
