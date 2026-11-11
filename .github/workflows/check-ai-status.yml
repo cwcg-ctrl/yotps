@@ -30,7 +30,7 @@ jobs:
           
           echo "Diff: $DIFF seconds ($((DIFF / 3600)) hours)"
           
-          if [ $DIFF -gt 86400 ]; then
+          if [ $DIFF -gt 2700 ]; then
             echo "status=down" >> $GITHUB_OUTPUT
             echo "::warning::AI status page has not been updated for more than 24 hours"
           else
