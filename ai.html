@@ -77,6 +77,21 @@
                 <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">上次備份</div>
                 <div id="backup" class="text-sm font-mono text-slate-700">---</div>
             </div>
+
+            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">磁碟空間</div>
+                <div id="disk" class="text-sm font-mono text-slate-700">---</div>
+            </div>
+
+            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">最近錯誤</div>
+                <div id="errors" class="text-sm font-mono text-slate-700">---</div>
+            </div>
+
+            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">最近工作</div>
+                <div id="recent-work" class="text-sm font-mono text-slate-700">---</div>
+            </div>
         </div>
 
         <div class="mt-6 text-center">
@@ -88,7 +103,7 @@
 
     <script>
         // 最後更新時間
-        const lastUpdated = "2026-11-12T02:30:18+08:00";
+        const lastUpdated = "2026-11-12T02:41:20+08:00";
         document.getElementById('last-updated').textContent = lastUpdated;
 
         // 模型
@@ -106,8 +121,8 @@
         const diffMinutes = (now - lastUpdatedDate) / 1000 / 60;
 
         if (diffMinutes > 45) {
-            document.getElementById('status-text').textContent = "✓ 系統正常";
-            document.getElementById('status-dot').className = "status-dot status-ok";
+            document.getElementById('status-text').textContent = "✗ 系統斷線（超過 45 分鐘未更新）";
+            document.getElementById('status-dot').className = "status-dot status-down";
         } else {
             document.getElementById('status-text').textContent = "✓ 系統正常";
             document.getElementById('status-dot').className = "status-dot status-ok";
