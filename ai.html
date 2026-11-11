@@ -37,6 +37,21 @@
         }
         .status-ok { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
         .status-down { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .card-label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            margin-bottom: 4px;
+        }
+        .card-value {
+            font-size: 13px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            color: #334155;
+            white-space: pre-line;
+            line-height: 1.55;
+            word-break: break-word;
+        }
     </style>
 </head>
 <body class="p-4">
@@ -49,83 +64,95 @@
             <div class="h-1 w-12 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
         </header>
 
-        <div class="space-y-4">
+        <div class="space-y-3">
             <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">系統狀態</div>
+                <div class="card-label">系統狀態</div>
                 <div class="flex items-center">
                     <span id="status-dot" class="status-dot status-ok"></span>
-                    <span id="status-text" class="text-lg font-bold text-slate-800">✓ 系統正常</span>
+                    <span id="status-text" class="text-lg font-bold text-slate-800">—</span>
                 </div>
             </div>
 
             <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">最後更新時間</div>
-                <div id="last-updated" class="text-lg font-mono text-slate-800">---</div>
+                <div class="card-label">最後更新時間</div>
+                <div id="last-updated" class="text-base font-mono text-slate-800">—</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                    <div class="card-label">模型</div>
+                    <div id="model" class="card-value">—</div>
+                </div>
+                <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                    <div class="card-label">Gateway</div>
+                    <div id="gateway" class="card-value">—</div>
+                </div>
+                <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                    <div class="card-label">上次備份</div>
+                    <div id="backup" class="card-value">—</div>
+                </div>
+                <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
+                    <div class="card-label">磁碟空間</div>
+                    <div id="disk" class="card-value">—</div>
+                </div>
             </div>
 
             <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">模型</div>
-                <div id="model" class="text-sm font-mono text-slate-700">---</div>
+                <div class="card-label">最近錯誤（24 小時）</div>
+                <div id="errors" class="card-value">—</div>
             </div>
 
             <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">Gateway</div>
-                <div id="gateway" class="text-sm font-mono text-slate-700">---</div>
-            </div>
-
-            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">上次備份</div>
-                <div id="backup" class="text-sm font-mono text-slate-700">---</div>
-            </div>
-
-            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">磁碟空間</div>
-                <div id="disk" class="text-sm font-mono text-slate-700">---</div>
-            </div>
-
-            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">最近錯誤</div>
-                <div id="errors" class="text-sm font-mono text-slate-700">---</div>
-            </div>
-
-            <div class="bg-white/70 rounded-xl p-4 border border-white shadow-sm">
-                <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">最近工作</div>
-                <div id="recent-work" class="text-sm font-mono text-slate-700">---</div>
+                <div class="card-label">最近工作</div>
+                <div id="recent-work" class="card-value">—</div>
             </div>
         </div>
 
         <div class="mt-6 text-center">
             <p class="text-slate-400 text-[10px] font-semibold uppercase tracking-widest">
-                Powered by Hermes AI
+                Powered by Hermes AI · 每 30 分鐘自動更新
             </p>
         </div>
     </div>
 
+    <script type="application/json" id="status-data">{"last_updated": "2026-11-12T03:15:39+08:00", "model": "meituan/longcat-2.5", "gateway": "running（2 個 agent 活躍）", "backup": "2026-11-12_0133（2046 MB，1 小時前）", "disk": "C: 84% 用咗，剩 10.6 GB\nE: 4% 用咗，剩 103.3 GB", "errors": "Rate limit（429） 623 次\nAPI 呼叫失敗 2 次\n工具錯誤 86 次\n403 封鎖 1 次\n其他 1976 次", "recent_work": "• evolution/KNOWLEDGE.md（6 分鐘前）\n• hermes-health/STATUS.md（46 分鐘前）\n• phase2：docs: add AGENTS.md project conventions（7 小時前）\n• 排程 7/7 啟用，5 個上次正常"}</script>
     <script>
-        // 最後更新時間
-        const lastUpdated = "2026-11-12T03:00:18+08:00";
-        document.getElementById('last-updated').textContent = lastUpdated;
+        let d = {};
+        try {
+            d = JSON.parse(document.getElementById('status-data').textContent);
+        } catch (e) {
+            d = {};
+        }
 
-        // 模型
-        document.getElementById('model').textContent = "meituan/longcat-2.5:free";
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el && val !== undefined && val !== null && val !== '') el.textContent = val;
+        };
 
-        // Gateway
-        document.getElementById('gateway').textContent = "running";
+        set('model', d.model);
+        set('gateway', d.gateway);
+        set('backup', d.backup);
+        set('disk', d.disk);
+        set('errors', d.errors);
+        set('recent-work', d.recent_work);
+        set('last-updated', d.last_updated);
 
-        // 上次備份
-        document.getElementById('backup').textContent = "2026-11-12 01:37 HKT";
+        // 系統狀態：最後更新超過 45 分鐘 → 判為斷線
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-text');
+        const t = d.last_updated ? new Date(d.last_updated) : null;
+        const valid = t && !isNaN(t.getTime());
+        const ageMin = valid ? (Date.now() - t.getTime()) / 60000 : Infinity;
 
-        // 判斷系統狀態（45 分鐘）
-        const lastUpdatedDate = new Date(lastUpdated);
-        const now = new Date();
-        const diffMinutes = (now - lastUpdatedDate) / 1000 / 60;
-
-        if (diffMinutes > 45) {
-            document.getElementById('status-text').textContent = "✓ 系統正常";
-            document.getElementById('status-dot').className = "status-dot status-ok";
+        if (!valid || ageMin > 45) {
+            const hrs = valid ? (ageMin / 60).toFixed(1) : '未知';
+            txt.textContent = valid
+                ? '✗ 系統斷線（已 ' + hrs + ' 小時冇更新）'
+                : '✗ 系統斷線（讀不到最後更新時間）';
+            dot.className = 'status-dot status-down';
         } else {
-            document.getElementById('status-text').textContent = "✓ 系統正常";
-            document.getElementById('status-dot').className = "status-dot status-ok";
+            txt.textContent = '✓ 系統正常（' + Math.round(ageMin) + ' 分鐘前更新）';
+            dot.className = 'status-dot status-ok';
         }
     </script>
 </body>
