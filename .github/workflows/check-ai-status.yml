@@ -15,7 +15,7 @@ jobs:
       - name: Check last updated
         id: check
         run: |
-          LAST_UPDATED=$(grep -oP 'const lastUpdated = "\K[^"]+' ai.html)
+          LAST_UPDATED=$(grep -oP '"last_updated":\s*"\K[^"]+' ai.html)
           echo "Last updated: $LAST_UPDATED"
           
           if [ -z "$LAST_UPDATED" ]; then
