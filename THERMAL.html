@@ -1,0 +1,2982 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>冷縮熱脹 3D 互動科學實驗室 · 香港小學科學科 (P4–P5)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans TC & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <!-- Three.js r128 & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #243137;
+      font-family: 'Noto Sans TC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #1e293b;
+      user-select: none;
+    }
+
+    /* 全螢幕 3D 畫布容器：直接接收滑鼠與觸控事件 */
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      touch-action: none;
+    }
+    #canvas-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* 高對比度磨砂玻璃卡片與空間標籤膠囊 */
+    .glass-card {
+      background: rgba(248, 250, 252, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(203, 213, 225, 0.75);
+      box-shadow: 0 10px 30px rgba(10, 18, 24, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+    .glass-pill {
+      background: rgba(248, 250, 252, 0.94);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      box-shadow: 0 6px 18px rgba(10, 18, 24, 0.34);
+    }
+
+    /* 頂部統一彈性工具列（outer pointer-events: none 確保絕不阻擋畫布與視窗操作） */
+    #top-hud {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .hud-group {
+      pointer-events: auto;
+    }
+
+    /* 可收合「科學迷思與原理」側邊浮動卡片 */
+    #myth-card {
+      position: fixed;
+      left: 12px;
+      top: 72px;
+      width: min(330px, calc(100vw - 24px));
+      max-height: calc(100vh - 230px);
+      overflow-y: auto;
+      z-index: 22;
+      pointer-events: auto;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    #myth-card::-webkit-scrollbar {
+      width: 5px;
+    }
+    #myth-card::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 999px;
+    }
+
+    /* 底部實驗操作控制列 */
+    #bottom-dock {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(740px, calc(100vw - 24px));
+      z-index: 20;
+      pointer-events: none;
+    }
+    #bottom-dock-inner {
+      pointer-events: auto;
+    }
+
+    /* 按鈕互動與主題色（實驗室墨綠 #1f5c52） */
+    .ui-btn {
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .ui-btn:active {
+      transform: scale(0.96);
+    }
+    .btn-active {
+      background: #1f5c52;
+      border-color: #16443d;
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(31, 92, 82, 0.32);
+    }
+    .btn-myth-active {
+      background: #d97706;
+      border-color: #b45309;
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(217, 119, 6, 0.32);
+    }
+    .btn-normal {
+      background: rgba(255, 255, 255, 0.92);
+      border-color: rgba(148, 163, 184, 0.48);
+      color: #334155;
+    }
+    .btn-normal:hover {
+      background: #f1f5f9;
+      border-color: #1f5c52;
+      color: #0f172a;
+    }
+
+    /* 溫度滑桿樣式（冰川藍 -> 實驗室綠 -> 暖橘紅） */
+    input[type="range"].sci-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3b82f6 0%, #1f5c52 42%, #f59e0b 74%, #ea580c 100%);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].sci-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 3px solid #1f5c52;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+      cursor: grab;
+    }
+    input[type="range"].sci-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 3px solid #1f5c52;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
+      cursor: grab;
+    }
+
+    /* 3D 空間投影浮動標籤（完全不攔截滑鼠與觸控事件） */
+    .label-3d {
+      position: fixed;
+      top: 0;
+      left: 0;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 8;
+      will-change: transform;
+    }
+  </style>
+</head>
+<body>
+  <!-- WebGL 3D 畫布容器 -->
+  <div id="canvas-container"></div>
+
+  <!-- 友善錯誤捕捉視窗（絕不使用 alert） -->
+  <div id="error-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4">
+    <div class="glass-card rounded-2xl max-w-md w-full p-6 text-center space-y-3 border-red-300">
+      <div class="w-11 h-11 mx-auto rounded-full bg-red-100 text-red-600 flex items-center justify-center text-lg font-bold">
+        !
+      </div>
+      <h2 class="text-base font-bold text-slate-800">3D 科學實驗室載入異常</h2>
+      <p id="error-modal-text" class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+        瀏覽器暫時無法啟動 WebGL 3D 繪圖引擎，請確認網路連線正常後重新整理頁面。
+      </p>
+      <button
+        type="button"
+        onclick="window.location.reload()"
+        class="ui-btn btn-active rounded-xl px-5 py-2 text-xs sm:text-sm font-semibold border cursor-pointer"
+      >
+        重新載入實驗室
+      </button>
+    </div>
+  </div>
+
+  <!-- 3D 空間投影浮動標籤層 -->
+  <div id="labels-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+    <!-- 模式一：粒子直徑量度卡尺環標籤 -->
+    <div id="tag-caliper" class="label-3d hidden">
+      <div class="glass-pill rounded-xl px-3 py-1.5 border-emerald-500 flex items-center gap-2 whitespace-nowrap">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+        <div>
+          <div class="text-[11px] font-bold text-emerald-800 leading-tight">
+            粒子直徑 d 固定不變（1.00 單位）
+          </div>
+          <div id="tag-spacing-txt" class="text-[10px] text-slate-600 leading-tight">
+            平均粒子間距：1.48 單位
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 模式一：整體物質體積比例標籤 -->
+    <div id="tag-volume" class="label-3d hidden">
+      <div class="glass-pill rounded-full px-3 py-1 text-xs font-semibold text-[#1f5c52] whitespace-nowrap">
+        物質整體體積：<span id="tag-volume-num" class="text-slate-900 font-bold">100%</span>
+        <span id="tag-ref-note" class="text-[10px] text-slate-500 ml-1">（虛線框：25°C 原體積）</span>
+      </div>
+    </div>
+
+    <!-- 模式二：銅球過鐵環狀態標籤 -->
+    <div id="tag-ring-status" class="label-3d hidden">
+      <div id="tag-ring-card" class="glass-pill rounded-2xl px-3.5 py-2 text-center whitespace-nowrap border-emerald-500">
+        <div id="tag-ring-title" class="text-xs sm:text-sm font-bold text-emerald-800">
+          常溫 25°C：銅球直徑 ＜ 鐵環內徑
+        </div>
+        <div id="tag-ring-sub" class="text-[10px] sm:text-[11px] text-slate-600 mt-0.5">
+          點擊下方「1. 常溫測試 (25°C)」觀察穿過鐵環
+        </div>
+      </div>
+    </div>
+    <div id="tag-lamp" class="label-3d hidden">
+      <div class="glass-pill rounded-full px-2.5 py-0.5 text-[11px] font-bold text-[#ea580c] whitespace-nowrap">
+        酒精燈（熱源）
+      </div>
+    </div>
+    <div id="tag-ice" class="label-3d hidden">
+      <div class="glass-pill rounded-full px-2.5 py-0.5 text-[11px] font-bold text-[#2563eb] whitespace-nowrap">
+        冰水燒杯（0°C）
+      </div>
+    </div>
+
+    <!-- 模式三：固液氣三組裝置標籤 -->
+    <div id="tag-comp-solid" class="label-3d hidden">
+      <div class="glass-pill rounded-xl px-2.5 py-1 text-center whitespace-nowrap border-amber-500/80">
+        <div class="text-[11px] sm:text-xs font-bold text-amber-800">① 固體（銅棒＋刻度指針）</div>
+        <div id="comp-solid-txt" class="text-[10px] text-slate-600">體積變化：0.00%（最小）</div>
+      </div>
+    </div>
+    <div id="tag-comp-liquid" class="label-3d hidden">
+      <div class="glass-pill rounded-xl px-2.5 py-1 text-center whitespace-nowrap border-rose-500/80">
+        <div class="text-[11px] sm:text-xs font-bold text-rose-700">② 液體（紅水燒瓶＋刻度玻璃管）</div>
+        <div id="comp-liquid-txt" class="text-[10px] text-slate-600">體積變化：0.0%（明顯）</div>
+      </div>
+    </div>
+    <div id="tag-comp-gas" class="label-3d hidden">
+      <div class="glass-pill rounded-xl px-2.5 py-1 text-center whitespace-nowrap border-sky-500/80">
+        <div class="text-[11px] sm:text-xs font-bold text-sky-800">③ 氣體（空氣燒瓶＋彈性氣球）</div>
+        <div id="comp-gas-txt" class="text-[10px] text-slate-600">體積變化：0.0%（最大！）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- 一、頂部統一彈性工具列 (Top HUD Flexbox Bar) -->
+  <!-- ======================================================================= -->
+  <header id="top-hud">
+    <!-- 左側標題區 -->
+    <div class="hud-group glass-card rounded-2xl px-3 py-1.5 flex items-center gap-2">
+      <span class="w-7 h-7 rounded-lg bg-[#1f5c52] text-white font-bold text-xs flex items-center justify-center shadow-sm shrink-0">
+        科學
+      </span>
+      <div>
+        <h1 class="text-xs sm:text-sm font-bold text-slate-800 leading-tight whitespace-nowrap">
+          冷縮熱脹 3D 科學實驗室
+        </h1>
+        <p class="text-[10px] text-[#1f5c52] font-semibold leading-tight whitespace-nowrap">
+          香港小學科學科 P4–P5
+        </p>
+      </div>
+    </div>
+
+    <!-- 中央模式切換膠囊 -->
+    <nav class="hud-group glass-card rounded-2xl p-1 flex flex-wrap items-center gap-1" aria-label="實驗模式切換">
+      <button id="mode-btn-1" type="button" class="ui-btn btn-active rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        1. 微觀粒子模型
+      </button>
+      <button id="mode-btn-2" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        2. 銅球過鐵環
+      </button>
+      <button id="mode-btn-3" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        3. 固・液・氣對比
+      </button>
+    </nav>
+
+    <!-- 右側視角與科學迷思按鈕群組 -->
+    <div class="hud-group glass-card rounded-2xl p-1 flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="視角與科學迷思控制">
+      <button id="cam-front" type="button" class="ui-btn btn-active rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        正面
+      </button>
+      <button id="cam-top" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        俯視
+      </button>
+      <button id="cam-closeup" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        特寫
+      </button>
+      <button id="cam-rotate" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap" aria-pressed="false">
+        自動旋轉
+      </button>
+      <button id="cam-reset" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-semibold border cursor-pointer whitespace-nowrap">
+        重設
+      </button>
+      <div class="h-5 w-px bg-slate-300 mx-0.5"></div>
+      <button id="btn-myth-toggle" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-1.5 text-xs font-bold border cursor-pointer whitespace-nowrap flex items-center gap-1" aria-expanded="false" aria-controls="myth-card">
+        <span>💡 科學迷思</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================= -->
+  <!-- 二、可收合「科學迷思與原理」側邊浮動卡片（預設收合，絕不遮擋畫面） -->
+  <!-- ======================================================================= -->
+  <aside id="myth-card" class="glass-card rounded-2xl p-3.5 hidden" aria-label="科學迷思與原理說明">
+    <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/90">
+      <div class="flex items-center gap-1.5">
+        <span class="text-sm">💡</span>
+        <h2 class="text-xs sm:text-sm font-bold text-slate-800">科學迷思與原理</h2>
+      </div>
+      <button
+        id="btn-myth-close"
+        type="button"
+        class="ui-btn rounded-lg px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer whitespace-nowrap"
+      >
+        ✕ 關閉
+      </button>
+    </div>
+
+    <div class="mt-2.5 space-y-2.5 text-xs leading-relaxed">
+      <div id="myth-mode-badge" class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-50 text-[#1f5c52] border border-teal-200">
+        模式一：微觀粒子模型
+      </div>
+
+      <!-- 常見迷思區塊 -->
+      <div class="rounded-xl bg-amber-50/95 border border-amber-200 p-2.5">
+        <div class="text-[11px] font-bold text-amber-800 mb-0.5">❌ 常見學習迷思：</div>
+        <p id="myth-wrong-text" class="text-slate-700">
+          「物體受熱膨脹時，裡面的粒子本身變大了，或者粒子的數量增加了。」
+        </p>
+      </div>
+
+      <!-- 正確科學原理區塊 -->
+      <div class="rounded-xl bg-teal-50/90 border border-teal-200 p-2.5">
+        <div class="text-[11px] font-bold text-[#1f5c52] mb-0.5">✅ 正確科學原理：</div>
+        <p id="myth-right-text" class="text-slate-700">
+          受熱時，粒子運動加快、<strong class="text-slate-900">粒子之間的距離（間距）變大</strong>，令整體體積膨脹；<strong class="text-slate-900">粒子本身的大小（直徑 d）及數量完全不變</strong>。
+        </p>
+      </div>
+
+      <p class="text-[10px] text-slate-500">
+        操作提示：單指／滑鼠左鍵拖曳可 360° 旋轉，雙指／滾輪可縮放視角。
+      </p>
+    </div>
+  </aside>
+
+  <!-- ======================================================================= -->
+  <!-- 三、底部實驗操作控制列 (Bottom Experiment Dock) -->
+  <!-- ======================================================================= -->
+  <footer id="bottom-dock">
+    <div id="bottom-dock-inner" class="glass-card rounded-2xl p-3 sm:p-3.5">
+
+      <!-- ==================== 模式一控制項 ==================== -->
+      <div id="panel-mode-1" class="space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 物質三態切換 -->
+          <div class="flex items-center gap-1 bg-slate-100/95 p-1 rounded-xl border border-slate-200">
+            <button id="m1-solid" type="button" class="ui-btn btn-active rounded-lg px-2.5 py-1.5 text-xs font-semibold border cursor-pointer">
+              固態（晶格）
+            </button>
+            <button id="m1-liquid" type="button" class="ui-btn btn-normal rounded-lg px-2.5 py-1.5 text-xs font-semibold border cursor-pointer">
+              液態（刻度量筒）
+            </button>
+            <button id="m1-gas" type="button" class="ui-btn btn-normal rounded-lg px-2.5 py-1.5 text-xs font-semibold border cursor-pointer">
+              氣態（活動活塞）
+            </button>
+          </div>
+
+          <!-- 破除迷思工具：顯示粒子直徑量度環 -->
+          <button
+            id="m1-caliper-btn"
+            type="button"
+            class="ui-btn btn-normal rounded-xl px-3 py-1.5 text-xs font-semibold border flex items-center gap-1.5 cursor-pointer"
+            aria-pressed="false"
+          >
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>顯示粒子直徑量度環</span>
+          </button>
+        </div>
+
+        <!-- 溫度滑桿與快捷鍵 -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <div class="flex items-center justify-between sm:justify-start gap-2 shrink-0">
+            <span class="text-xs font-semibold text-slate-600">溫度：</span>
+            <span id="m1-temp-label" class="px-2.5 py-0.5 rounded-lg text-xs sm:text-sm font-bold bg-teal-50 text-[#1f5c52] border border-teal-200 min-w-[64px] text-center">
+              25°C
+            </span>
+          </div>
+
+          <input
+            id="m1-slider"
+            type="range"
+            min="-20"
+            max="120"
+            value="25"
+            step="1"
+            class="sci-slider flex-1"
+            aria-label="溫度滑桿 (-20°C 至 120°C)"
+          />
+
+          <div class="flex items-center justify-end gap-1.5 shrink-0">
+            <button type="button" data-m1-t="-20" class="ui-btn rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-[#2563eb] border border-blue-200 cursor-pointer">
+              降溫 (-20°C)
+            </button>
+            <button type="button" data-m1-t="25" class="ui-btn rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-[#1f5c52] border border-teal-200 cursor-pointer">
+              常溫 (25°C)
+            </button>
+            <button type="button" data-m1-t="100" class="ui-btn rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-[#ea580c] border border-orange-200 cursor-pointer">
+              加熱 (100°C)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 模式二控制項 ==================== -->
+      <div id="panel-mode-2" class="hidden space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-slate-600">銅球溫度：</span>
+            <span id="m2-temp-label" class="px-2.5 py-0.5 rounded-lg text-xs sm:text-sm font-bold bg-teal-50 text-[#1f5c52] border border-teal-200">
+              25°C (常溫)
+            </span>
+            <span id="m2-ratio-label" class="px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-300">
+              銅球直徑：92% 鐵環內徑
+            </span>
+          </div>
+
+          <!-- X光微觀透視開關 -->
+          <button
+            id="m2-xray-btn"
+            type="button"
+            class="ui-btn btn-normal rounded-xl px-3 py-1.5 text-xs font-semibold border cursor-pointer"
+            aria-pressed="false"
+          >
+            X光微觀透視
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button id="m2-step-normal" type="button" class="ui-btn rounded-xl px-2.5 py-2 text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-[#1f5c52] border border-teal-300 cursor-pointer">
+            1. 常溫測試 (25°C)
+          </button>
+          <button id="m2-step-heat" type="button" class="ui-btn rounded-xl px-2.5 py-2 text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-[#ea580c] border border-orange-300 cursor-pointer">
+            2. 酒精燈加熱 (200°C)
+          </button>
+          <button id="m2-step-cool" type="button" class="ui-btn rounded-xl px-2.5 py-2 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-[#2563eb] border border-blue-300 cursor-pointer">
+            3. 冰水冷卻 (0°C)
+          </button>
+          <button id="m2-step-test" type="button" class="ui-btn btn-normal rounded-xl px-2.5 py-2 text-xs font-semibold border cursor-pointer">
+            測試穿過鐵環
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== 模式三控制項 ==================== -->
+      <div id="panel-mode-3" class="hidden space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs sm:text-sm font-bold text-slate-700">
+            同一恆溫水浴槽加熱下，膨脹幅度：<span class="text-[#1f5c52]">氣體 ＞ 液體 ＞ 固體</span>
+          </span>
+          <span id="m3-temp-label" class="px-2.5 py-0.5 rounded-lg text-xs sm:text-sm font-bold bg-teal-50 text-[#1f5c52] border border-teal-200">
+            25°C
+          </span>
+        </div>
+
+        <!-- 三態膨脹倍率即時對比條 -->
+        <div class="grid grid-cols-3 gap-2 text-[11px]">
+          <div class="bg-slate-100/95 rounded-lg px-2 py-1 border border-slate-200">
+            <div class="flex justify-between font-semibold text-amber-800">
+              <span>固體（銅棒）</span>
+              <span id="bar-solid-val">最小</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
+              <div id="bar-solid-fill" class="h-full bg-amber-500 rounded-full transition-all duration-150" style="width: 12%;"></div>
+            </div>
+          </div>
+          <div class="bg-slate-100/95 rounded-lg px-2 py-1 border border-slate-200">
+            <div class="flex justify-between font-semibold text-rose-700">
+              <span>液體（紅水）</span>
+              <span id="bar-liquid-val">明顯</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
+              <div id="bar-liquid-fill" class="h-full bg-rose-500 rounded-full transition-all duration-150" style="width: 32%;"></div>
+            </div>
+          </div>
+          <div class="bg-slate-100/95 rounded-lg px-2 py-1 border border-slate-200">
+            <div class="flex justify-between font-semibold text-sky-800">
+              <span>氣體（空氣）</span>
+              <span id="bar-gas-val">最大</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
+              <div id="bar-gas-fill" class="h-full bg-sky-500 rounded-full transition-all duration-150" style="width: 48%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <span class="text-xs font-semibold text-slate-600 shrink-0">水浴溫度：</span>
+          <input
+            id="m3-slider"
+            type="range"
+            min="10"
+            max="90"
+            value="25"
+            step="1"
+            class="sci-slider flex-1"
+            aria-label="恆溫水浴槽溫度滑桿 (10°C 至 90°C)"
+          />
+          <div class="flex items-center justify-end gap-1.5 shrink-0">
+            <button type="button" data-m3-t="10" class="ui-btn rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-[#2563eb] border border-blue-200 cursor-pointer">
+              冷水 10°C
+            </button>
+            <button type="button" data-m3-t="25" class="ui-btn rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-[#1f5c52] border border-teal-200 cursor-pointer">
+              常溫 25°C
+            </button>
+            <button type="button" data-m3-t="85" class="ui-btn rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-[#ea580c] border border-orange-200 cursor-pointer">
+              熱水 85°C
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ======================================================================= -->
+  <!-- Three.js r128 主程式邏輯 -->
+  <!-- ======================================================================= -->
+  <script>
+    /**
+     * 冷縮熱脹 3D 互動科學實驗室 (Three.js r128)
+     * 專為香港小學科學科（P4–P5）設計：
+     * - 香港中學科學實驗室 3D 實景環境（深石板青灰背景 #243137、黑色防酸鹼實驗檯、柚木實驗櫃、煤氣掣、鵝頸水龍頭、墨綠瓷磚雙色牆身、安全守則及元素週期表海報）
+     * - 模式一：微觀粒子模型（固態晶格＋原體積虛線對照框、液態刻度量筒、氣態活動活塞、粒子直徑量度卡尺環）
+     * - 模式二：經典「銅球過鐵環」實驗（常溫穿過、酒精燈加熱膨脹卡環、冰水冷卻冒出水氣並收縮穿過、X光微觀透視）
+     * - 模式三：同一恆溫水浴槽內的固・液・氣膨脹速率對比實驗台
+     */
+
+    let scene, camera, renderer, controls, clock;
+    let groupMode1, groupMode2, groupMode3;
+
+    // 全局互動狀態
+    const state = {
+      mode: 1,                  // 1: 微觀粒子模型, 2: 銅球過鐵環, 3: 固・液・氣對比
+      camView: 'front',         // 'front' | 'top' | 'closeup'
+      autoRotate: false,
+      mythOpen: false,          // 預設收合，避免遮擋視窗與模型
+      camTransitioning: false,
+      targetCamPos: new THREE.Vector3(0, 4.1, 10.6),
+      targetCamLook: new THREE.Vector3(0, 2.0, 0),
+
+      // 模式一
+      m1Matter: 'solid',        // 'solid' | 'liquid' | 'gas'
+      m1Temp: 25,               // -20°C ~ 120°C
+      showCaliper: false,
+
+      // 模式二
+      m2Temp: 25,
+      m2Action: 'IDLE',         // 'IDLE' | 'NORMAL_TEST' | 'TESTING' | 'HEATING' | 'COOLING'
+      m2Timer: 0,
+      m2Xray: false,
+      armAngle: 0,
+      ballDrop: 0,
+      flameOn: false,
+      steamActive: false,
+
+      // 模式三
+      m3Temp: 25                // 10°C ~ 90°C
+    };
+
+    // 三種模式各自的「正面 / 俯視 / 特寫」攝影機預設
+    const CAMERA_PRESETS = {
+      1: {
+        front:   { pos: new THREE.Vector3(0, 4.1, 10.6), look: new THREE.Vector3(0, 2.0, 0) },
+        top:     { pos: new THREE.Vector3(0, 9.6, 2.8),  look: new THREE.Vector3(0, 1.9, 0) },
+        closeup: { pos: new THREE.Vector3(2.8, 2.6, 4.8),  look: new THREE.Vector3(0, 2.0, 0) }
+      },
+      2: {
+        front:   { pos: new THREE.Vector3(0, 4.1, 10.6), look: new THREE.Vector3(0, 2.0, -0.3) },
+        top:     { pos: new THREE.Vector3(0, 9.6, 2.8),  look: new THREE.Vector3(0, 1.8, -0.4) },
+        closeup: { pos: new THREE.Vector3(2.3, 2.5, 4.2),  look: new THREE.Vector3(0, 2.15, 0) }
+      },
+      3: {
+        front:   { pos: new THREE.Vector3(0, 4.3, 11.4), look: new THREE.Vector3(0, 2.0, 0) },
+        top:     { pos: new THREE.Vector3(0, 9.8, 3.6),  look: new THREE.Vector3(0, 1.8, 0) },
+        closeup: { pos: new THREE.Vector3(0, 3.1, 6.8),  look: new THREE.Vector3(0, 2.1, 0) }
+      }
+    };
+
+    function showFriendlyError(msg) {
+      const modal = document.getElementById('error-modal');
+      const txt = document.getElementById('error-modal-text');
+      if (txt && msg) txt.textContent = msg;
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // 1. 程序化紋理生成器 (CanvasTexture) — 香港中學科學實驗室實景材質
+    // =========================================================================
+
+    /**
+     * 黑色防酸鹼樹脂實驗檯面紋理（#1b2024 炭黑底色＋微細礦物斑點與淡雅測量網格）
+     */
+    function createAcidResistantBenchTexture() {
+      const size = 1024;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#1b2024';
+      ctx.fillRect(0, 0, size, size);
+
+      // 細微礦物防酸鹼斑點
+      for (let i = 0; i < 24000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.22)';
+        ctx.fillRect(x, y, 2, 2);
+      }
+
+      // 極淡桌面實驗參考網格
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= size; i += 64) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, size);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(size, i);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(4, 3);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /**
+     * 溫潤柚木紋理（#5e381f / #6b4226）
+     */
+    function createTeakWoodTexture() {
+      const w = 512;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#5e381f';
+      ctx.fillRect(0, 0, w, h);
+
+      for (let y = 0; y < h; y += 2) {
+        const wave = Math.sin(y * 0.04) * 8;
+        ctx.fillStyle = (y % 6 === 0) ? 'rgba(42, 21, 9, 0.25)' : 'rgba(135, 86, 48, 0.14)';
+        ctx.fillRect(0, y, w, 2);
+        if (y % 18 === 0) {
+          ctx.fillStyle = 'rgba(35, 16, 6, 0.22)';
+          ctx.fillRect(wave + 10, y, w - 20, 1.5);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /**
+     * 香港中學實驗室經典墨綠色光面瓷磚紋理（#1f4d45）
+     */
+    function createGreenTileTexture() {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#1f4d45';
+      ctx.fillRect(0, 0, size, size);
+
+      // 每塊瓷磚細微色澤變化與高光邊緣
+      const tile = 64;
+      for (let gx = 0; gx < size; gx += tile) {
+        for (let gy = 0; gy < size; gy += tile) {
+          const shade = (Math.random() - 0.5) * 10;
+          ctx.fillStyle = `rgb(${31 + shade}, ${77 + shade}, ${69 + shade})`;
+          ctx.fillRect(gx + 2, gy + 2, tile - 4, tile - 4);
+        }
+      }
+
+      // 淺灰白瓷磚縫
+      ctx.strokeStyle = 'rgba(203, 213, 225, 0.34)';
+      ctx.lineWidth = 2.5;
+      for (let i = 0; i <= size; i += tile) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, size);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(size, i);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(12, 2);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /**
+     * 牆上教學海報 1：「實驗室安全守則」
+     */
+    function createSafetyPosterTexture() {
+      const w = 512;
+      const h = 680;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // 海報白底與深綠外框
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#1f4d45';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      // 頂部標題橫幅
+      ctx.fillStyle = '#1f4d45';
+      ctx.fillRect(24, 24, w - 48, 76);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 34px "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('實驗室安全守則', w / 2, 74);
+
+      const rules = [
+        { color: '#dc2626', icon: '!', text: '1. 未經老師許可，切勿擅自觸摸儀器' },
+        { color: '#2563eb', icon: '🥽', text: '2. 進行加熱實驗時必須佩戴安全護目鏡' },
+        { color: '#d97706', icon: '🔥', text: '3. 點燃酒精燈後切勿離開實驗工作檯' },
+        { color: '#059669', icon: '🧪', text: '4. 切勿在實驗室內飲食或奔跑嬉戲' },
+        { color: '#7c3aed', icon: '🧤', text: '5. 切勿徒手觸摸剛加熱的金屬銅球' },
+        { color: '#0284c7', icon: '🧼', text: '6. 實驗完畢後須清潔器材並徹底洗手' }
+      ];
+
+      ctx.textAlign = 'left';
+      rules.forEach((r, idx) => {
+        const y = 148 + idx * 82;
+        ctx.fillStyle = r.color;
+        ctx.beginPath();
+        ctx.arc(62, y, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(r.icon, 62, y + 7);
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 20px "Noto Sans TC", sans-serif';
+        ctx.fillText(r.text, 98, y + 7);
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /**
+     * 牆上教學海報 2：「元素週期表」
+     */
+    function createPeriodicTableTexture() {
+      const w = 768;
+      const h = 480;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(8, 8, w - 16, h - 16);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 30px "Noto Sans TC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('元素週期表  PERIODIC TABLE', w / 2, 54);
+
+      const cols = 18;
+      const rows = 7;
+      const cellW = 37;
+      const cellH = 42;
+      const startX = (w - cols * cellW) / 2;
+      const startY = 82;
+      const palette = ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#7dd3fc', '#c4b5fd', '#f9a8d4'];
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let show = true;
+          if (r === 0 && c > 0 && c < 17) show = false;
+          if ((r === 1 || r === 2) && c > 1 && c < 12) show = false;
+          if (!show) continue;
+
+          const x = startX + c * cellW;
+          const y = startY + r * cellH;
+          ctx.fillStyle = palette[(c + r) % palette.length];
+          ctx.fillRect(x + 1.5, y + 1.5, cellW - 3, cellH - 3);
+          ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 1.5, y + 1.5, cellW - 3, cellH - 3);
+        }
+      }
+
+      // 底部鑭系錒系示意條
+      for (let r = 0; r < 2; r++) {
+        for (let c = 2; c < 16; c++) {
+          const x = startX + c * cellW;
+          const y = startY + (rows + 0.35 + r) * cellH;
+          ctx.fillStyle = r === 0 ? '#93c5fd' : '#d8b4fe';
+          ctx.fillRect(x + 1.5, y + 1.5, cellW - 3, cellH - 5);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /**
+     * 量筒／玻璃管刻度紋理（白色高對比刻度線＋深色描邊，在深灰背景下清晰易讀）
+     */
+    function createScaleTexture(unit, maxVal) {
+      const w = 512;
+      const h = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = 'bold 21px Inter, sans-serif';
+
+      const steps = 10;
+      for (let i = 1; i <= steps; i++) {
+        const y = h - (i / (steps + 1)) * h * 0.88 - 22;
+        const isMajor = i % 2 === 0;
+        const len = isMajor ? 58 : 32;
+        const x0 = w * 0.24;
+
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.lineWidth = isMajor ? 5.5 : 3.5;
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x0 + len, y);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = isMajor ? 2.5 : 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x0 + len, y);
+        ctx.stroke();
+
+        if (isMajor) {
+          const label = `${Math.round((i / steps) * maxVal)}${i === steps && unit ? ' ' + unit : ''}`;
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.lineWidth = 4;
+          ctx.strokeText(label, x0 + len + 10, y + 7);
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(label, x0 + len + 10, y + 7);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /**
+     * 固體膨脹機械指針刻度盤紋理
+     */
+    function createDialTexture() {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size * 0.46, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      const cx = size / 2;
+      const cy = size * 0.56;
+      const rOut = size * 0.36;
+      ctx.font = 'bold 24px Inter, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+
+      for (let i = 0; i <= 10; i++) {
+        const frac = i / 10;
+        const ang = -Math.PI * 0.82 + frac * (Math.PI * 0.64);
+        const rIn = i % 2 === 0 ? rOut - 26 : rOut - 15;
+
+        ctx.strokeStyle = i >= 7 ? '#ea580c' : '#1e293b';
+        ctx.lineWidth = i % 2 === 0 ? 4 : 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * rIn, cy + Math.sin(ang) * rIn);
+        ctx.lineTo(cx + Math.cos(ang) * rOut, cy + Math.sin(ang) * rOut);
+        ctx.stroke();
+
+        if (i % 2 === 0) {
+          ctx.fillText(String(i), cx + Math.cos(ang) * (rIn - 24), cy + Math.sin(ang) * (rIn - 24) + 8);
+        }
+      }
+
+      ctx.font = 'bold 22px "Noto Sans TC", sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText('微小膨脹刻度', cx, size * 0.79);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    // =========================================================================
+    // 2. 初始化「香港中學科學實驗室實景」3D 環境
+    // =========================================================================
+    function initLabScene() {
+      const container = document.getElementById('canvas-container');
+      const rect = container.getBoundingClientRect();
+      const initW = Math.max(rect.width || window.innerWidth, 300);
+      const initH = Math.max(rect.height || window.innerHeight, 300);
+
+      scene = new THREE.Scene();
+      // 深石板青灰背景與柔和指數霧效，消除刺眼白底並突顯中央器材
+      scene.background = new THREE.Color('#243137');
+      scene.fog = new THREE.FogExp2(0x243137, 0.018);
+
+      camera = new THREE.PerspectiveCamera(45, initW / initH, 0.1, 120);
+      camera.position.set(0, 4.1, 10.6);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(initW, initH);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // OrbitControls：支援 360° 旋轉、縮放、平移
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 2.0, 0);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.enablePan = true;
+      controls.minDistance = 2.6;
+      controls.maxDistance = 17.5;
+      controls.maxPolarAngle = Math.PI * 0.485;
+      controls.addEventListener('start', () => {
+        state.camTransitioning = false;
+      });
+
+      // 1) 環境光與教室照明系統
+      const hemiLight = new THREE.HemisphereLight(0xe2e8f0, 0x4a321f, 1.15);
+      hemiLight.position.set(0, 14, 0);
+      scene.add(hemiLight);
+
+      // 左側實驗室大窗灑入自然日光與柔和陰影
+      const windowSunLight = new THREE.DirectionalLight(0xfff7ed, 1.65);
+      windowSunLight.position.set(-7.5, 11.5, 7.0);
+      windowSunLight.castShadow = true;
+      windowSunLight.shadow.mapSize.width = 2048;
+      windowSunLight.shadow.mapSize.height = 2048;
+      windowSunLight.shadow.camera.near = 1;
+      windowSunLight.shadow.camera.far = 30;
+      const d = 8.5;
+      windowSunLight.shadow.camera.left = -d;
+      windowSunLight.shadow.camera.right = d;
+      windowSunLight.shadow.camera.top = d;
+      windowSunLight.shadow.camera.bottom = -d;
+      windowSunLight.shadow.bias = -0.0005;
+      scene.add(windowSunLight);
+
+      // 實驗檯上方日光燈槽補光（確保黑色防酸鹼檯面上的器材清晰立體）
+      const overheadLight = new THREE.DirectionalLight(0xf1f5f9, 0.95);
+      overheadLight.position.set(2.5, 9.5, 5.5);
+      scene.add(overheadLight);
+
+      // 天花板懸吊式雙管日光燈槽模型
+      const fixtureHousingMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.4, roughness: 0.4 });
+      const tubeGlowMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+      [-3.8, 3.8].forEach(lx => {
+        const lightBox = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.14, 0.48), fixtureHousingMat);
+        lightBox.position.set(lx, 7.8, -0.5);
+        scene.add(lightBox);
+
+        [-0.12, 0.12].forEach(tz => {
+          const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 3.4, 12), tubeGlowMat);
+          tube.rotation.z = Math.PI / 2;
+          tube.position.set(lx, 7.71, -0.5 + tz);
+          scene.add(tube);
+        });
+      });
+
+      // 2) 經典香港中學黑色防酸鹼實驗長檯 + 柚木實木包邊 + 柚木實驗櫃
+      const blackBenchTex = createAcidResistantBenchTexture();
+      const teakTex = createTeakWoodTexture();
+
+      // 霧面炭黑防酸鹼樹脂檯面 (#1b2024)
+      const benchTop = new THREE.Mesh(
+        new THREE.BoxGeometry(17.6, 0.40, 10.6),
+        new THREE.MeshStandardMaterial({
+          map: blackBenchTex,
+          roughness: 0.52,
+          metalness: 0.08
+        })
+      );
+      benchTop.position.set(0, -0.20, -0.4);
+      benchTop.receiveShadow = true;
+      scene.add(benchTop);
+
+      // 溫潤柚木實木包邊 (#6b4226)
+      const teakTrimMat = new THREE.MeshStandardMaterial({
+        map: teakTex,
+        color: 0x8b5a36,
+        roughness: 0.48,
+        metalness: 0.06
+      });
+      const teakTrim = new THREE.Mesh(new THREE.BoxGeometry(17.88, 0.44, 10.88), teakTrimMat);
+      teakTrim.position.set(0, -0.225, -0.4);
+      teakTrim.receiveShadow = true;
+      scene.add(teakTrim);
+
+      // 檯面下方深柚木色實驗櫃與抽屜 (#5e381f)
+      const teakCabMat = new THREE.MeshStandardMaterial({
+        map: teakTex,
+        color: 0x734729,
+        roughness: 0.56,
+        metalness: 0.05
+      });
+      const cabinetBody = new THREE.Mesh(new THREE.BoxGeometry(16.6, 3.8, 9.6), teakCabMat);
+      cabinetBody.position.set(0, -2.32, -0.4);
+      scene.add(cabinetBody);
+
+      // 嵌入式柚木抽屜與櫃門細節 + 黃銅拉手
+      const brassMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.25 });
+      for (let col = -2; col <= 2; col++) {
+        const cx = col * 3.2;
+        // 上層抽屜面板
+        const drawer = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.72, 0.12), teakTrimMat);
+        drawer.position.set(cx, -0.95, 4.44);
+        scene.add(drawer);
+
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.08, 0.14), brassMat);
+        handle.position.set(cx, -0.95, 4.52);
+        scene.add(handle);
+
+        // 下層雙開櫃門
+        const door = new THREE.Mesh(new THREE.BoxGeometry(2.9, 2.35, 0.12), teakTrimMat);
+        door.position.set(cx, -2.65, 4.44);
+        scene.add(door);
+      }
+
+      // 3) 中學實驗室標誌性檯面配件（置於兩側與後方，絕不遮擋中央實驗區）
+      buildHKLabBenchFixtures(teakTrimMat, brassMat);
+
+      // 4) 香港中學經典上下雙色牆身（下半墨綠光面瓷磚 #1f4d45 + 上半沉穩灰綠 #4e6066）
+      const greenTileTex = createGreenTileTexture();
+      const lowerTileMat = new THREE.MeshStandardMaterial({
+        map: greenTileTex,
+        roughness: 0.26,
+        metalness: 0.08
+      });
+      const upperWallMat = new THREE.MeshStandardMaterial({
+        color: 0x4e6066,
+        roughness: 0.85
+      });
+      const darkTrimMat = new THREE.MeshStandardMaterial({
+        color: 0x162226,
+        roughness: 0.5
+      });
+
+      // 後牆下半墨綠瓷磚 (y = -4.2 ~ 3.2)
+      const backLower = new THREE.Mesh(new THREE.PlaneGeometry(38, 7.4), lowerTileMat);
+      backLower.position.set(0, -0.5, -10.2);
+      scene.add(backLower);
+
+      // 後牆腰線壓條
+      const backDado = new THREE.Mesh(new THREE.BoxGeometry(38, 0.14, 0.12), darkTrimMat);
+      backDado.position.set(0, 3.22, -10.16);
+      scene.add(backDado);
+
+      // 後牆上半沉穩灰綠牆面 (y = 3.2 ~ 11.5)
+      const backUpper = new THREE.Mesh(new THREE.PlaneGeometry(38, 8.3), upperWallMat);
+      backUpper.position.set(0, 7.35, -10.2);
+      scene.add(backUpper);
+
+      // 左牆上下雙色與鋁框實驗室大窗
+      const leftLower = new THREE.Mesh(new THREE.PlaneGeometry(28, 7.4), lowerTileMat);
+      leftLower.rotation.y = Math.PI / 2;
+      leftLower.position.set(-12.8, -0.5, 0);
+      scene.add(leftLower);
+
+      const leftUpper = new THREE.Mesh(new THREE.PlaneGeometry(28, 8.3), upperWallMat);
+      leftUpper.rotation.y = Math.PI / 2;
+      leftUpper.position.set(-12.8, 7.35, 0);
+      scene.add(leftUpper);
+
+      const leftDado = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 28), darkTrimMat);
+      leftDado.position.set(-12.76, 3.22, 0);
+      scene.add(leftDado);
+
+      // 左側鋁框實驗室大窗（透出柔和室外天光）
+      const aluFrameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.65, roughness: 0.35 });
+      const windowLightMat = new THREE.MeshBasicMaterial({ color: 0xdbeafe });
+      [-3.2, 1.8].forEach(wz => {
+        const outerFrame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.2, 4.2), aluFrameMat);
+        outerFrame.position.set(-12.72, 5.5, wz);
+        scene.add(outerFrame);
+
+        const pane = new THREE.Mesh(new THREE.PlaneGeometry(3.85, 3.85), windowLightMat);
+        pane.rotation.y = Math.PI / 2;
+        pane.position.set(-12.62, 5.5, wz);
+        scene.add(pane);
+
+        // 窗格十字鋁條
+        const mullionV = new THREE.Mesh(new THREE.BoxGeometry(0.20, 3.9, 0.08), aluFrameMat);
+        mullionV.position.set(-12.66, 5.5, wz);
+        scene.add(mullionV);
+
+        const mullionH = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 3.9), aluFrameMat);
+        mullionH.position.set(-12.66, 5.5, wz);
+        scene.add(mullionH);
+      });
+
+      // 5) 後方玻璃門木製儀器櫃與教學掛圖
+      buildBackWallCabinetsAndPosters(teakCabMat);
+    }
+
+    /**
+     * 建構中學實驗室標誌性配件：黃色雙向煤氣掣、黑色洗手盆與高身鵝頸水龍頭、雙層柚木試劑架
+     */
+    function buildHKLabBenchFixtures(teakMat, brassMat) {
+      const yellowGasMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.35, roughness: 0.35 });
+      const darkBasinMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4, metalness: 0.15 });
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        transparent: true,
+        opacity: 0.32,
+        roughness: 0.15,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+
+      // A. 經典黃色雙向煤氣掣 (Gas Taps) — 左側與右側各一座
+      [-6.0, 5.4].forEach(gx => {
+        const gasGroup = new THREE.Group();
+        gasGroup.position.set(gx, 0, -2.5);
+        scene.add(gasGroup);
+
+        const baseFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.08, 20), brassMat);
+        baseFlange.position.y = 0.04;
+        gasGroup.add(baseFlange);
+
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.38, 16), yellowGasMat);
+        stem.position.y = 0.24;
+        stem.castShadow = true;
+        gasGroup.add(stem);
+
+        // 左右雙向出氣嘴
+        [-1, 1].forEach(dir => {
+          const nozzle = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.24, 14), brassMat);
+          nozzle.rotation.z = dir * -1.15;
+          nozzle.position.set(dir * 0.14, 0.34, 0);
+          gasGroup.add(nozzle);
+
+          const lever = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.04), yellowGasMat);
+          lever.position.set(dir * 0.08, 0.44, 0);
+          lever.rotation.z = dir * -0.4;
+          gasGroup.add(lever);
+        });
+      });
+
+      // B. 黑色實驗室洗手盆與高身黃銅鵝頸水龍頭 (Swan-neck Tap) — 右側檯面
+      const sinkGroup = new THREE.Group();
+      sinkGroup.position.set(6.8, 0.01, -0.5);
+      scene.add(sinkGroup);
+
+      const basinRim = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 1.8), darkBasinMat);
+      sinkGroup.add(basinRim);
+
+      const basinInner = new THREE.Mesh(
+        new THREE.BoxGeometry(1.26, 0.04, 1.54),
+        new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.25 })
+      );
+      basinInner.position.y = 0.015;
+      sinkGroup.add(basinInner);
+
+      // 高身鵝頸水龍頭主柱與弧形彎管
+      const tapBase = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.12, 20), brassMat);
+      tapBase.position.set(0, 0.08, -0.72);
+      sinkGroup.add(tapBase);
+
+      const tapRiser = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.85, 16), brassMat);
+      tapRiser.position.set(0, 0.52, -0.72);
+      tapRiser.castShadow = true;
+      sinkGroup.add(tapRiser);
+
+      const swanCurve = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24, 0.038, 12, 24, Math.PI),
+        brassMat
+      );
+      swanCurve.rotation.y = Math.PI / 2;
+      swanCurve.position.set(0, 0.94, -0.48);
+      swanCurve.castShadow = true;
+      sinkGroup.add(swanCurve);
+
+      const spoutTip = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.042, 0.14, 14), brassMat);
+      spoutTip.position.set(0, 0.88, -0.24);
+      sinkGroup.add(spoutTip);
+
+      // C. 檯面後方雙層柚木試劑架（分置左右兩翼，保持中央實驗視野純淨）
+      [-5.8, 5.8].forEach((rx, sideIdx) => {
+        const rackGroup = new THREE.Group();
+        rackGroup.position.set(rx, 0, -4.3);
+        scene.add(rackGroup);
+
+        // 左右立柱與上下兩層木板
+        [-1.35, 1.35].forEach(px => {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.10, 1.55, 0.42), teakMat);
+          post.position.set(px, 0.775, 0);
+          post.castShadow = true;
+          rackGroup.add(post);
+        });
+
+        [0.72, 1.48].forEach(sy => {
+          const shelf = new THREE.Mesh(new THREE.BoxGeometry(2.85, 0.08, 0.46), teakMat);
+          shelf.position.set(0, sy, 0);
+          shelf.castShadow = true;
+          rackGroup.add(shelf);
+        });
+
+        // 棕色避光試劑瓶 (Amber Reagent Bottles)
+        const amberMat = new THREE.MeshStandardMaterial({
+          color: 0x78350f,
+          roughness: 0.22,
+          metalness: 0.1
+        });
+        const labelMat = new THREE.MeshBasicMaterial({ color: 0xfef3c7 });
+        [-0.85, -0.35, 0.15].forEach(bx => {
+          const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.44, 18), amberMat);
+          bottle.position.set(bx, 0.98, 0);
+          rackGroup.add(bottle);
+
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.12, 14), darkBasinMat);
+          cap.position.set(bx, 1.24, 0);
+          rackGroup.add(cap);
+
+          const lbl = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.16), labelMat);
+          lbl.position.set(bx, 0.98, 0.142);
+          rackGroup.add(lbl);
+        });
+
+        // 藍色硫酸銅溶液錐形瓶 (Copper(II) Sulfate Flask)
+        const flaskX = sideIdx === 0 ? 0.78 : -0.78;
+        const cuso4Flask = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.24, 0.48, 20, 1, true), glassMat);
+        cuso4Flask.position.set(flaskX, 1.76, 0);
+        rackGroup.add(cuso4Flask);
+
+        const blueLiquid = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.14, 0.23, 0.26, 20),
+          new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2 })
+        );
+        blueLiquid.position.set(flaskX, 1.65, 0);
+        rackGroup.add(blueLiquid);
+
+        // 木製試管架與彩色試管
+        const ttRackX = sideIdx === 0 ? -0.45 : 0.45;
+        const ttBase = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.05, 0.20), teakMat);
+        ttBase.position.set(ttRackX, 1.545, 0);
+        rackGroup.add(ttBase);
+
+        const ttTopBar = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 0.20), teakMat);
+        ttTopBar.position.set(ttRackX, 1.82, 0);
+        rackGroup.add(ttTopBar);
+
+        const ttColors = [0xef4444, 0x10b981, 0x3b82f6, 0xf59e0b];
+        ttColors.forEach((col, ti) => {
+          const tx = ttRackX - 0.24 + ti * 0.16;
+          const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.44, 12), glassMat);
+          tube.position.set(tx, 1.78, 0);
+          rackGroup.add(tube);
+
+          const fill = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.026, 0.026, 0.22, 12),
+            new THREE.MeshStandardMaterial({ color: col })
+          );
+          fill.position.set(tx, 1.68, 0);
+          rackGroup.add(fill);
+        });
+      });
+    }
+
+    /**
+     * 建構靠牆玻璃門木製儀器櫃與「實驗室安全守則」「元素週期表」掛圖
+     */
+    function buildBackWallCabinetsAndPosters(teakCabMat) {
+      const glassDoorMat = new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        transparent: true,
+        opacity: 0.32,
+        roughness: 0.2
+      });
+      const glasswareMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        transparent: true,
+        opacity: 0.48,
+        roughness: 0.2
+      });
+
+      // 左右靠牆玻璃門儀器櫃
+      [-7.4, 7.4].forEach(cx => {
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(3.6, 5.2, 1.0), teakCabMat);
+        cab.position.set(cx, 2.2, -9.55);
+        scene.add(cab);
+
+        const glass = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 4.4), glassDoorMat);
+        glass.position.set(cx, 2.3, -9.02);
+        scene.add(glass);
+
+        // 櫃內兩排燒杯與量筒
+        [1.4, 2.8].forEach(sy => {
+          for (let i = -1; i <= 1; i++) {
+            const beaker = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.20, 0.20, 0.52, 16),
+              glasswareMat
+            );
+            beaker.position.set(cx + i * 0.85, sy, -9.25);
+            scene.add(beaker);
+          }
+        });
+      });
+
+      // 中央牆面掛圖：「實驗室安全守則」與「元素週期表」
+      const safetyTex = createSafetyPosterTexture();
+      const safetyPoster = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.3, 3.05),
+        new THREE.MeshStandardMaterial({ map: safetyTex, roughness: 0.65 })
+      );
+      safetyPoster.position.set(-2.9, 5.2, -10.12);
+      scene.add(safetyPoster);
+
+      const periodicTex = createPeriodicTableTexture();
+      const periodicPoster = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.8, 2.4),
+        new THREE.MeshStandardMaterial({ map: periodicTex, roughness: 0.65 })
+      );
+      periodicPoster.position.set(2.4, 5.3, -10.12);
+      scene.add(periodicPoster);
+    }
+
+    // =========================================================================
+    // 3. 模式一：微觀粒子模型（固態晶格＋原體積虛線框、液態刻度量筒、氣態活動活塞）
+    // =========================================================================
+    const m1Data = {
+      solidGroup: null,
+      solidParticles: [],
+      solidRods: [],
+      solidWireBox: null,
+      solidRefWireBox: null,
+      liquidGroup: null,
+      liquidParticles: [],
+      liquidColumn: null,
+      liquidSurface: null,
+      gasGroup: null,
+      gasParticles: [],
+      pistonGroup: null,
+      caliperGroup: null,
+      trackedMat: null,
+      solidMat: null,
+      liquidMat: null,
+      gasMat: null
+    };
+
+    const PARTICLE_R = 0.145; // 所有溫度下粒子半徑恆定不變
+
+    function buildMode1() {
+      groupMode1 = new THREE.Group();
+      scene.add(groupMode1);
+
+      // 儀器底座
+      const pedestal = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.35, 2.55, 0.22, 48),
+        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.45, roughness: 0.4 })
+      );
+      pedestal.position.y = 0.11;
+      pedestal.castShadow = true;
+      pedestal.receiveShadow = true;
+      groupMode1.add(pedestal);
+
+      const accentRing = new THREE.Mesh(
+        new THREE.TorusGeometry(2.36, 0.025, 12, 64),
+        new THREE.MeshStandardMaterial({ color: 0x34d399, roughness: 0.3 })
+      );
+      accentRing.rotation.x = Math.PI / 2;
+      accentRing.position.y = 0.22;
+      groupMode1.add(accentRing);
+
+      const sphereGeo = new THREE.SphereGeometry(PARTICLE_R, 24, 18);
+
+      m1Data.trackedMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        emissive: 0x059669,
+        emissiveIntensity: 0.45,
+        roughness: 0.2,
+        metalness: 0.2
+      });
+
+      // A. 固態：4×4×4 規則立方晶格 + 原體積虛線對照框
+      m1Data.solidGroup = new THREE.Group();
+      m1Data.solidGroup.position.set(0, 2.0, 0);
+      groupMode1.add(m1Data.solidGroup);
+
+      m1Data.solidMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        metalness: 0.55,
+        roughness: 0.25
+      });
+
+      for (let ix = 0; ix < 4; ix++) {
+        for (let iy = 0; iy < 4; iy++) {
+          for (let iz = 0; iz < 4; iz++) {
+            const mesh = new THREE.Mesh(sphereGeo, m1Data.solidMat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            m1Data.solidGroup.add(mesh);
+            m1Data.solidParticles.push({
+              mesh,
+              ix: ix - 1.5,
+              iy: iy - 1.5,
+              iz: iz - 1.5,
+              px: Math.random() * Math.PI * 2,
+              py: Math.random() * Math.PI * 2,
+              pz: Math.random() * Math.PI * 2
+            });
+          }
+        }
+      }
+
+      const rodGeo = new THREE.CylinderGeometry(0.016, 0.016, 1, 8);
+      const rodMat = new THREE.MeshStandardMaterial({
+        color: 0xfbbf24,
+        transparent: true,
+        opacity: 0.45
+      });
+
+      const idxOf = (x, y, z) => x * 16 + y * 4 + z;
+      for (let x = 0; x < 4; x++) {
+        for (let y = 0; y < 4; y++) {
+          for (let z = 0; z < 4; z++) {
+            const a = idxOf(x, y, z);
+            if (x < 3) {
+              const cyl = new THREE.Mesh(rodGeo, rodMat);
+              m1Data.solidGroup.add(cyl);
+              m1Data.solidRods.push({ cyl, a, b: idxOf(x + 1, y, z) });
+            }
+            if (y < 3) {
+              const cyl = new THREE.Mesh(rodGeo, rodMat);
+              m1Data.solidGroup.add(cyl);
+              m1Data.solidRods.push({ cyl, a, b: idxOf(x, y + 1, z) });
+            }
+            if (z < 3) {
+              const cyl = new THREE.Mesh(rodGeo, rodMat);
+              m1Data.solidGroup.add(cyl);
+              m1Data.solidRods.push({ cyl, a, b: idxOf(x, y, z + 1) });
+            }
+          }
+        }
+      }
+
+      // 當前固體外框線
+      const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1));
+      m1Data.solidWireBox = new THREE.LineSegments(
+        edges,
+        new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.72 })
+      );
+      m1Data.solidGroup.add(m1Data.solidWireBox);
+
+      // 常溫 25°C 原體積虛線對照框
+      const refTNorm = (25 + 20) / 140;
+      const refSpacing = 0.50 + refTNorm * 0.22;
+      const refDim = refSpacing * 3 + PARTICLE_R * 2.2;
+      const refEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(refDim, refDim, refDim));
+      m1Data.solidRefWireBox = new THREE.LineSegments(
+        refEdges,
+        new THREE.LineDashedMaterial({
+          color: 0x38bdf8,
+          dashSize: 0.14,
+          gapSize: 0.10,
+          transparent: true,
+          opacity: 0.75
+        })
+      );
+      m1Data.solidRefWireBox.computeLineDistances();
+      m1Data.solidGroup.add(m1Data.solidRefWireBox);
+
+      // B. 液態：帶 mL 刻度線的透明玻璃量筒 + 藍色液體柱 + 滑動粒子
+      m1Data.liquidGroup = new THREE.Group();
+      m1Data.liquidGroup.visible = false;
+      groupMode1.add(m1Data.liquidGroup);
+
+      const beakerR = 1.48;
+      const beakerH = 3.55;
+      const baseY = 0.22;
+
+      const clearGlassMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        transparent: true,
+        opacity: 0.24,
+        roughness: 0.15,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+
+      const beakerWall = new THREE.Mesh(
+        new THREE.CylinderGeometry(beakerR, beakerR, beakerH, 48, 1, true),
+        clearGlassMat
+      );
+      beakerWall.position.y = baseY + beakerH / 2;
+      m1Data.liquidGroup.add(beakerWall);
+
+      const scaleTex = createScaleTexture('mL', 100);
+      const scaleMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(beakerR + 0.008, beakerR + 0.008, beakerH, 48, 1, true),
+        new THREE.MeshBasicMaterial({ map: scaleTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })
+      );
+      scaleMesh.position.y = baseY + beakerH / 2;
+      m1Data.liquidGroup.add(scaleMesh);
+
+      const beakerRim = new THREE.Mesh(
+        new THREE.TorusGeometry(beakerR, 0.035, 12, 48),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.7, roughness: 0.2 })
+      );
+      beakerRim.rotation.x = Math.PI / 2;
+      beakerRim.position.y = baseY + beakerH;
+      m1Data.liquidGroup.add(beakerRim);
+
+      m1Data.liquidColumn = new THREE.Mesh(
+        new THREE.CylinderGeometry(beakerR - 0.02, beakerR - 0.02, 1, 40),
+        new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.24,
+          roughness: 0.2,
+          depthWrite: false
+        })
+      );
+      m1Data.liquidGroup.add(m1Data.liquidColumn);
+
+      m1Data.liquidSurface = new THREE.Mesh(
+        new THREE.CircleGeometry(beakerR - 0.02, 40),
+        new THREE.MeshStandardMaterial({
+          color: 0x0ea5e9,
+          transparent: true,
+          opacity: 0.65,
+          side: THREE.DoubleSide
+        })
+      );
+      m1Data.liquidSurface.rotation.x = -Math.PI / 2;
+      m1Data.liquidGroup.add(m1Data.liquidSurface);
+
+      m1Data.liquidMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        roughness: 0.22,
+        metalness: 0.1
+      });
+
+      for (let i = 0; i < 76; i++) {
+        const mesh = new THREE.Mesh(sphereGeo, m1Data.liquidMat);
+        mesh.castShadow = true;
+        const r = Math.sqrt(Math.random()) * (beakerR - PARTICLE_R * 1.4);
+        const theta = Math.random() * Math.PI * 2;
+        const pos = new THREE.Vector3(
+          Math.cos(theta) * r,
+          baseY + PARTICLE_R + Math.random() * 1.6,
+          Math.sin(theta) * r
+        );
+        mesh.position.copy(pos);
+        m1Data.liquidGroup.add(mesh);
+        m1Data.liquidParticles.push({
+          mesh,
+          pos,
+          vel: new THREE.Vector3(
+            (Math.random() - 0.5) * 1.6,
+            (Math.random() - 0.5) * 0.9,
+            (Math.random() - 0.5) * 1.6
+          )
+        });
+      }
+
+      // C. 氣態：帶刻度透明氣缸 + 可活動活塞 + 高速直線碰撞氣體粒子
+      m1Data.gasGroup = new THREE.Group();
+      m1Data.gasGroup.visible = false;
+      groupMode1.add(m1Data.gasGroup);
+
+      const gasR = 1.38;
+      const gasH = 4.2;
+
+      const gasWall = new THREE.Mesh(
+        new THREE.CylinderGeometry(gasR, gasR, gasH, 48, 1, true),
+        clearGlassMat
+      );
+      gasWall.position.y = baseY + gasH / 2;
+      m1Data.gasGroup.add(gasWall);
+
+      const gasScaleTex = createScaleTexture('cm³', 100);
+      const gasScale = new THREE.Mesh(
+        new THREE.CylinderGeometry(gasR + 0.008, gasR + 0.008, gasH, 48, 1, true),
+        new THREE.MeshBasicMaterial({ map: gasScaleTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })
+      );
+      gasScale.position.y = baseY + gasH / 2;
+      m1Data.gasGroup.add(gasScale);
+
+      const gasTopRim = new THREE.Mesh(
+        new THREE.TorusGeometry(gasR, 0.035, 12, 48),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.7, roughness: 0.2 })
+      );
+      gasTopRim.rotation.x = Math.PI / 2;
+      gasTopRim.position.y = baseY + gasH;
+      m1Data.gasGroup.add(gasTopRim);
+
+      // 可上下滑動活塞蓋
+      m1Data.pistonGroup = new THREE.Group();
+      m1Data.pistonGroup.position.y = baseY + 2.3;
+      m1Data.gasGroup.add(m1Data.pistonGroup);
+
+      const pistonPlate = new THREE.Mesh(
+        new THREE.CylinderGeometry(gasR - 0.02, gasR - 0.02, 0.22, 40),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.25 })
+      );
+      pistonPlate.position.y = 0.11;
+      pistonPlate.castShadow = true;
+      m1Data.pistonGroup.add(pistonPlate);
+
+      const rubberRing = new THREE.Mesh(
+        new THREE.TorusGeometry(gasR - 0.015, 0.032, 10, 40),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
+      );
+      rubberRing.rotation.x = Math.PI / 2;
+      rubberRing.position.y = 0.11;
+      m1Data.pistonGroup.add(rubberRing);
+
+      const rod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.08, 1.45, 16),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.2 })
+      );
+      rod.position.y = 0.92;
+      m1Data.pistonGroup.add(rod);
+
+      const handle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.45, 0.45, 0.12, 24),
+        new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.35 })
+      );
+      handle.position.y = 1.65;
+      m1Data.pistonGroup.add(handle);
+
+      m1Data.gasMat = new THREE.MeshStandardMaterial({
+        color: 0xf97316,
+        roughness: 0.25,
+        metalness: 0.1
+      });
+
+      for (let i = 0; i < 55; i++) {
+        const mesh = new THREE.Mesh(sphereGeo, m1Data.gasMat);
+        mesh.castShadow = true;
+        const r = Math.sqrt(Math.random()) * (gasR - PARTICLE_R * 1.4);
+        const theta = Math.random() * Math.PI * 2;
+        const pos = new THREE.Vector3(
+          Math.cos(theta) * r,
+          baseY + PARTICLE_R + Math.random() * 1.9,
+          Math.sin(theta) * r
+        );
+        mesh.position.copy(pos);
+        m1Data.gasGroup.add(mesh);
+
+        const dir = new THREE.Vector3(
+          Math.random() - 0.5,
+          Math.random() - 0.5,
+          Math.random() - 0.5
+        ).normalize();
+        m1Data.gasParticles.push({ mesh, pos, dir });
+      }
+
+      // D. 破除迷思工具：粒子直徑量度卡尺圓環
+      m1Data.caliperGroup = new THREE.Group();
+      m1Data.caliperGroup.visible = false;
+      scene.add(m1Data.caliperGroup);
+
+      const caliperRing = new THREE.Mesh(
+        new THREE.RingGeometry(PARTICLE_R + 0.018, PARTICLE_R + 0.052, 48),
+        new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, depthTest: false })
+      );
+      caliperRing.renderOrder = 999;
+      m1Data.caliperGroup.add(caliperRing);
+
+      const jawMat = new THREE.MeshBasicMaterial({ color: 0x10b981, depthTest: false });
+      [-1, 1].forEach(side => {
+        const jaw = new THREE.Mesh(new THREE.PlaneGeometry(0.026, 0.38), jawMat);
+        jaw.position.x = side * (PARTICLE_R + 0.048);
+        jaw.renderOrder = 999;
+        m1Data.caliperGroup.add(jaw);
+      });
+    }
+
+    // =========================================================================
+    // 4. 模式二：經典「銅球過鐵環」實驗（含冷卻白色水氣粒子與 X 光微觀透視）
+    // =========================================================================
+    const m2Data = {
+      swingArm: null,
+      chainMesh: null,
+      ballGroup: null,
+      ballMesh: null,
+      ballMat: null,
+      xrayGroup: null,
+      xrayAtoms: [],
+      flameGroup: null,
+      outerFlame: null,
+      innerFlame: null,
+      iceCubes: [],
+      steamParticles: [],
+      lampPos: new THREE.Vector3(),
+      icePos: new THREE.Vector3(),
+      ringY: 2.15,
+      ringMajorR: 0.68,
+      ringTubeR: 0.06,
+      ballBaseR: 0.57,
+      armLen: 1.40,
+      poleZ: -1.40
+    };
+
+    function buildMode2() {
+      groupMode2 = new THREE.Group();
+      groupMode2.visible = false;
+      scene.add(groupMode2);
+
+      const ironMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.72, roughness: 0.42 });
+      const steelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.22 });
+
+      // 鐵架台底座與直立鐵柱
+      const standBase = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.18, 2.3), ironMat);
+      standBase.position.set(0, 0.09, -0.88);
+      standBase.castShadow = true;
+      standBase.receiveShadow = true;
+      groupMode2.add(standBase);
+
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 4.4, 20), steelMat);
+      pole.position.set(0, 2.2, m2Data.poleZ);
+      pole.castShadow = true;
+      groupMode2.add(pole);
+
+      // 橫向鐵夾與固定內徑鐵環
+      const clamp = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.24), ironMat);
+      clamp.position.set(0, m2Data.ringY, m2Data.poleZ);
+      groupMode2.add(clamp);
+
+      const ringRodLen = m2Data.armLen - m2Data.ringMajorR;
+      const ringRod = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, ringRodLen, 14), steelMat);
+      ringRod.rotation.x = Math.PI / 2;
+      ringRod.position.set(0, m2Data.ringY, m2Data.poleZ + ringRodLen / 2);
+      groupMode2.add(ringRod);
+
+      const ironRing = new THREE.Mesh(
+        new THREE.TorusGeometry(m2Data.ringMajorR, m2Data.ringTubeR, 24, 64),
+        steelMat
+      );
+      ironRing.rotation.x = Math.PI / 2;
+      ironRing.position.set(0, m2Data.ringY, 0);
+      ironRing.castShadow = true;
+      ironRing.receiveShadow = true;
+      groupMode2.add(ironRing);
+
+      // 可旋轉升降支架與黃銅球
+      m2Data.swingArm = new THREE.Group();
+      m2Data.swingArm.position.set(0, 3.95, m2Data.poleZ);
+      groupMode2.add(m2Data.swingArm);
+
+      const topCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.24, 20), ironMat);
+      m2Data.swingArm.add(topCollar);
+
+      const horizRod = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, m2Data.armLen, 14), steelMat);
+      horizRod.rotation.x = Math.PI / 2;
+      horizRod.position.set(0, 0, m2Data.armLen / 2);
+      horizRod.castShadow = true;
+      m2Data.swingArm.add(horizRod);
+
+      const chainGeo = new THREE.CylinderGeometry(0.014, 0.014, 1, 10);
+      chainGeo.translate(0, -0.5, 0);
+      m2Data.chainMesh = new THREE.Mesh(chainGeo, steelMat);
+      m2Data.chainMesh.position.set(0, 0, m2Data.armLen);
+      m2Data.swingArm.add(m2Data.chainMesh);
+
+      m2Data.ballGroup = new THREE.Group();
+      m2Data.ballGroup.position.set(0, -0.70, m2Data.armLen);
+      m2Data.swingArm.add(m2Data.ballGroup);
+
+      m2Data.ballMat = new THREE.MeshStandardMaterial({
+        color: 0xeab308,
+        emissive: 0x000000,
+        metalness: 0.85,
+        roughness: 0.22
+      });
+
+      m2Data.ballMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(m2Data.ballBaseR, 40, 32),
+        m2Data.ballMat
+      );
+      m2Data.ballMesh.castShadow = true;
+      m2Data.ballMesh.receiveShadow = true;
+      m2Data.ballGroup.add(m2Data.ballMesh);
+
+      const hook = new THREE.Mesh(new THREE.TorusGeometry(0.065, 0.016, 10, 20), steelMat);
+      hook.position.y = m2Data.ballBaseR + 0.04;
+      m2Data.ballGroup.add(hook);
+
+      // X光微觀透視銅原子晶格
+      m2Data.xrayGroup = new THREE.Group();
+      m2Data.xrayGroup.visible = false;
+      m2Data.ballGroup.add(m2Data.xrayGroup);
+
+      const atomGeo = new THREE.SphereGeometry(0.055, 14, 12);
+      const atomMat = new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xd97706, emissiveIntensity: 0.45 });
+      for (let ix = -1; ix <= 1; ix++) {
+        for (let iy = -1; iy <= 1; iy++) {
+          for (let iz = -1; iz <= 1; iz++) {
+            if (Math.hypot(ix, iy, iz) <= 1.5) {
+              const atom = new THREE.Mesh(atomGeo, atomMat);
+              m2Data.xrayGroup.add(atom);
+              m2Data.xrayAtoms.push({ mesh: atom, ix, iy, iz, phase: Math.random() * Math.PI * 2 });
+            }
+          }
+        }
+      }
+
+      // 左側酒精燈
+      const stationAng = 0.95;
+      const lampX = -m2Data.armLen * Math.sin(stationAng);
+      const lampZ = m2Data.poleZ + m2Data.armLen * Math.cos(stationAng);
+      m2Data.lampPos.set(lampX, 0, lampZ);
+
+      const lampGroup = new THREE.Group();
+      lampGroup.position.set(lampX, 0, lampZ);
+      groupMode2.add(lampGroup);
+
+      const clearGlassMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        transparent: true,
+        opacity: 0.26,
+        roughness: 0.15,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+
+      const lampBody = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.50, 0.72, 28), clearGlassMat);
+      lampBody.position.y = 0.36;
+      lampBody.castShadow = true;
+      lampGroup.add(lampBody);
+
+      const alcoholFill = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.36, 0.45, 0.46, 24),
+        new THREE.MeshStandardMaterial({ color: 0xa855f7, transparent: true, opacity: 0.62, roughness: 0.2 })
+      );
+      alcoholFill.position.y = 0.25;
+      lampGroup.add(alcoholFill);
+
+      const wickCap = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 0.16, 16), steelMat);
+      wickCap.position.y = 0.78;
+      lampGroup.add(wickCap);
+
+      const wick = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.035, 0.16, 10),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 })
+      );
+      wick.position.y = 0.90;
+      lampGroup.add(wick);
+
+      // 多層半透明錐體動態火舌
+      m2Data.flameGroup = new THREE.Group();
+      m2Data.flameGroup.position.set(0, 0.95, 0);
+      m2Data.flameGroup.visible = false;
+      lampGroup.add(m2Data.flameGroup);
+
+      const outerFlameGeo = new THREE.ConeGeometry(0.19, 0.72, 20);
+      outerFlameGeo.translate(0, 0.36, 0);
+      m2Data.outerFlame = new THREE.Mesh(
+        outerFlameGeo,
+        new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.85 })
+      );
+      m2Data.flameGroup.add(m2Data.outerFlame);
+
+      const innerFlameGeo = new THREE.ConeGeometry(0.10, 0.40, 16);
+      innerFlameGeo.translate(0, 0.20, 0);
+      m2Data.innerFlame = new THREE.Mesh(
+        innerFlameGeo,
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.92 })
+      );
+      m2Data.flameGroup.add(m2Data.innerFlame);
+
+      const flameLight = new THREE.PointLight(0xf97316, 2.0, 5.5);
+      flameLight.position.y = 0.36;
+      m2Data.flameGroup.add(flameLight);
+
+      // 右側冰水燒杯（含冷卻時冒出的白色水氣粒子）
+      const iceX = m2Data.armLen * Math.sin(stationAng);
+      const iceZ = lampZ;
+      m2Data.icePos.set(iceX, 0, iceZ);
+
+      const iceGroup = new THREE.Group();
+      iceGroup.position.set(iceX, 0, iceZ);
+      groupMode2.add(iceGroup);
+
+      const iceBeaker = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.84, 0.80, 1.65, 36, 1, true),
+        clearGlassMat
+      );
+      iceBeaker.position.y = 0.825;
+      iceGroup.add(iceBeaker);
+
+      const iceRim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.84, 0.026, 10, 36),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.65 })
+      );
+      iceRim.rotation.x = Math.PI / 2;
+      iceRim.position.y = 1.65;
+      iceGroup.add(iceRim);
+
+      const coldWater = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.81, 0.78, 1.25, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.36,
+          roughness: 0.15,
+          depthWrite: false
+        })
+      );
+      coldWater.position.y = 0.63;
+      iceGroup.add(coldWater);
+
+      const iceCubeMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.9,
+        roughness: 0.15
+      });
+      for (let c = 0; c < 6; c++) {
+        const ang = (c / 6) * Math.PI * 2;
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.22, 0.26), iceCubeMat);
+        cube.position.set(Math.cos(ang) * 0.42, 1.22, Math.sin(ang) * 0.42);
+        cube.rotation.set(Math.random() * 0.4, ang, Math.random() * 0.4);
+        iceGroup.add(cube);
+        m2Data.iceCubes.push({ mesh: cube, phase: c * 1.1 });
+      }
+
+      // 冰水冷卻灼熱銅球時的白色水氣粒子
+      const steamGeo = new THREE.SphereGeometry(0.11, 10, 10);
+      const steamMat = new THREE.MeshBasicMaterial({
+        color: 0xf8fafc,
+        transparent: true,
+        opacity: 0.48
+      });
+      for (let s = 0; s < 18; s++) {
+        const puff = new THREE.Mesh(steamGeo, steamMat);
+        puff.visible = false;
+        iceGroup.add(puff);
+        m2Data.steamParticles.push({
+          mesh: puff,
+          age: Math.random(),
+          speed: 0.7 + Math.random() * 0.6,
+          ox: (Math.random() - 0.5) * 0.55,
+          oz: (Math.random() - 0.5) * 0.55
+        });
+      }
+    }
+
+    // =========================================================================
+    // 5. 模式三：同一恆溫水浴槽內的固・液・氣膨脹對比實驗台
+    // =========================================================================
+    const m3Data = {
+      brassRod: null,
+      pointerPivot: null,
+      redWaterCol: null,
+      balloonMesh: null,
+      bathWaterMat: null
+    };
+
+    function buildMode3() {
+      groupMode3 = new THREE.Group();
+      groupMode3.visible = false;
+      scene.add(groupMode3);
+
+      const standMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.55, roughness: 0.38 });
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        transparent: true,
+        opacity: 0.24,
+        roughness: 0.15,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+
+      // 共用透明恆溫水浴槽（讓三組器材置於完全相同的受熱條件下）
+      const tankW = 9.4;
+      const tankH = 1.55;
+      const tankD = 2.2;
+      const tankGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(tankW, tankH, tankD),
+        glassMat
+      );
+      tankGlass.position.set(0, tankH / 2 + 0.02, 0);
+      groupMode3.add(tankGlass);
+
+      const tankFrame = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(tankW, tankH, tankD)),
+        new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.75 })
+      );
+      tankFrame.position.set(0, tankH / 2 + 0.02, 0);
+      groupMode3.add(tankFrame);
+
+      m3Data.bathWaterMat = new THREE.MeshStandardMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.30,
+        roughness: 0.15,
+        depthWrite: false
+      });
+      const sharedBathWater = new THREE.Mesh(
+        new THREE.BoxGeometry(tankW - 0.06, 1.24, tankD - 0.06),
+        m3Data.bathWaterMat
+      );
+      sharedBathWater.position.set(0, 0.64, 0);
+      groupMode3.add(sharedBathWater);
+
+      // ① 左側 (x = -3.1)：固體組（銅棒＋機械槓桿指針刻度盤）
+      const solidGroup = new THREE.Group();
+      solidGroup.position.set(-3.1, 0, 0);
+      groupMode3.add(solidGroup);
+
+      const leftHolder = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.15, 0.55), standMat);
+      leftHolder.position.set(-1.1, 0.60, 0);
+      leftHolder.castShadow = true;
+      solidGroup.add(leftHolder);
+
+      const rodLen = 1.65;
+      const rodGeo = new THREE.CylinderGeometry(0.11, 0.11, rodLen, 24);
+      rodGeo.rotateZ(Math.PI / 2);
+      rodGeo.translate(rodLen / 2, 0, 0);
+      m3Data.brassRod = new THREE.Mesh(
+        rodGeo,
+        new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.85, roughness: 0.22 })
+      );
+      m3Data.brassRod.position.set(-0.95, 0.85, 0);
+      m3Data.brassRod.castShadow = true;
+      solidGroup.add(m3Data.brassRod);
+
+      const dialSupport = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.85, 0.24), standMat);
+      dialSupport.position.set(0.85, 0.95, -0.32);
+      solidGroup.add(dialSupport);
+
+      const dialTex = createDialTexture();
+      const dialDisc = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.78, 0.78, 0.08, 36),
+        new THREE.MeshStandardMaterial({ map: dialTex, roughness: 0.4 })
+      );
+      dialDisc.rotation.x = Math.PI / 2;
+      dialDisc.position.set(0.85, 1.85, -0.15);
+      solidGroup.add(dialDisc);
+
+      m3Data.pointerPivot = new THREE.Group();
+      m3Data.pointerPivot.position.set(0.85, 1.75, -0.08);
+      solidGroup.add(m3Data.pointerPivot);
+
+      const needle = new THREE.Mesh(
+        new THREE.ConeGeometry(0.035, 0.62, 8),
+        new THREE.MeshBasicMaterial({ color: 0xdc2626 })
+      );
+      needle.position.y = 0.28;
+      m3Data.pointerPivot.add(needle);
+
+      const cap = new THREE.Mesh(
+        new THREE.SphereGeometry(0.065, 14, 14),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 })
+      );
+      m3Data.pointerPivot.add(cap);
+
+      // ② 中央 (x = 0)：液體組（裝滿紅水的圓底燒瓶＋細長刻度玻璃管）
+      const liquidGroup = new THREE.Group();
+      liquidGroup.position.set(0, 0, 0);
+      groupMode3.add(liquidGroup);
+
+      const lFlask = new THREE.Mesh(new THREE.SphereGeometry(0.72, 32, 24), glassMat);
+      lFlask.position.y = 0.76;
+      liquidGroup.add(lFlask);
+
+      const redWaterMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0x991b1b,
+        emissiveIntensity: 0.35,
+        roughness: 0.18
+      });
+      const flaskRedWater = new THREE.Mesh(new THREE.SphereGeometry(0.69, 32, 24), redWaterMat);
+      flaskRedWater.position.y = 0.76;
+      liquidGroup.add(flaskRedWater);
+
+      const stopper = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.20, 0.28, 24),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
+      );
+      stopper.position.y = 1.50;
+      liquidGroup.add(stopper);
+
+      const tubeH = 2.65;
+      const thinTube = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, tubeH, 24, 1, true), glassMat);
+      thinTube.position.y = 1.60 + tubeH / 2;
+      liquidGroup.add(thinTube);
+
+      const tubeScale = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.09, tubeH, 24, 1, true),
+        new THREE.MeshBasicMaterial({ map: createScaleTexture('', 10), transparent: true, depthWrite: false })
+      );
+      tubeScale.position.y = 1.60 + tubeH / 2;
+      liquidGroup.add(tubeScale);
+
+      const colGeo = new THREE.CylinderGeometry(0.062, 0.062, 1, 20);
+      colGeo.translate(0, 0.5, 0);
+      m3Data.redWaterCol = new THREE.Mesh(colGeo, redWaterMat);
+      m3Data.redWaterCol.position.y = 1.60;
+      liquidGroup.add(m3Data.redWaterCol);
+
+      // ③ 右側 (x = +3.1)：氣體組（空氣圓底燒瓶＋頂部彈性 3D 氣球）
+      const gasGroup = new THREE.Group();
+      gasGroup.position.set(3.1, 0, 0);
+      groupMode3.add(gasGroup);
+
+      const gFlask = new THREE.Mesh(new THREE.SphereGeometry(0.72, 32, 24), glassMat);
+      gFlask.position.y = 0.76;
+      gasGroup.add(gFlask);
+
+      const gNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.42, 24, 1, true), glassMat);
+      gNeck.position.y = 1.56;
+      gasGroup.add(gNeck);
+
+      const balloonGeo = new THREE.SphereGeometry(0.55, 32, 24);
+      balloonGeo.translate(0, 0.48, 0);
+      m3Data.balloonMesh = new THREE.Mesh(
+        balloonGeo,
+        new THREE.MeshStandardMaterial({
+          color: 0xfacc15,
+          emissive: 0xca8a04,
+          emissiveIntensity: 0.2,
+          roughness: 0.35,
+          metalness: 0.05
+        })
+      );
+      m3Data.balloonMesh.position.y = 1.74;
+      m3Data.balloonMesh.castShadow = true;
+      gasGroup.add(m3Data.balloonMesh);
+    }
+
+    // =========================================================================
+    // 6. 科學迷思卡片內容與位置同步（確保永不與頂部或底部工具列重疊）
+    // =========================================================================
+    function syncMythCardPosition() {
+      const topHud = document.getElementById('top-hud');
+      const bottomDock = document.getElementById('bottom-dock');
+      const mythCard = document.getElementById('myth-card');
+      if (!topHud || !bottomDock || !mythCard) return;
+
+      const topRect = topHud.getBoundingClientRect();
+      const botRect = bottomDock.getBoundingClientRect();
+      const topOffset = Math.round(topRect.bottom + 8);
+      const availableH = Math.max(150, Math.round(botRect.top - topOffset - 10));
+
+      mythCard.style.top = `${topOffset}px`;
+      mythCard.style.maxHeight = `${availableH}px`;
+    }
+
+    function refreshMythCardContent() {
+      const badge = document.getElementById('myth-mode-badge');
+      const wrongTxt = document.getElementById('myth-wrong-text');
+      const rightTxt = document.getElementById('myth-right-text');
+
+      if (state.mode === 1) {
+        badge.textContent = '模式一：微觀粒子模型（破除核心迷思）';
+        wrongTxt.textContent = '「物體受熱膨脹時，裡面的粒子本身變大了，或者粒子的數量變多了。」';
+        if (state.m1Matter === 'solid') {
+          rightTxt.innerHTML = '固態粒子排列整齊緊密，只在原位振動。受熱時振動加快、<strong class="text-slate-900">粒子之間的距離（間距）微幅變大</strong>；<strong class="text-slate-900">粒子本身的大小（直徑 d）及數量完全不變</strong>。';
+        } else if (state.m1Matter === 'liquid') {
+          rightTxt.innerHTML = '液態粒子緊密但無規則地互相滑動。受熱時滑動加快、<strong class="text-slate-900">粒子間距增大</strong>，使液面沿刻度上升（溫度計原理）；<strong class="text-slate-900">粒子本身大小及數量不變</strong>。';
+        } else {
+          rightTxt.innerHTML = '氣態粒子間距極大且高速向四方八面碰撞。受熱時撞擊力與<strong class="text-slate-900">粒子間距劇增</strong>，把活塞明顯向上推高；<strong class="text-slate-900">粒子直徑 d 依然完全不變</strong>。';
+        }
+      } else if (state.mode === 2) {
+        badge.textContent = '模式二：經典「銅球過鐵環」實驗';
+        wrongTxt.textContent = '「銅球受熱卡住是因為變重了，或者鐵環突然縮小了。」';
+        rightTxt.innerHTML = '加熱銅球至 <strong class="text-[#ea580c]">200°C</strong> 時，內部銅原子振動加劇、間距變大，令<strong class="text-slate-900">銅球體積膨脹（直徑大於鐵環內徑）</strong>而卡在上方；浸入 <strong class="text-[#2563eb]">0°C 冰水</strong>後，原子間距縮小，<strong class="text-slate-900">體積收縮回原狀</strong>即可再次穿過鐵環。';
+      } else {
+        badge.textContent = '模式三：固・液・氣膨脹速率對比';
+        wrongTxt.textContent = '「所有物質在相同升溫條件下，冷縮熱脹的幅度都是一樣的。」';
+        rightTxt.innerHTML = '固、液、氣三態粒子之間的束縛力不同（氣體最弱、固體最強）。在相同升溫條件下，膨脹程度：<strong class="text-[#1f5c52]">氣體（最明顯）＞ 液體（較明顯）＞ 固體（最微小）</strong>。';
+      }
+      syncMythCardPosition();
+    }
+
+    function setMythCardOpen(open) {
+      state.mythOpen = open;
+      const card = document.getElementById('myth-card');
+      const btn = document.getElementById('btn-myth-toggle');
+      card.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.classList.toggle('btn-myth-active', open);
+      btn.classList.toggle('btn-normal', !open);
+      if (open) {
+        refreshMythCardContent();
+      }
+    }
+
+    function styleTempLabel(el, temp, suffix = '') {
+      el.textContent = `${Math.round(temp)}°C${suffix}`;
+      el.className = 'px-2.5 py-0.5 rounded-lg text-xs sm:text-sm font-bold border min-w-[64px] text-center ';
+      if (temp <= 12) {
+        el.className += 'bg-blue-50 text-[#2563eb] border-blue-200';
+      } else if (temp >= 75) {
+        el.className += 'bg-orange-50 text-[#ea580c] border-orange-200';
+      } else {
+        el.className += 'bg-teal-50 text-[#1f5c52] border-teal-200';
+      }
+    }
+
+    function switchMode(modeNum) {
+      state.mode = modeNum;
+      [1, 2, 3].forEach(n => {
+        const btn = document.getElementById(`mode-btn-${n}`);
+        const panel = document.getElementById(`panel-mode-${n}`);
+        const active = n === modeNum;
+        btn.classList.toggle('btn-active', active);
+        btn.classList.toggle('btn-normal', !active);
+        panel.classList.toggle('hidden', !active);
+      });
+
+      groupMode1.visible = modeNum === 1;
+      groupMode2.visible = modeNum === 2;
+      groupMode3.visible = modeNum === 3;
+      m1Data.caliperGroup.visible = modeNum === 1 && state.showCaliper;
+
+      applyCameraView(state.camView);
+      refreshMythCardContent();
+      requestAnimationFrame(syncMythCardPosition);
+    }
+
+    function applyCameraView(viewName) {
+      state.camView = viewName;
+      ['front', 'top', 'closeup'].forEach(v => {
+        const b = document.getElementById(`cam-${v}`);
+        if (b) {
+          b.classList.toggle('btn-active', v === viewName);
+          b.classList.toggle('btn-normal', v !== viewName);
+        }
+      });
+
+      const preset = CAMERA_PRESETS[state.mode][viewName];
+      state.targetCamPos.copy(preset.pos);
+      state.targetCamLook.copy(preset.look);
+      state.camTransitioning = true;
+    }
+
+    function updateTrackedParticleMaterial() {
+      m1Data.solidParticles.forEach((p, i) => {
+        p.mesh.material = (state.showCaliper && i === 27) ? m1Data.trackedMat : m1Data.solidMat;
+      });
+      m1Data.liquidParticles.forEach((p, i) => {
+        p.mesh.material = (state.showCaliper && i === 0) ? m1Data.trackedMat : m1Data.liquidMat;
+      });
+      m1Data.gasParticles.forEach((p, i) => {
+        p.mesh.material = (state.showCaliper && i === 0) ? m1Data.trackedMat : m1Data.gasMat;
+      });
+    }
+
+    function bindEvents() {
+      // 科學迷思開關與關閉鈕
+      document.getElementById('btn-myth-toggle').addEventListener('click', () => {
+        setMythCardOpen(!state.mythOpen);
+      });
+      document.getElementById('btn-myth-close').addEventListener('click', () => {
+        setMythCardOpen(false);
+      });
+
+      // 三大模式按鈕
+      [1, 2, 3].forEach(n => {
+        document.getElementById(`mode-btn-${n}`).addEventListener('click', () => switchMode(n));
+      });
+
+      // 視角控制：正面、俯視、特寫、自動旋轉、重設
+      document.getElementById('cam-front').addEventListener('click', () => applyCameraView('front'));
+      document.getElementById('cam-top').addEventListener('click', () => applyCameraView('top'));
+      document.getElementById('cam-closeup').addEventListener('click', () => applyCameraView('closeup'));
+
+      const rotBtn = document.getElementById('cam-rotate');
+      rotBtn.addEventListener('click', () => {
+        state.autoRotate = !state.autoRotate;
+        controls.autoRotate = state.autoRotate;
+        controls.autoRotateSpeed = 1.1;
+        rotBtn.setAttribute('aria-pressed', String(state.autoRotate));
+        rotBtn.classList.toggle('btn-active', state.autoRotate);
+        rotBtn.classList.toggle('btn-normal', !state.autoRotate);
+      });
+
+      document.getElementById('cam-reset').addEventListener('click', () => {
+        state.autoRotate = false;
+        controls.autoRotate = false;
+        rotBtn.setAttribute('aria-pressed', 'false');
+        rotBtn.classList.remove('btn-active');
+        rotBtn.classList.add('btn-normal');
+        applyCameraView('front');
+      });
+
+      // 模式一：物質三態切換
+      ['solid', 'liquid', 'gas'].forEach(m => {
+        document.getElementById(`m1-${m}`).addEventListener('click', () => {
+          state.m1Matter = m;
+          ['solid', 'liquid', 'gas'].forEach(k => {
+            const b = document.getElementById(`m1-${k}`);
+            b.classList.toggle('btn-active', k === m);
+            b.classList.toggle('btn-normal', k !== m);
+          });
+          m1Data.solidGroup.visible = m === 'solid';
+          m1Data.liquidGroup.visible = m === 'liquid';
+          m1Data.gasGroup.visible = m === 'gas';
+          updateTrackedParticleMaterial();
+          refreshMythCardContent();
+        });
+      });
+
+      // 模式一：顯示粒子直徑量度環
+      const calBtn = document.getElementById('m1-caliper-btn');
+      calBtn.addEventListener('click', () => {
+        state.showCaliper = !state.showCaliper;
+        calBtn.setAttribute('aria-pressed', String(state.showCaliper));
+        calBtn.classList.toggle('btn-active', state.showCaliper);
+        calBtn.classList.toggle('btn-normal', !state.showCaliper);
+        m1Data.caliperGroup.visible = state.mode === 1 && state.showCaliper;
+        updateTrackedParticleMaterial();
+      });
+
+      // 模式一：溫度滑桿與快捷鍵
+      const m1Slider = document.getElementById('m1-slider');
+      const m1Label = document.getElementById('m1-temp-label');
+      const setM1T = (val) => {
+        state.m1Temp = Number(val);
+        m1Slider.value = state.m1Temp;
+        styleTempLabel(m1Label, state.m1Temp);
+      };
+      m1Slider.addEventListener('input', (e) => setM1T(e.target.value));
+      document.querySelectorAll('[data-m1-t]').forEach(btn => {
+        btn.addEventListener('click', () => setM1T(btn.getAttribute('data-m1-t')));
+      });
+
+      // 模式二：三步實驗按鈕與穿過測試
+      document.getElementById('m2-step-normal').addEventListener('click', () => {
+        state.m2Action = 'NORMAL_TEST';
+        state.m2Timer = 0;
+        state.flameOn = false;
+        state.steamActive = false;
+      });
+      document.getElementById('m2-step-heat').addEventListener('click', () => {
+        state.m2Action = 'HEATING';
+        state.m2Timer = 0;
+        state.steamActive = false;
+      });
+      document.getElementById('m2-step-cool').addEventListener('click', () => {
+        state.m2Action = 'COOLING';
+        state.m2Timer = 0;
+        state.flameOn = false;
+      });
+      document.getElementById('m2-step-test').addEventListener('click', () => {
+        state.m2Action = 'TESTING';
+        state.m2Timer = 0;
+        state.flameOn = false;
+        state.steamActive = false;
+      });
+
+      const xrayBtn = document.getElementById('m2-xray-btn');
+      xrayBtn.addEventListener('click', () => {
+        state.m2Xray = !state.m2Xray;
+        xrayBtn.setAttribute('aria-pressed', String(state.m2Xray));
+        xrayBtn.classList.toggle('btn-active', state.m2Xray);
+        xrayBtn.classList.toggle('btn-normal', !state.m2Xray);
+        m2Data.ballMat.transparent = state.m2Xray;
+        m2Data.ballMat.opacity = state.m2Xray ? 0.28 : 1.0;
+        m2Data.ballMat.depthWrite = !state.m2Xray;
+        m2Data.ballMat.needsUpdate = true;
+        m2Data.xrayGroup.visible = state.m2Xray;
+      });
+
+      // 模式三：恆溫水浴槽溫度滑桿與快捷鍵
+      const m3Slider = document.getElementById('m3-slider');
+      const m3Label = document.getElementById('m3-temp-label');
+      const setM3T = (val) => {
+        state.m3Temp = Number(val);
+        m3Slider.value = state.m3Temp;
+        styleTempLabel(m3Label, state.m3Temp);
+      };
+      m3Slider.addEventListener('input', (e) => setM3T(e.target.value));
+      document.querySelectorAll('[data-m3-t]').forEach(btn => {
+        btn.addEventListener('click', () => setM3T(btn.getAttribute('data-m3-t')));
+      });
+    }
+
+    // =========================================================================
+    // 7. 60fps 物理與動畫更新
+    // =========================================================================
+    const _diff = new THREE.Vector3();
+    const _up = new THREE.Vector3(0, 1, 0);
+    const _proj = new THREE.Vector3();
+
+    function positionTag(worldPos, el, visible) {
+      if (!visible) {
+        el.classList.add('hidden');
+        return;
+      }
+      _proj.copy(worldPos).project(camera);
+      if (_proj.z > 1) {
+        el.classList.add('hidden');
+        return;
+      }
+      const w = Math.max(window.innerWidth, 300);
+      const h = Math.max(window.innerHeight, 300);
+      const sx = (_proj.x * 0.5 + 0.5) * w;
+      const sy = (-_proj.y * 0.5 + 0.5) * h;
+      el.classList.remove('hidden');
+      el.style.transform = `translate(-50%, -50%) translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0)`;
+    }
+
+    function stepMode1(delta, elapsed) {
+      const tNorm = (state.m1Temp + 20) / 140; // 0.0 (-20°C) -> 1.0 (120°C)
+      let trackedWorld = null;
+      let volTagPos = null;
+      let volPct = 100;
+      let spacingUnits = '1.00';
+      const refNote = document.getElementById('tag-ref-note');
+
+      if (state.m1Matter === 'solid') {
+        const spacing = 0.50 + tNorm * 0.22;
+        const vibAmp = 0.008 + tNorm * 0.042;
+        const vibFreq = 8.0 + tNorm * 24.0;
+
+        for (let i = 0; i < m1Data.solidParticles.length; i++) {
+          const p = m1Data.solidParticles[i];
+          p.mesh.position.set(
+            p.ix * spacing + Math.sin(elapsed * vibFreq + p.px) * vibAmp,
+            p.iy * spacing + Math.cos(elapsed * vibFreq * 1.06 + p.py) * vibAmp,
+            p.iz * spacing + Math.sin(elapsed * vibFreq * 0.94 + p.pz) * vibAmp
+          );
+        }
+
+        for (let i = 0; i < m1Data.solidRods.length; i++) {
+          const r = m1Data.solidRods[i];
+          const pA = m1Data.solidParticles[r.a].mesh.position;
+          const pB = m1Data.solidParticles[r.b].mesh.position;
+          _diff.subVectors(pB, pA);
+          const d = _diff.length();
+          r.cyl.position.copy(pA).addScaledVector(_diff, 0.5);
+          r.cyl.scale.set(1, d, 1);
+          r.cyl.quaternion.setFromUnitVectors(_up, _diff.normalize());
+        }
+
+        const boxDim = spacing * 3 + PARTICLE_R * 2.2;
+        m1Data.solidWireBox.scale.set(boxDim, boxDim, boxDim);
+
+        trackedWorld = new THREE.Vector3();
+        m1Data.solidParticles[27].mesh.getWorldPosition(trackedWorld);
+        volTagPos = new THREE.Vector3(0, 2.0 + Math.max(boxDim, 2.02) * 0.5 + 0.35, 0);
+        volPct = Math.round(100 + (state.m1Temp - 25) * 0.12);
+        spacingUnits = (1.15 + tNorm * 0.38).toFixed(2);
+        refNote.classList.remove('hidden');
+
+      } else if (state.m1Matter === 'liquid') {
+        refNote.classList.add('hidden');
+        const beakerR = 1.48;
+        const baseY = 0.22;
+        const liqH = 1.55 + tNorm * 0.90;
+        const topY = baseY + liqH - PARTICLE_R * 0.95;
+        const speed = 0.45 + tNorm * 2.4;
+
+        m1Data.liquidColumn.scale.set(1, liqH, 1);
+        m1Data.liquidColumn.position.y = baseY + liqH / 2;
+        m1Data.liquidSurface.position.y = baseY + liqH;
+
+        for (let i = 0; i < m1Data.liquidParticles.length; i++) {
+          const p = m1Data.liquidParticles[i];
+          p.vel.x += (Math.random() - 0.5) * 4.5 * delta * speed;
+          p.vel.y += (Math.random() - 0.5) * 3.5 * delta * speed;
+          p.vel.z += (Math.random() - 0.5) * 4.5 * delta * speed;
+          if (p.vel.length() > speed * 1.1) p.vel.setLength(speed * 1.1);
+
+          p.pos.addScaledVector(p.vel, delta);
+
+          const rHoriz = Math.hypot(p.pos.x, p.pos.z);
+          const maxR = beakerR - PARTICLE_R * 1.15;
+          if (rHoriz > maxR) {
+            p.pos.x *= maxR / rHoriz;
+            p.pos.z *= maxR / rHoriz;
+            p.vel.x *= -0.8;
+            p.vel.z *= -0.8;
+          }
+          if (p.pos.y < baseY + PARTICLE_R) {
+            p.pos.y = baseY + PARTICLE_R;
+            p.vel.y = Math.abs(p.vel.y);
+          }
+          if (p.pos.y > topY) {
+            p.pos.y = topY;
+            p.vel.y = -Math.abs(p.vel.y);
+          }
+          p.mesh.position.copy(p.pos);
+        }
+
+        trackedWorld = new THREE.Vector3();
+        m1Data.liquidParticles[0].mesh.getWorldPosition(trackedWorld);
+        volTagPos = new THREE.Vector3(0, baseY + liqH + 0.35, 0);
+        volPct = Math.round(100 + (state.m1Temp - 25) * 0.36);
+        spacingUnits = (1.42 + tNorm * 0.65).toFixed(2);
+
+      } else {
+        refNote.classList.add('hidden');
+        const gasR = 1.38;
+        const baseY = 0.22;
+        const pistonY = baseY + 1.45 + tNorm * 2.35;
+        m1Data.pistonGroup.position.y = pistonY;
+
+        const speed = 1.4 + tNorm * 6.8;
+        const maxR = gasR - PARTICLE_R * 1.12;
+        const minY = baseY + PARTICLE_R;
+        const maxY = pistonY - PARTICLE_R;
+
+        for (let i = 0; i < m1Data.gasParticles.length; i++) {
+          const p = m1Data.gasParticles[i];
+          p.pos.addScaledVector(p.dir, speed * delta);
+
+          const rHoriz = Math.hypot(p.pos.x, p.pos.z);
+          if (rHoriz > maxR) {
+            const nx = p.pos.x / rHoriz;
+            const nz = p.pos.z / rHoriz;
+            p.pos.x = nx * maxR;
+            p.pos.z = nz * maxR;
+            const dot = p.dir.x * nx + p.dir.z * nz;
+            p.dir.x -= 2 * dot * nx;
+            p.dir.z -= 2 * dot * nz;
+          }
+          if (p.pos.y < minY) {
+            p.pos.y = minY;
+            p.dir.y = Math.abs(p.dir.y);
+          } else if (p.pos.y > maxY) {
+            p.pos.y = maxY;
+            p.dir.y = -Math.abs(p.dir.y);
+          }
+          p.mesh.position.copy(p.pos);
+        }
+
+        trackedWorld = new THREE.Vector3();
+        m1Data.gasParticles[0].mesh.getWorldPosition(trackedWorld);
+        volTagPos = new THREE.Vector3(0, pistonY + 1.9, 0);
+        volPct = Math.round(100 + (state.m1Temp - 25) * 1.15);
+        spacingUnits = (2.85 + tNorm * 2.40).toFixed(2);
+      }
+
+      if (state.showCaliper && trackedWorld) {
+        m1Data.caliperGroup.position.copy(trackedWorld);
+        m1Data.caliperGroup.quaternion.copy(camera.quaternion);
+        document.getElementById('tag-spacing-txt').textContent = `平均粒子間距：${spacingUnits} 單位（隨溫度改變）`;
+        positionTag(trackedWorld.clone().add(new THREE.Vector3(0, 0.44, 0)), document.getElementById('tag-caliper'), true);
+      } else {
+        document.getElementById('tag-caliper').classList.add('hidden');
+      }
+
+      document.getElementById('tag-volume-num').textContent = `${volPct}%`;
+      positionTag(volTagPos, document.getElementById('tag-volume'), true);
+    }
+
+    function stepMode2(delta, elapsed) {
+      const stationAng = 0.95;
+      state.m2Timer += delta;
+      const t = state.m2Timer;
+
+      if (state.m2Action === 'NORMAL_TEST') {
+        state.m2Temp += (25 - state.m2Temp) * Math.min(1, delta * 8);
+        if (Math.abs(state.m2Temp - 25) < 0.8) state.m2Temp = 25;
+        state.armAngle += (0 - state.armAngle) * Math.min(1, delta * 8);
+        if (t < 1.0) {
+          state.ballDrop = t / 1.0;
+        } else if (t < 2.4) {
+          state.ballDrop = 1.0;
+        } else if (t < 3.3) {
+          state.ballDrop = Math.max(0, 1 - (t - 2.4) / 0.9);
+        } else {
+          state.ballDrop = 0;
+          state.m2Action = 'IDLE';
+          refreshMythCardContent();
+        }
+      } else if (state.m2Action === 'TESTING') {
+        state.armAngle += (0 - state.armAngle) * Math.min(1, delta * 8);
+        if (t < 1.0) {
+          state.ballDrop = t / 1.0;
+        } else if (t < 2.4) {
+          state.ballDrop = 1.0;
+        } else if (t < 3.3) {
+          state.ballDrop = Math.max(0, 1 - (t - 2.4) / 0.9);
+        } else {
+          state.ballDrop = 0;
+          state.m2Action = 'IDLE';
+        }
+      } else if (state.m2Action === 'HEATING') {
+        if (t < 0.85) {
+          state.armAngle = -stationAng * (t / 0.85);
+          state.ballDrop = 0.28 * (t / 0.85);
+          state.flameOn = t > 0.35;
+        } else if (t < 3.4) {
+          state.armAngle = -stationAng;
+          state.ballDrop = 0.28;
+          state.flameOn = true;
+          state.m2Temp += (200 - state.m2Temp) * Math.min(1, delta * 2.4);
+          if (t > 3.0) state.m2Temp = 200;
+        } else if (t < 4.25) {
+          const k = (t - 3.4) / 0.85;
+          state.armAngle = -stationAng * (1 - k);
+          state.ballDrop = 0.28 * (1 - k);
+          state.flameOn = false;
+        } else if (t < 5.1) {
+          // 加熱完成後自動下降測試，讓學生親眼看見卡在鐵環上方
+          state.armAngle = 0;
+          state.ballDrop = (t - 4.25) / 0.85;
+        } else if (t < 6.4) {
+          state.ballDrop = 1.0;
+        } else if (t < 7.2) {
+          state.ballDrop = Math.max(0, 1 - (t - 6.4) / 0.8);
+        } else {
+          state.armAngle = 0;
+          state.ballDrop = 0;
+          state.flameOn = false;
+          state.m2Action = 'IDLE';
+          refreshMythCardContent();
+        }
+      } else if (state.m2Action === 'COOLING') {
+        const wasHot = state.m2Temp > 60;
+        if (t < 0.85) {
+          state.armAngle = stationAng * (t / 0.85);
+          state.ballDrop = 0.62 * (t / 0.85);
+        } else if (t < 3.2) {
+          state.armAngle = stationAng;
+          state.ballDrop = 0.62;
+          state.steamActive = wasHot || state.m2Temp > 15;
+          state.m2Temp += (0 - state.m2Temp) * Math.min(1, delta * 2.5);
+          if (t > 2.8) state.m2Temp = 0;
+        } else if (t < 4.05) {
+          const k = (t - 3.2) / 0.85;
+          state.armAngle = stationAng * (1 - k);
+          state.ballDrop = 0.62 * (1 - k);
+          state.steamActive = false;
+        } else if (t < 4.9) {
+          // 冷卻完成後自動下降測試，讓學生親眼看見順利穿過鐵環
+          state.armAngle = 0;
+          state.ballDrop = (t - 4.05) / 0.85;
+        } else if (t < 6.2) {
+          state.ballDrop = 1.0;
+        } else if (t < 7.0) {
+          state.ballDrop = Math.max(0, 1 - (t - 6.2) / 0.8);
+        } else {
+          state.armAngle = 0;
+          state.ballDrop = 0;
+          state.steamActive = false;
+          state.m2Action = 'IDLE';
+          refreshMythCardContent();
+        }
+      }
+
+      // 膨脹約 8%：200°C 時 scale = 1.16（直徑大於鐵環內徑）
+      const scale = 1.0 + (state.m2Temp - 25) * 0.00095;
+      const curBallR = m2Data.ballBaseR * scale;
+      m2Data.ballMesh.scale.setScalar(scale);
+
+      const heatFrac = Math.max(0, (state.m2Temp - 25) / 175);
+      m2Data.ballMat.emissive.setRGB(heatFrac * 0.55, heatFrac * 0.14, 0);
+
+      if (state.m2Xray) {
+        const atomSpace = 0.21 * scale;
+        const vib = 0.004 + ((state.m2Temp + 10) / 210) * 0.022;
+        m2Data.xrayAtoms.forEach(a => {
+          a.mesh.position.set(
+            a.ix * atomSpace + Math.sin(elapsed * 22 + a.phase) * vib,
+            a.iy * atomSpace + Math.cos(elapsed * 24 + a.phase) * vib,
+            a.iz * atomSpace + Math.sin(elapsed * 20 + a.phase) * vib
+          );
+        });
+      }
+
+      const ringInnerR = m2Data.ringMajorR - m2Data.ringTubeR; // 0.62
+      const canPass = curBallR < ringInnerR;
+      const topWorldY = 3.25;
+      let bottomWorldY = 1.15;
+
+      if (!canPass && Math.abs(state.armAngle) < 0.05) {
+        const sumR = curBallR + m2Data.ringTubeR;
+        const dy = Math.sqrt(Math.max(0.01, sumR * sumR - m2Data.ringMajorR * m2Data.ringMajorR));
+        bottomWorldY = m2Data.ringY + dy;
+      }
+      if (
+        (state.m2Action === 'HEATING' && state.m2Timer < 4.25) ||
+        (state.m2Action === 'COOLING' && state.m2Timer < 4.05)
+      ) {
+        bottomWorldY = 1.05;
+      }
+
+      const curWorldY = topWorldY - state.ballDrop * (topWorldY - bottomWorldY);
+      const localBallY = curWorldY - 3.95;
+
+      m2Data.swingArm.rotation.y = state.armAngle;
+      m2Data.ballGroup.position.y = localBallY;
+      m2Data.chainMesh.scale.y = Math.abs(localBallY);
+
+      m2Data.flameGroup.visible = state.flameOn;
+      if (state.flameOn) {
+        m2Data.outerFlame.scale.set(
+          1 + Math.sin(elapsed * 18) * 0.08,
+          1 + Math.cos(elapsed * 22) * 0.12,
+          1 + Math.sin(elapsed * 16) * 0.08
+        );
+        m2Data.outerFlame.rotation.z = Math.sin(elapsed * 12) * 0.07;
+        m2Data.innerFlame.scale.set(1, 1 + Math.sin(elapsed * 25) * 0.1, 1);
+      }
+
+      // 更新冰水冷卻水氣粒子
+      m2Data.steamParticles.forEach(sp => {
+        if (!state.steamActive) {
+          sp.mesh.visible = false;
+          return;
+        }
+        sp.mesh.visible = true;
+        sp.age = (sp.age + delta * sp.speed) % 1.0;
+        sp.mesh.position.set(
+          sp.ox + Math.sin(elapsed * 4 + sp.age * 6) * 0.12,
+          1.35 + sp.age * 1.15,
+          sp.oz + Math.cos(elapsed * 4 + sp.age * 6) * 0.12
+        );
+        const s = (0.6 + sp.age * 1.2) * (1 - sp.age);
+        sp.mesh.scale.setScalar(Math.max(0.05, s));
+      });
+
+      m2Data.iceCubes.forEach(c => {
+        c.mesh.position.y = 1.22 + Math.sin(elapsed * 2.2 + c.phase) * 0.025;
+        c.mesh.rotation.y += delta * 0.25;
+      });
+
+      const tempSuffix = state.m2Temp > 120 ? ' (受熱膨脹)' : (state.m2Temp < 10 ? ' (冰水冷縮)' : ' (常溫)');
+      styleTempLabel(document.getElementById('m2-temp-label'), state.m2Temp, tempSuffix);
+      document.getElementById('m2-ratio-label').textContent = `銅球直徑：${Math.round((curBallR / ringInnerR) * 100)}% 鐵環內徑`;
+
+      const card = document.getElementById('tag-ring-card');
+      const title = document.getElementById('tag-ring-title');
+      const sub = document.getElementById('tag-ring-sub');
+
+      if (!canPass) {
+        card.className = 'glass-pill rounded-2xl px-3.5 py-2 text-center whitespace-nowrap border-orange-500';
+        title.className = 'text-xs sm:text-sm font-bold text-[#ea580c]';
+        title.textContent = (state.ballDrop > 0.82 && Math.abs(state.armAngle) < 0.05)
+          ? '體積膨脹，卡在鐵環上方無法穿過！'
+          : '銅球受熱膨脹：直徑 ＞ 鐵環內徑';
+        sub.textContent = '請點擊「3. 冰水冷卻 (0°C)」觀察遇冷收縮';
+      } else {
+        card.className = 'glass-pill rounded-2xl px-3.5 py-2 text-center whitespace-nowrap border-emerald-500';
+        title.className = 'text-xs sm:text-sm font-bold text-emerald-800';
+        title.textContent = (state.ballDrop > 0.82 && Math.abs(state.armAngle) < 0.05)
+          ? '✓ 順利穿過鐵環！'
+          : (state.m2Temp < 10 ? '遇冷收縮：直徑 ＜ 鐵環內徑' : '常溫 25°C：銅球直徑 ＜ 鐵環內徑');
+        sub.textContent = state.m2Temp < 10 ? '體積收縮回原狀，再次順利通過鐵環！' : '點擊「2. 酒精燈加熱 (200°C)」觀察受熱膨脹';
+      }
+
+      positionTag(new THREE.Vector3(0, 4.35, 0), document.getElementById('tag-ring-status'), true);
+      positionTag(new THREE.Vector3(m2Data.lampPos.x, 1.85, m2Data.lampPos.z), document.getElementById('tag-lamp'), true);
+      positionTag(new THREE.Vector3(m2Data.icePos.x, 1.95, m2Data.icePos.z), document.getElementById('tag-ice'), true);
+    }
+
+    function stepMode3() {
+      const norm = (state.m3Temp - 10) / 80; // 0.0 (10°C) -> 1.0 (90°C)
+
+      // 恆溫水浴槽水色隨溫度從冰川藍漸變為暖橘紅
+      const bathCol = new THREE.Color().setHSL(0.58 - norm * 0.54, 0.85, 0.52);
+      m3Data.bathWaterMat.color.copy(bathCol);
+
+      // 1. 固體銅棒微小伸長 + 指針小幅度偏轉
+      m3Data.brassRod.scale.set(1.0 + norm * 0.045, 1, 1);
+      m3Data.pointerPivot.rotation.z = 0.52 - norm * 0.68;
+
+      // 2. 液體紅水沿細玻璃管明顯上升
+      m3Data.redWaterCol.scale.set(1, 0.45 + norm * 1.95, 1);
+
+      // 3. 氣體受熱大幅膨脹使氣球鼓脹變大
+      const bXZ = 0.70 + norm * 1.18;
+      const bY = 0.76 + norm * 1.28;
+      m3Data.balloonMesh.scale.set(bXZ, bY, bXZ);
+
+      const sign = state.m3Temp >= 25 ? '+' : '';
+      const sPct = ((state.m3Temp - 25) * 0.002).toFixed(2);
+      const lPct = ((state.m3Temp - 25) * 0.05).toFixed(1);
+      const gPct = ((state.m3Temp - 25) * 0.38).toFixed(1);
+
+      document.getElementById('comp-solid-txt').textContent = `體積變化：${sign}${sPct}%（最小）`;
+      document.getElementById('comp-liquid-txt').textContent = `體積變化：${sign}${lPct}%（明顯）`;
+      document.getElementById('comp-gas-txt').textContent = `體積變化：${sign}${gPct}%（最大！）`;
+
+      // 更新底部即時對比進度條
+      document.getElementById('bar-solid-fill').style.width = `${Math.round(6 + norm * 14)}%`;
+      document.getElementById('bar-liquid-fill').style.width = `${Math.round(14 + norm * 42)}%`;
+      document.getElementById('bar-gas-fill').style.width = `${Math.round(22 + norm * 78)}%`;
+
+      positionTag(new THREE.Vector3(-3.1, 3.05, 0), document.getElementById('tag-comp-solid'), true);
+      positionTag(new THREE.Vector3(0.0, 4.65, 0), document.getElementById('tag-comp-liquid'), true);
+      positionTag(new THREE.Vector3(3.1, 4.35, 0), document.getElementById('tag-comp-gas'), true);
+    }
+
+    function hideInactiveTags() {
+      const m = state.mode;
+      if (m !== 1) {
+        document.getElementById('tag-caliper').classList.add('hidden');
+        document.getElementById('tag-volume').classList.add('hidden');
+      }
+      if (m !== 2) {
+        document.getElementById('tag-ring-status').classList.add('hidden');
+        document.getElementById('tag-lamp').classList.add('hidden');
+        document.getElementById('tag-ice').classList.add('hidden');
+      }
+      if (m !== 3) {
+        document.getElementById('tag-comp-solid').classList.add('hidden');
+        document.getElementById('tag-comp-liquid').classList.add('hidden');
+        document.getElementById('tag-comp-gas').classList.add('hidden');
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.getElapsedTime();
+
+      if (state.camTransitioning) {
+        camera.position.lerp(state.targetCamPos, Math.min(1, delta * 4.5));
+        controls.target.lerp(state.targetCamLook, Math.min(1, delta * 4.5));
+        if (
+          camera.position.distanceTo(state.targetCamPos) < 0.03 &&
+          controls.target.distanceTo(state.targetCamLook) < 0.03
+        ) {
+          state.camTransitioning = false;
+        }
+      }
+
+      hideInactiveTags();
+
+      if (state.mode === 1) {
+        stepMode1(delta, elapsed);
+      } else if (state.mode === 2) {
+        stepMode2(delta, elapsed);
+      } else if (state.mode === 3) {
+        stepMode3();
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function handleViewportResize() {
+      if (!camera || !renderer) return;
+      const container = document.getElementById('canvas-container');
+      const rect = container.getBoundingClientRect();
+      const w = Math.max(rect.width || window.innerWidth, 300);
+      const h = Math.max(rect.height || window.innerHeight, 300);
+
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      syncMythCardPosition();
+    }
+
+    // =========================================================================
+    // 8. 頁面載入完成後啟動 3D 實驗室與 ResizeObserver 響應式監聽
+    // =========================================================================
+    window.onload = function () {
+      try {
+        clock = new THREE.Clock();
+        initLabScene();
+        buildMode1();
+        buildMode2();
+        buildMode3();
+        bindEvents();
+        refreshMythCardContent();
+        syncMythCardPosition();
+
+        // 使用 ResizeObserver 實時監聽畫布容器與頂部工具列尺寸變化
+        const ro = new ResizeObserver(() => handleViewportResize());
+        ro.observe(document.getElementById('canvas-container'));
+        ro.observe(document.getElementById('top-hud'));
+        window.addEventListener('resize', handleViewportResize);
+
+        renderer.render(scene, camera);
+        animate();
+      } catch (err) {
+        console.error('Initialization failed:', err);
+        showFriendlyError(`無法初始化 3D 科學實驗室：${err.message || '未知錯誤'}`);
+      }
+    };
+  </script>
+</body>
+</html>
