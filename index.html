@@ -121,6 +121,35 @@
             transform: rotate(12deg) scale(1.1);
         }
 
+        /* 最新上載：霓虹邊框 + 掃光 */
+        @keyframes borderGlow {
+            0%   { box-shadow: 0 0 8px rgba(45,212,191,.45), 0 0 18px rgba(45,212,191,.18); }
+            50%  { box-shadow: 0 0 18px rgba(45,212,191,.75), 0 0 40px rgba(45,212,191,.30); }
+            100% { box-shadow: 0 0 8px rgba(45,212,191,.45), 0 0 18px rgba(45,212,191,.18); }
+        }
+        @keyframes shineSweep {
+            0%   { left: -120%; }
+            55%  { left: 140%; }
+            100% { left: 140%; }
+        }
+        .latest-glow {
+            position: relative;
+            overflow: hidden;
+            animation: borderGlow 2.4s ease-in-out infinite;
+        }
+        .latest-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 55%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.38), transparent);
+            transform: skewX(-20deg);
+            animation: shineSweep 3.4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
         /* 優化滾動條外觀 */
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
@@ -152,6 +181,27 @@
                 </h1>
                 <div class="h-1 w-12 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
             </header>
+
+            <!-- 最新上載 -->
+            <div class="mb-4 shrink-0">
+                <div class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2 px-1">最新上載</div>
+                <a href="https://cwcg-ctrl.github.io/yotps/SCIENCE60.html" target="_blank" 
+                   onclick="trackGameClick('香港科學探索城')"
+                   class="link-card latest-glow flex items-center p-4 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border-2 border-teal-300 shadow-sm group">
+                    <div class="icon-box w-12 h-12 bg-teal-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
+                        🧪
+                    </div>
+                    <div class="ml-4">
+                        <div class="font-bold text-slate-800 text-lg group-hover:text-teal-600 transition-colors">香港科學探索城</div>
+                        <div class="text-xs text-slate-500">60 格 3D 科學飛行棋</div>
+                    </div>
+                    <div class="ml-auto text-slate-300 group-hover:text-teal-500 transition-colors shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
+            </div>
 
             <!-- 內容列表區塊，加入滾動功能以應對更多遊戲 -->
             <div class="space-y-3 overflow-y-auto px-1 custom-scrollbar flex-grow pb-4">
