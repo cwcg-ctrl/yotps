@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>光與聲的奇幻旅程 · 3D 熱帶綠洲棋盤（v9 · Three.js r128）</title>
+<style>
+:root{
+  --ink:#12302a; --paper:#f6e8c8; --turq:#2fb8c4; --sand:#ecd9a9;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{ height:100%; }
+body{
+  font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC","Heiti TC",sans-serif;
+  color:var(--ink); background:#0b1220; overflow:hidden;
+}
+
+/* ---------------- 3D 層（最底） ---------------- */
+#bg{ position:fixed; inset:0; width:100%; height:100%; z-index:0; overflow:hidden; background:#0b1220; }
+#bg canvas{ display:block; width:100% !important; height:100% !important; }
+
+/* ---------------- intro ---------------- */
+#intro{
+  position:fixed; inset:0; z-index:20; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; padding:24px;
+  background:radial-gradient(125% 85% at 50% 18%, rgba(28,90,108,.72), rgba(11,18,32,.86) 72%);
+  transition:opacity .9s; opacity:1; pointer-events:auto;
+}
+#intro.hidden{ opacity:0; pointer-events:none; }
+#intro .kicker{ color:#7fd0e8; font-weight:700; letter-spacing:.30em; font-size:12px; margin-bottom:12px; }
+#intro h1{ font-size:46px; font-weight:900; letter-spacing:.02em; background:linear-gradient(120deg,#f8edc2,#f5b97a); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:14px; }
+#intro .sub{ color:#cfe6ee; font-size:16px; margin-bottom:22px; }
+#intro .tagline{ color:#9fd4e4; font-size:13px; line-height:1.8; max-width:640px; margin-bottom:26px; }
+.btn{
+  background:linear-gradient(120deg,#2fb8c4,#0f7d8c); color:#fff; border:none;
+  padding:16px 36px; border-radius:999px; font-size:19px; font-weight:800; cursor:pointer;
+  box-shadow:0 12px 32px rgba(47,184,196,.45); transition:transform .16s, box-shadow .16s;
+}
+.btn:hover{transform:translateY(-2px) scale(1.03); box-shadow:0 16px 38px rgba(47,184,196,.58);}
+.btn:active{transform:scale(.97);}
+#intro .creds{ color:#7fb0c4; font-size:12px; margin-top:20px; }
+
+/* ---------------- HUD ---------------- */
+#hud{ position:fixed; inset:0; z-index:10; pointer-events:none; padding:14px 16px 16px; }
+#hud > *{ pointer-events:auto; }
+.titlebar{
+  display:inline-flex; align-items:center; gap:12px; flex-wrap:wrap;
+  background:rgba(11,28,36,.86); border:1px solid rgba(255,255,255,.18);
+  border-radius:14px; padding:10px 14px; backdrop-filter:blur(8px);
+}
+.titlebar .tm{ font-weight:900; font-size:17px; color:#eafaf8; letter-spacing:.03em; }
+.titlebar .ts{ font-size:12px; color:#8fbabb; font-weight:600; margin-left:6px; }
+.scorebar{ display:flex; gap:10px; margin-top:10px; flex:0 0 auto; }
+.scorechip{
+  flex:0 0 190px; background:rgba(11,28,36,.82); border:1px solid rgba(255,255,255,.15);
+  border-radius:12px; padding:10px 12px; text-align:center; backdrop-filter:blur(8px);
+  transition:transform .25s;
+}
+.scorechip.ready{ transform:translateY(-3px); }
+.sc-chip{ font-size:13px; font-weight:800; color:#bfe3ec; }
+.sc-name{ font-size:13px; font-weight:900; }
+.sc-p1 .sc-name{color:#1fa6b0;} .sc-p2 .sc-name{color:#a78bfa;}
+.sc-score{ font-size:21px; font-weight:900; line-height:1.1; }
+.sc-p1 .sc-score{color:#2fb8c4;} .sc-p2 .sc-score{color:#a78bfa;}
+.panels{ display:flex; gap:12px; margin-top:10px; }
+.panel{
+  flex:0 1 430px; background:rgba(11,28,36,.82); border:1px solid rgba(255,255,255,.16);
+  border-radius:14px; padding:12px; backdrop-filter:blur(8px); min-width:0; transition:transform .25s;
+}
+.panel.ready{ transform:translateY(-3px); }
+.panel h3{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; margin-bottom:9px; }
+.panel .ppic{ font-size:21px; }
+.panel .psum{ font-size:11px; color:#8fbabb; font-weight:700; margin-bottom:9px; line-height:1.3; }
+.cardlist{ display:flex; gap:8px; }
+.card{
+  flex:1 1 0; background:#0f242e; border:1px solid rgba(255,255,255,.12);
+  border-radius:12px; padding:10px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+  text-align:left;
+}
+.card:hover{ border-color:rgba(255,255,255,.3); transform:translateY(-2px); }
+.card.on{
+  border-color:var(--c,#2fb8c4); box-shadow:0 0 0 2px rgba(47,184,196,.42), 0 8px 20px rgba(47,184,196,.25);
+}
+.card .ci{ font-size:22px; }
+.card .ct{ font-size:12px; font-weight:900; margin-top:6px; }
+.card .cs{ font-size:10px; color:#9fbaba; margin-top:3px; line-height:1.4; }
+.card .pill{
+  position:absolute; top:6px; right:6px; font-size:9px; font-weight:900; color:#12302a;
+  background:rgba(255,255,255,.12); padding:2px 6px; border-radius:999px; letter-spacing:.05em;
+}
+.log{ margin-top:10px; max-height:104px; overflow:auto; background:rgba(11,23,31,.9); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:9px 12px; font-size:12px; line-height:1.7; color:#cfe0e4; font-family:"Noto Sans TC",sans-serif; }
+.log .line{ display:block; }
+.log .p1{ color:#7fd8e4; } .log .p2{ color:#c9b6f7; } .log .ok{ color:#d9f0d4; } .log .warn{ color:#f7dcc0; } .log .sys{ color:#7f9fb0; font-style:italic; }
+.foot{ display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:#7f9fb0; }
+.rollstat{ font-weight:900; color:#f7e9c8; }
+.hint{ position:fixed; right:14px; bottom:12px; z-index:10; font-size:11px; color:#7f9fb0;
+  background:rgba(11,28,36,.7); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:6px 10px; }
+</style>
+</head>
+<body>
+
+<!-- 3D 場景容器（必須係 div，唔係 canvas） -->
+<div id="bg"></div>
+
+<div id="intro">
+  <div class="kicker">HK SCIENCE EXPLORATION CITY · LIGHT &amp; SOUND WONDERLAND</div>
+  <h1>熱帶綠洲棋盤</h1>
+  <div class="sub">3D Low Poly 站台 · Three.js r128 / WebGL</div>
+  <div class="tagline">六十塊漂浮島嶼沿蜿蜒路徑鋪開，風波穿梭在島與島之間。雙隊「科學小先鋒」與「創科 AI 博士」出招取牌、搖骰、爭奇點。</div>
+  <button class="btn" id="btnStart">START 探險</button>
+  <div class="creds">Raycaster 點格 · 手牌循環 · 骰子搖擺 · 陽光漂移</div>
+</div>
+
+<div id="hud">
+  <div class="titlebar">
+    <div class="tm">光與聲的奇幻旅程<span class="ts">v9 · 3D 熱帶綠洲棋盤 · Three.js r128</span></div>
+  </div>
+  <div class="scorebar">
+    <div class="scorechip p1 ready" id="chip1">
+      <div class="sc-chip">🔬</div>
+      <div class="sc-name">科學小先鋒</div>
+      <div class="sc-score" id="score1">0</div>
+    </div>
+    <div class="scorechip p2 ready" id="chip2">
+      <div class="sc-chip">🤖</div>
+      <div class="sc-name">創科AI博士</div>
+      <div class="sc-score" id="score2">0</div>
+    </div>
+  </div>
+  <div class="panels">
+    <div class="panel p1" id="panel1">
+      <h3><span class="ppic">🧭</span> 科學小先鋒 手卡</h3>
+      <div class="psum">選一張獨一無二的科學瞄準</div>
+      <div class="cardlist" id="cards1"></div>
+    </div>
+    <div class="panel p2" id="panel2">
+      <h3><span class="ppic">⚡</span> 創科AI博士 手卡</h3>
+      <div class="psum">選一張獨一無二的活力攻擊</div>
+      <div class="cardlist" id="cards2"></div>
+    </div>
+  </div>
+  <div class="log" id="log"><span class="sys">等待兩隊各自取一張手卡，然後骰子炸開</span></div>
+  <div class="foot">
+    <span>搖骰 · 奇點爭奪 · 光譜共振</span>
+    <span class="rollstat" id="rstat"></span>
+  </div>
+</div>
+
+<div class="hint">🐚 點擊棋盤格可以標記 · 滾輪縮放</div>
+<div id="diag" style="position:fixed;left:-9999px;top:0;"></div>
+
+<!-- Three.js r128（統一用它，唔好用 r157） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================
+   v9 · 3D 熱帶綠洲棋盤（Three.js r128 / WebGL）
+   技術標準跟 SCIENCE60.html：
+   - THREE.WebGLRenderer + PCFSoftShadowMap
+   - MeshStandardMaterial + flatShading（low poly）
+   - IcosahedronGeometry 雕刻岩石
+   - PerspectiveCamera + Fog
+   - 棋盤 / 樹 / 水 / 骰子 全 3D
+   ============================================================ */
+(function(){
+'use strict';
+
+var $ = function(s){ return document.querySelector(s); };
+var intro = $('#intro'), btnStart = $('#btnStart'), logEl = $('#log'), rstat = $('#rstat');
+var score1 = $('#score1'), score2 = $('#score2');
+var cards1 = $('#cards1'), cards2 = $('#cards2');
+var bgHost = $('#bg');
+
+var HAS_THREE = (typeof THREE !== 'undefined');
+window.__errs = [];
+window.addEventListener('error', function(e){ window.__errs.push(String(e.message)); });
+var renderer, scene, camera, dirLight, hemiLight, ambLight;
+var tileMeshes = [], tileCoords = [];
+var dice = [], pieces = {}, fairies = [], clouds = [];
+var crystal = null, waterMeshes = [];
+var sceneReady = false;
+var raycaster, mouseNDC;
+var camDist = 54, camTarget = null;
+
+/* ---------------- 內容定義 ---------------- */
+var CARD = [
+  {key:'explore', label:'知識探勘', desc:'前進 2 格', icon:'🔭', hue:'#62b8ff', hint:'偵測科學現象'},
+  {key:'water',   label:'水位觀測', desc:'造 1 塊浮島', icon:'🌊', hue:'#2fb8c4', hint:'擴張島嶼'},
+  {key:'light',   label:'光譜採集', desc:'點亮 1 顆晶石', icon:'✨', hue:'#fbbf24', hint:'吸收光能'},
+  {key:'sound',   label:'聲波共振', desc:'震動 1 枚棋子', icon:'📢', hue:'#f59e0b', hint:'聲勢騰脫'},
+  {key:'grow',    label:'草芽繁殖', desc:'強化 1 枚棋子', icon:'🌱', hue:'#4caf50', hint:'養分累積'},
+  {key:'link',    label:'奇點連結', desc:'搶 1 格控制權', icon:'⚡', hue:'#7c3aed', hint:'時空裂縫'}
+];
+var ROLES = [
+  {name:'科學小先鋒', pic:'🔬', hue:'#2fb8c4', color:0x1fa6b0, score:0, q:[0,1,2], ready:false},
+  {name:'創科AI博士', pic:'🤖', hue:'#a78bfa', color:0x7c36e0, score:0, q:[3,4,5], ready:false}
+];
+var STATE = { turn:0, phase:'ready' };
+var PALETTE = [0x3f8f5b, 0x14b8a6, 0xf97316, 0xeab308, 0x7c3aed, 0x3b82f6, 0x94a3b8];
+
+/* ---------------- 材質工具（SCIENCE60 標準） ---------------- */
+function lowPolyMat(hex, opts){
+  opts = opts || {};
+  return new THREE.MeshStandardMaterial({
+    color: hex,
+    roughness: (opts.roughness !== undefined) ? opts.roughness : 0.76,
+    metalness: (opts.metalness !== undefined) ? opts.metalness : 0.05,
+    flatShading: true,
+    transparent: !!opts.transparent,
+    opacity: (opts.opacity !== undefined) ? opts.opacity : 1.0,
+    emissive: opts.emissive || 0x000000,
+    emissiveIntensity: opts.emissiveIntensity || 0,
+    side: opts.doubleSide ? THREE.DoubleSide : THREE.FrontSide
+  });
+}
+
+/* 雕刻岩石：IcosahedronGeometry + 頂點噪聲（跟 SCIENCE60 一致） */
+function sculptedRock(radius, detail, seed, sx, sy, sz){
+  var geo = new THREE.IcosahedronGeometry(radius, detail);
+  var pos = geo.attributes.position;
+  for(var i=0;i<pos.count;i++){
+    var vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+    var n = Math.sin(vx*3.1 + seed*1.7) * Math.cos(vy*2.7 - seed) * Math.sin(vz*3.3 + seed*0.9);
+    var f = 1 + n*0.22;
+    pos.setXYZ(i, vx*f*sx, vy*f*sy, vz*f*sz);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/* ---------------- 棋盤路徑（6 行 × 10 列，蛇形折返） ---------------- */
+var ROWS = 6, COLS = 10, STEP = 1.8, TURN = 0.9, ZSTEP = 3.3;
+function buildTrackCoords(){
+  var raw = [], px = 0, pz = 0, pdir = 1, r, c;
+  for(r=0;r<ROWS;r++){
+    var row = [];
+    for(c=0;c<COLS;c++){
+      row.push({tx:px, tz:pz, th:0.14*Math.sin(r*1.4 + c*0.65 + 1.1)});
+      px += pdir*STEP;
+    }
+    raw.push(row);
+    var last = raw[r][COLS-1];
+    px = last.tx + TURN*pdir;
+    pz += ZSTEP;
+    pdir *= -1;
+  }
+  /* 搵中心，將成個棋盤移回原點 */
+  var minX=1e9,maxX=-1e9,minZ=1e9,maxZ=-1e9;
+  raw.forEach(function(row){
+    row.forEach(function(t){
+      if(t.tx<minX)minX=t.tx; if(t.tx>maxX)maxX=t.tx;
+      if(t.tz<minZ)minZ=t.tz; if(t.tz>maxZ)maxZ=t.tz;
+    });
+  });
+  var cx = (minX+maxX)/2, cz = (minZ+maxZ)/2;
+  raw.forEach(function(row){
+    row.forEach(function(t){ t.tx -= cx; t.tz -= cz; });
+  });
+  tileCoords = raw;
+  return raw;
+}
+
+/* ---------------- 場景 ---------------- */
+function initScene(){
+  if(typeof THREE === 'undefined'){ console.error('[v9] Three.js 未載入'); return; }
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b1220);
+  scene.fog = new THREE.FogExp2(0x0b1220, 0.0065);
+
+  var w = bgHost.clientWidth || window.innerWidth;
+  var h = bgHost.clientHeight || window.innerHeight;
+
+  camera = new THREE.PerspectiveCamera(42, w/h, 0.1, 600);
+  camTarget = new THREE.Vector3(0, 0, 2);
+  positionCamera();
+
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x0b1220, 1);
+  /* r128 預設 LinearEncoding，跟隨 SCIENCE60 標準（唔設 sRGB，避免洗白） */
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  bgHost.appendChild(renderer.domElement);   /* append 到 div，唔係 canvas */
+
+  /* 燈光：環境 + 半球 + 日光（帶陰影） */
+  ambLight = new THREE.AmbientLight(0xffffff, 0.42);
+  scene.add(ambLight);
+  hemiLight = new THREE.HemisphereLight(0xbfe9ff, 0x5c4a3a, 0.30);
+  scene.add(hemiLight);
+  dirLight = new THREE.DirectionalLight(0xfff2d8, 0.82);
+  dirLight.position.set(22, 38, 16);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.camera.near = 5;
+  dirLight.shadow.camera.far = 160;
+  var dCam = 40;
+  dirLight.shadow.camera.left = -dCam;
+  dirLight.shadow.camera.right = dCam;
+  dirLight.shadow.camera.top = dCam;
+  dirLight.shadow.camera.bottom = -dCam;
+  dirLight.shadow.bias = -0.0006;
+  scene.add(dirLight);
+
+  raycaster = new THREE.Raycaster();
+  mouseNDC = new THREE.Vector2();
+
+  buildTrackCoords();
+  buildSea();
+  buildIsland();
+  buildPath();
+  buildProps();
+  buildDice();
+  buildPieces();
+  buildClouds();
+  buildFairies();
+
+  window.addEventListener('resize', onResize);
+  renderer.domElement.addEventListener('pointerdown', onPointerDown);
+  renderer.domElement.addEventListener('wheel', onWheel, {passive:false});
+
+  sceneReady = true;
+  window.__v9ready = true;
+  /* _debug handle（唔影響畫面） */
+  window.__v9 = {
+    get renderer(){ return renderer; }, get scene(){ return scene; }, get camera(){ return camera; },
+    get tileMeshes(){ return tileMeshes; }, get dice(){ return dice; }, get pieces(){ return pieces; },
+    get clouds(){ return clouds; }, get fairies(){ return fairies; }, get waterMeshes(){ return waterMeshes; }
+  };
+  initUI();
+  startIntro();
+  requestAnimationFrame(loop);
+  writeDiag('init');
+}
+function writeDiag(tag){
+  var el = document.getElementById('diag');
+  if(!el) return;
+  var r = renderer, s = scene, cam = camera;
+  el.textContent = JSON.stringify({
+    tag: tag, ready: window.__v9ready, frames: window.__frameCount || 0,
+    three: (typeof THREE !== 'undefined') ? THREE.REVISION : null,
+    sceneChildren: s ? s.children.length : 0,
+    tiles: tileMeshes.length, dice: dice.length,
+    p1: (pieces.p1 ? pieces.p1.children.length : 0), p2: (pieces.p2 ? pieces.p2.children.length : 0),
+    clouds: clouds.length, fairies: fairies.length, water: waterMeshes.length,
+    calls: (r && r.info) ? r.info.render.calls : 0,
+    tris: (r && r.info) ? r.info.render.triangles : 0,
+    cam: cam ? [+cam.position.x.toFixed(1), +cam.position.y.toFixed(1), +cam.position.z.toFixed(1)] : null,
+    errs: window.__errs || []
+  });
+}
+
+function positionCamera(){
+  var az = 0.0, el = 0.72;                 /* 方位角 / 仰角 */
+  camera.position.set(
+    camTarget.x + camDist*Math.cos(el)*Math.sin(az),
+    camTarget.y + camDist*Math.sin(el),
+    camTarget.z + camDist*Math.cos(el)*Math.cos(az)
+  );
+  camera.lookAt(camTarget);
+}
+function onResize(){
+  if(!renderer) return;
+  var w = bgHost.clientWidth || window.innerWidth;
+  var h = bgHost.clientHeight || window.innerHeight;
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+function onWheel(e){
+  e.preventDefault();
+  camDist *= (e.deltaY > 0) ? 1.08 : 0.92;
+  camDist = Math.max(24, Math.min(90, camDist));
+  positionCamera();
+}
+function onPointerDown(e){
+  if(!sceneReady) return;
+  var rect = renderer.domElement.getBoundingClientRect();
+  mouseNDC.x = ((e.clientX - rect.left)/rect.width)*2 - 1;
+  mouseNDC.y = -((e.clientY - rect.top)/rect.height)*2 + 1;
+  raycaster.setFromCamera(mouseNDC, camera);
+  var hits = raycaster.intersectObjects(tileMeshes, false);
+  if(hits.length){
+    var idx = hits[0].object.userData.tileIndex;
+    log('<span class="sys">📍 選咗第 '+(idx+1)+' 格</span>');
+  }
+}
+
+/* ---------------- 海 ---------------- */
+function buildSea(){
+  var g = new THREE.Group();
+  var sea = new THREE.Mesh(
+    new THREE.CircleGeometry(90, 48),
+    lowPolyMat(0x123a4a, {roughness:0.55, metalness:0.15})
+  );
+  sea.rotation.x = -Math.PI/2;
+  sea.position.y = -1.6;
+  sea.receiveShadow = true;
+  g.add(sea);
+
+  var rings = [
+    {r1:24, r2:30, col:0x2fb8c4, op:0.55, y:-0.9},
+    {r1:30, r2:38, col:0x237a4e, op:0.40, y:-1.1},
+    {r1:38, r2:52, col:0x1a4a33, op:0.30, y:-1.3}
+  ];
+  rings.forEach(function(d){
+    var m = new THREE.Mesh(
+      new THREE.RingGeometry(d.r1, d.r2, 64),
+      lowPolyMat(d.col, {transparent:true, opacity:d.op, roughness:0.4, metalness:0.2, doubleSide:true})
+    );
+    m.rotation.x = -Math.PI/2;
+    m.position.y = d.y;
+    g.add(m);
+    waterMeshes.push(m);
+  });
+  scene.add(g);
+}
+
+/* ---------------- 浮島（棋盤底下） ---------------- */
+function buildIsland(){
+  var g = new THREE.Group();
+
+  /* 島底基座（壓平，確保唔會蓋住棋盤） */
+  var rock = new THREE.Mesh(sculptedRock(21, 1, 7, 1.0, 0.13, 1.0), lowPolyMat(0x2c8a5e, {roughness:0.85}));
+  rock.position.y = -2.6;
+  rock.receiveShadow = true;
+  g.add(rock);
+
+  /* 島緣小山（擺喺棋盤範圍之外，唔會遮蓋格子） */
+  [[-14.2,-6.0,4.0,0x2c8a5e],[13.6,-9.6,3.2,0x237a4e],[-5.5,-15.2,2.6,0x2c8a5e],[15.0,6.5,2.4,0x237a4e]].forEach(function(d,i){
+    var m = new THREE.Mesh(sculptedRock(d[2], 1, i*11+5, 1.0, 0.85, 1.0), lowPolyMat(d[3], {roughness:0.85}));
+    m.position.set(d[0], 0.55, d[1]);
+    m.castShadow = true; m.receiveShadow = true;
+    g.add(m);
+  });
+
+  var cliff = new THREE.Mesh(new THREE.CylinderGeometry(20.2, 21.6, 2.2, 12), lowPolyMat(0xcfa063));
+  cliff.position.y = -0.9;
+  cliff.receiveShadow = true;
+  g.add(cliff);
+
+  var grass = new THREE.Mesh(new THREE.CylinderGeometry(20.4, 20.2, 0.7, 12), lowPolyMat(0x6ab032, {roughness:0.9}));
+  grass.position.y = 0.35;
+  grass.receiveShadow = true;
+  g.add(grass);
+
+  var sand = new THREE.Mesh(new THREE.RingGeometry(18.6, 21.2, 48), lowPolyMat(0xf3dfae, {roughness:0.95, doubleSide:true}));
+  sand.rotation.x = -Math.PI/2;
+  sand.position.y = 0.72;
+  g.add(sand);
+
+  /* 中心水晶（光元素） */
+  crystal = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.85, 0),
+    lowPolyMat(0x3de0ff, {emissive:0x3de0ff, emissiveIntensity:0.9, roughness:0.2, metalness:0.1})
+  );
+  crystal.position.set(0, 3.0, -12.5);
+  crystal.userData.baseY = 3.0;
+  g.add(crystal);
+
+  /* 小屋 + 屋頂 */
+  var hut = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.4, 2.2), lowPolyMat(0xf2d49b));
+  hut.position.set(-9.0, 1.4, -12.0); hut.castShadow = true;
+  g.add(hut);
+  var roof = new THREE.Mesh(new THREE.ConeGeometry(2.1, 1.1, 4), lowPolyMat(0xe85d75));
+  roof.rotation.y = Math.PI/4;
+  roof.position.set(-9.0, 2.6, -12.0); roof.castShadow = true;
+  g.add(roof);
+
+  scene.add(g);
+}
+
+/* ---------------- 棋盤格（3D） ---------------- */
+function buildPath(){
+  for(var r=0;r<ROWS;r++){
+    for(var c=0;c<COLS;c++){
+      var i = r*COLS + c;
+      var t = tileCoords[r][c];
+      var col = PALETTE[i % PALETTE.length];
+
+      var base = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.22, 1.42), lowPolyMat(col, {roughness:0.7}));
+      base.position.y = 0.11;
+      base.castShadow = true; base.receiveShadow = true;
+
+      var top = new THREE.Mesh(new THREE.BoxGeometry(1.34, 0.12, 1.34), lowPolyMat(col, {roughness:0.45, metalness:0.12}));
+      top.position.y = 0.26;
+      top.castShadow = true; top.receiveShadow = true;
+
+      var gr = new THREE.Group();
+      gr.add(base); gr.add(top);
+      gr.position.set(t.tx, t.th + 0.85, t.tz);
+      scene.add(gr);
+
+      top.userData.tileIndex = i;
+      base.userData.tileIndex = i;
+      tileMeshes.push(top);
+    }
+  }
+}
+
+/* ---------------- 道具：棕櫚樹 / 岩石 / 沙灘 ---------------- */
+function makePalm(x, z, scale, lean){
+  var palm = new THREE.Group();
+  palm.position.set(x, 0.7, z);
+  palm.scale.setScalar(scale);
+  var segs = 5, curY = 0, curX = 0;
+  for(var s=0;s<segs;s++){
+    var segH = 0.56;
+    var seg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.175 - s*0.022, 0.2 - s*0.022, segH, 6),
+      lowPolyMat(s % 2 === 0 ? 0x8d5a34 : 0x7a4b29)
+    );
+    curX += lean*(s+1)*0.16;
+    seg.position.set(curX, curY + segH/2, 0);
+    seg.rotation.z = -lean*(s+1)*0.22;
+    seg.castShadow = true;
+    palm.add(seg);
+    curY += segH*0.94;
+  }
+  var crown = new THREE.Group();
+  crown.position.set(curX, curY, 0);
+  for(var f=0;f<6;f++){
+    var pivot = new THREE.Group();
+    pivot.rotation.y = (f*Math.PI*2)/6;
+    var frond = new THREE.Mesh(
+      new THREE.ConeGeometry(0.42, 1.65, 4),
+      lowPolyMat(f % 2 === 0 ? 0x7cc444 : 0x5ea32a)
+    );
+    frond.rotation.z = Math.PI/2 + 0.36;
+    frond.position.set(0.95, -0.05, 0);
+    frond.castShadow = true;
+    pivot.add(frond);
+    crown.add(pivot);
+  }
+  palm.add(crown);
+  scene.add(palm);
+  return palm;
+}
+function buildProps(){
+  makePalm( 9.6, -9.6, 0.95, 0.16);
+  makePalm(-10.4,  8.6, 0.80, -0.14);
+  makePalm( 11.2,  9.8, 0.72, 0.12);
+  makePalm(-11.8, -9.2, 0.78, -0.16);
+  makePalm( 0.5,  12.4, 0.70, 0.10);
+  makePalm(-4.2, -12.8, 0.66, -0.12);
+
+  /* 岩石堆 */
+  [[13.6,-13.4],[-13.0,7.0],[-14.2,-1.0],[14.0,4.0],[7.2,12.0],[-3.4,-14.6]].forEach(function(p, i){
+    var m = new THREE.Mesh(sculptedRock(0.5, 0, i*7+3, 1.1, 0.85, 1.0), lowPolyMat(0x9a8a72));
+    m.position.set(p[0], 0.9, p[1]);
+    m.rotation.set(0.3, i*0.7, 0.2);
+    m.castShadow = true; m.receiveShadow = true;
+    scene.add(m);
+  });
+
+  /* 岸邊沙灘 */
+  var sand = new THREE.Mesh(new THREE.BoxGeometry(46, 0.3, 2.0), lowPolyMat(0xf3dfae));
+  sand.position.set(0, 0.55, -16.5);
+  sand.receiveShadow = true;
+  scene.add(sand);
+}
+
+/* ---------------- 骰子（3D） ---------------- */
+var DICE_COLORS = [0xef4444, 0x3b82f6, 0x22c55e, 0xeab308, 0xa855f7, 0xec4899];
+function makeDie(x, y, z, idx){
+  var mats = [];
+  for(var f=0;f<6;f++){
+    mats.push(lowPolyMat(DICE_COLORS[f], {roughness:0.35, metalness:0.1, emissive:DICE_COLORS[f], emissiveIntensity:0.0}));
+  }
+  var m = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), mats);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  /* BoxGeometry 材質順序：+x, -x, +y, -y, +z, -z */
+  m.userData.faceToMat = {1:2, 2:3, 3:0, 4:1, 5:4, 6:5};
+  m.userData.rolling = false;
+  m.userData.idle = 0;
+  m.userData.baseY = y;
+  m.userData.idx = idx;
+  scene.add(m);
+  dice.push(m);
+  paintDie(m, 1);
+  return m;
+}
+function paintDie(die, face){
+  var map = die.userData.faceToMat;
+  for(var i=0;i<6;i++){
+    die.material[i].emissiveIntensity = 0.0;
+    die.material[i].color.setHex(DICE_COLORS[i]);
+  }
+  var mi = map[face];
+  die.material[mi].emissiveIntensity = 0.85;
+}
+function buildDice(){
+  makeDie(-9.4, 1.5, 3.2, 0);
+  makeDie( 9.4, 1.5, 11.0, 1);
+}
+
+/* ---------------- 棋子 ---------------- */
+function makePawn(colorHex){
+  var g = new THREE.Group();
+  var base = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 18), lowPolyMat(colorHex, {roughness:0.5, metalness:0.2}));
+  base.rotation.x = Math.PI/2;
+  base.position.y = 0.06;
+  base.castShadow = true;
+  g.add(base);
+
+  var body = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.27, 0.62, 12), lowPolyMat(0x4fd8d0));
+  body.position.y = 0.38; body.castShadow = true;
+  g.add(body);
+
+  var head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 14, 14), lowPolyMat(0x7ee8e0, {roughness:0.35}));
+  head.position.y = 0.82; head.castShadow = true;
+  g.add(head);
+
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.035, 6, 16), lowPolyMat(0xfbbf24, {emissive:0xfbbf24, emissiveIntensity:0.35}));
+  ring.rotation.x = Math.PI/2;
+  ring.position.y = 0.62;
+  g.add(ring);
+  return g;
+}
+function buildPieces(){
+  var p1cols = [tileCoords[0][1], tileCoords[0][2], tileCoords[0][3], tileCoords[0][4]];
+  var p2cols = [tileCoords[5][5], tileCoords[5][6], tileCoords[5][7], tileCoords[5][8]];
+  var g1 = new THREE.Group(), g2 = new THREE.Group();
+  p1cols.forEach(function(t){ var p = makePawn(0x2fb8c4); p.position.set(t.tx, t.th+0.95, t.tz); g1.add(p); });
+  p2cols.forEach(function(t){ var p = makePawn(0xa78bfa); p.position.set(t.tx, t.th+0.95, t.tz); g2.add(p); });
+  scene.add(g1); scene.add(g2);
+  pieces = {p1:g1, p2:g2};
+}
+
+/* ---------------- 雲 ---------------- */
+function buildClouds(){
+  var places = [
+    {x:-30, y:22, z:-26, s:1.1}, {x:26, y:26, z:-30, s:0.9},
+    {x:32, y:20, z:10, s:1.0}, {x:-34, y:24, z:18, s:0.85},
+    {x:0, y:28, z:-40, s:1.2}
+  ];
+  places.forEach(function(p){
+    var g = new THREE.Group();
+    for(var d=0;d<3;d++){
+      var rr = (0.7 + d*0.28)*p.s;
+      var seg = new THREE.Mesh(
+        new THREE.CircleGeometry(rr, 20),
+        new THREE.MeshBasicMaterial({color:0xeef7fb, transparent:true, opacity:0.9, depthWrite:false})
+      );
+      var ang = Math.random()*Math.PI*2;
+      seg.position.set(Math.cos(ang)*rr*0.4, (d-1)*0.3, 0);
+      g.add(seg);
+    }
+    g.position.set(p.x, p.y, p.z);
+    g.userData = {baseX:p.x, baseY:p.y, phase:Math.random()*6.28};
+    scene.add(g);
+    clouds.push(g);
+  });
+}
+
+/* ---------------- 螢光粒子 ---------------- */
+function buildFairies(){
+  for(var i=0;i<30;i++){
+    var s = new THREE.Mesh(
+      new THREE.SphereGeometry(0.055, 6, 6),
+      new THREE.MeshBasicMaterial({color:0xfff6e0, transparent:true, opacity:0.85, depthWrite:false})
+    );
+    var ang = Math.random()*Math.PI*2, rad = 8 + Math.random()*14;
+    s.position.set(Math.cos(ang)*rad, 2 + Math.random()*5, Math.sin(ang)*rad);
+    s.userData = {ang:ang, rad:rad, speed:0.3+Math.random()*0.5, h:2+Math.random()*5, off:Math.random()*6.28};
+    scene.add(s);
+    fairies.push(s);
+  }
+}
+
+/* ---------------- UI ---------------- */
+function initUI(){
+  renderHands();
+  updateRollStat();
+}
+function makeCard(k, hue){
+  var el = document.createElement('div');
+  el.className = 'card';
+  el.style.setProperty('--c', hue);
+  el.innerHTML = '<div class="ci">'+CARD[k].icon+'</div>'+
+    '<div class="ct">'+CARD[k].label+'</div>'+
+    '<div class="cs">'+CARD[k].desc+'<br><small style="color:#7f9fb0">'+CARD[k].hint+'</small></div>'+
+    '<div class="pill">'+CARD[k].key+'</div>';
+  el.addEventListener('click', function(){
+    if(STATE.phase !== 'ready') return;
+    var panel = el.closest('.panel');
+    var p = panel.classList.contains('p1') ? 0 : 1;
+    if(ROLES[p].ready){ ROLES[p].ready = false; el.classList.remove('on'); panel.classList.remove('ready'); }
+    else { ROLES[p].ready = true; el.classList.add('on'); panel.classList.add('ready'); }
+    updateRollStat();
+    checkBoth();
+  });
+  return el;
+}
+function renderHands(){
+  [cards1, cards2].forEach(function(list, i){
+    list.innerHTML = '';
+    ROLES[i].q.forEach(function(src){
+      list.appendChild(makeCard(src, CARD[src].hue));
+    });
+  });
+}
+function updateRollStat(){
+  var a = ROLES[0].ready, b = ROLES[1].ready;
+  logEl.innerHTML =
+    '<span class="p1">'+(a?'🔬 科學小先鋒：取卡完成':'等待科學小先鋒取卡')+'</span> '+
+    '<span class="p2">'+(b?'🤖 創科AI博士：取卡完成':'等待創科AI博士取卡')+'</span>';
+  rstat.textContent = (a&&b)
+    ? '兩隊皆就位 → 自動搖骰'
+    : (a ? '🔬 科學小先鋒已取卡 → 等待 AI 博士'
+         : (b ? '🤖 創科AI博士已取卡 → 等待小先鋒' : '等待兩隊取卡'));
+}
+function checkBoth(){
+  if(ROLES[0].ready && ROLES[1].ready){
+    STATE.phase = 'rolling';
+    setTimeout(doTurn, 260);
+  }
+}
+function log(html){
+  var line = document.createElement('span');
+  line.className = 'line';
+  line.innerHTML = html;
+  logEl.appendChild(line);
+  while(logEl.children.length > 40) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function rollResult(){ return 1 + Math.floor(Math.random()*6); }
+
+function doTurn(){
+  var a = ROLES[0], b = ROLES[1];
+  var ra = rollResult(), rb = rollResult();
+  rollDice(dice[0], 0.9, ra);
+  rollDice(dice[1], 0.9, rb);
+  var win = (ra > rb) ? 0 : (ra < rb ? 1 : (Math.random() < 0.5 ? 0 : 1));
+  ROLES[win].score++;
+  score1.textContent = ROLES[0].score;
+  score2.textContent = ROLES[1].score;
+  log('<span class="p1">【'+a.name+'】選「'+CARD[a.q[0]].label+'」</span>');
+  log('<span class="p2">【'+b.name+'】選「'+CARD[b.q[0]].label+'」</span>');
+  log('<span class="ok">骰子開：'+ra+' vs '+rb+' → '+ROLES[win].name+' 得分 +1</span>');
+  a.ready = b.ready = false;
+  $('#panel1').classList.remove('ready');
+  $('#panel2').classList.remove('ready');
+  [cards1, cards2].forEach(function(list){
+    Array.prototype.forEach.call(list.children, function(c){ c.classList.remove('on'); });
+  });
+  advanceHand(0); advanceHand(1);
+  renderHands();
+  STATE.turn++;
+  rstat.textContent = '回合 ' + STATE.turn + ' 完成';
+  STATE.phase = 'ready';
+}
+function advanceHand(p){
+  var q = ROLES[p].q;
+  ROLES[p].q = [q[1], q[2], q[0]];
+}
+function rollDice(die, dur, face){
+  if(!die) return;
+  var start = performance.now();
+  die.userData.rolling = true;
+  (function frame(){
+    var t = (performance.now() - start)/1000;
+    if(t < dur){
+      die.rotation.set(Math.sin(t*6.0)*1.1, Math.sin(t*4.6+1.3)*1.3, Math.sin(t*7.2+0.6)*0.6);
+      die.position.y = die.userData.baseY + Math.abs(Math.sin(t*9.0))*0.7;
+      requestAnimationFrame(frame);
+    } else {
+      die.rotation.set(0, 0, 0);
+      die.position.y = die.userData.baseY;
+      die.userData.rolling = false;
+      die.userData.idle = 0;
+      paintDie(die, face);
+    }
+  })();
+}
+
+/* ---------------- 動畫迴圈 ---------------- */
+var tPrev = performance.now(), gameTime = 0;
+function loop(){
+  var now = performance.now();
+  var dt = Math.min(0.05, (now - tPrev)/1000);
+  tPrev = now;
+  gameTime += dt;
+
+  clouds.forEach(function(c){
+    c.position.x = c.userData.baseX + Math.sin(gameTime*0.12 + c.userData.phase)*6;
+    c.position.y = c.userData.baseY + Math.sin(gameTime*0.2 + c.userData.phase)*0.8;
+  });
+  waterMeshes.forEach(function(m, i){
+    m.position.y += Math.sin(gameTime*0.8 + i)*0.0015;
+  });
+  dice.forEach(function(d){
+    if(d.userData.rolling) return;
+    d.userData.idle += dt;
+    d.rotation.z = Math.sin(d.userData.idle*0.7)*0.05;
+    d.position.y = d.userData.baseY + Math.sin(d.userData.idle*1.3)*0.04;
+  });
+  if(pieces.p1){
+    [pieces.p1, pieces.p2].forEach(function(g, i){
+      g.children.forEach(function(p, j){
+        var off = i*0.6 + j*0.13;
+        p.rotation.y = Math.sin(off + gameTime*0.5)*0.12;
+      });
+    });
+  }
+  if(crystal){
+    crystal.rotation.y += dt*0.7;
+    crystal.position.y = crystal.userData.baseY + Math.sin(gameTime*0.9)*0.16;
+  }
+  fairies.forEach(function(f){
+    f.position.x = Math.cos(f.userData.ang + gameTime*f.userData.speed*0.25)*f.userData.rad;
+    f.position.z = Math.sin(f.userData.ang + gameTime*f.userData.speed*0.25)*f.userData.rad;
+    f.position.y = f.userData.h + Math.sin(gameTime*0.9 + f.userData.off)*0.35;
+  });
+  if(dirLight){
+    dirLight.position.x = 22 + Math.sin(gameTime*0.12)*2.0;
+    dirLight.position.z = 16 + Math.sin(gameTime*0.17+0.7)*1.5;
+  }
+
+  renderer.render(scene, camera);
+  window.__frameCount = (window.__frameCount || 0) + 1;
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- 開始流程 ---------------- */
+function startIntro(){
+  btnStart.addEventListener('click', function(){
+    intro.classList.add('hidden');
+    setTimeout(function(){ STATE.phase = 'ready'; }, 300);
+    log('<span class="sys">🚀 探險開始：3D 熱帶綠洲棋盤已載入（Three.js r128）</span>');
+  });
+}
+
+/* ---------------- 導入 ---------------- */
+function boot(){
+  if(typeof THREE === 'undefined'){
+    log('<span class="warn">⚠️ Three.js 未能載入，請檢查網絡</span>');
+    return;
+  }
+  initScene();
+  /* 3D 場景即时可見；intro 自動淡出 */
+  setTimeout(function(){
+    intro.classList.add('hidden');
+    STATE.phase = 'ready';
+  }, 2600);
+  /* 自動化 smoke test（只喺 ?autotest=1 時觸發，唔影響正常使用） */
+  if(/[?&]autotest=1/.test(location.search)){
+    setTimeout(function(){
+      document.querySelector('#cards1 .card').click();
+      document.querySelector('#cards2 .card').click();
+    }, 900);
+    setTimeout(function(){
+      writeDiag('autotest');
+      var el = document.getElementById('diag');
+      if(el) el.setAttribute('data-score', score1.textContent + '-' + score2.textContent);
+    }, 4000);
+  }
+}
+boot();
+
+})();
+</script>
+<script>
+window.addEventListener('DOMContentLoaded', function(){ if(typeof boot==='function') boot(); });
+</script>
+<script>
+window.addEventListener('load', function(){ if(typeof loop==='function') loop(); });
+</script>
+<script>loop();</script>
+</body>
+</html>
