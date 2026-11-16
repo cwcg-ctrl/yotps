@@ -8,19 +8,21 @@
   <title>花喵喵 3D 虛擬寵物 | HuaMiaoMiao</title>
   <style>
     :root {
-      --bg-day: #e8ecf4;
-      --bg-night: #141927;
-      --glass-bg: rgba(255, 255, 255, 0.82);
-      --glass-border: rgba(255, 255, 255, 0.72);
-      --glass-dark: rgba(22, 27, 40, 0.82);
-      --text-main: #1f2430;
-      --text-sub: #5c6475;
-      --accent: #e68a2e;
-      --accent-soft: #fff1e0;
-      --pink: #ec4899;
-      --green: #10b981;
-      --blue: #3b82f6;
-      --shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+      --bg-day: #ede7de;
+      --bg-night: #121622;
+      --glass-bg: rgba(255, 252, 247, 0.76);
+      --glass-border: rgba(255, 255, 255, 0.85);
+      --glass-dark: rgba(24, 29, 43, 0.78);
+      --glass-dark-border: rgba(255, 255, 255, 0.14);
+      --text-main: #231f20;
+      --text-sub: #6b635b;
+      --accent: #e07a2b;
+      --accent-grad: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+      --pink-grad: linear-gradient(90deg, #fb7185 0%, #ec4899 100%);
+      --food-grad: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+      --mood-grad: linear-gradient(90deg, #34d399 0%, #10b981 100%);
+      --shadow-soft: 0 10px 30px rgba(45, 32, 18, 0.10);
+      --shadow-float: 0 14px 36px rgba(45, 32, 18, 0.16);
     }
 
     * {
@@ -42,14 +44,14 @@
       height: 100vh;
       height: 100dvh;
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "Noto Sans TC", "Helvetica Neue", sans-serif;
-      background: #11151f;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "PingFang HK", "Noto Sans TC", sans-serif;
+      background: #0f121a;
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
-    /* Mobile-First Portrait Frame (Centered cleanly on Desktop, Fullscreen on Mobile) */
+    /* Mobile-First Portrait Container */
     #app-shell {
       position: relative;
       width: 100%;
@@ -58,14 +60,15 @@
       max-height: 920px;
       background: var(--bg-day);
       overflow: hidden;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 28px 72px rgba(0, 0, 0, 0.62);
+      transition: background 0.45s ease;
     }
 
     @media (min-width: 520px) {
       #app-shell {
         height: 94dvh;
-        border-radius: 36px;
-        border: 4px solid rgba(255, 255, 255, 0.14);
+        border-radius: 38px;
+        border: 3px solid rgba(255, 255, 255, 0.16);
       }
     }
 
@@ -78,11 +81,24 @@
       z-index: 1;
     }
 
-    /* Loading & Diagnostic Overlay */
+    /* Soft Vignette Overlay for Studio Depth */
+    .vignette-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      background: radial-gradient(circle at 50% 45%, transparent 58%, rgba(35, 24, 12, 0.12) 100%);
+    }
+
+    body.night .vignette-overlay {
+      background: radial-gradient(circle at 50% 45%, transparent 50%, rgba(5, 8, 16, 0.42) 100%);
+    }
+
+    /* Loading Overlay */
     #loader-overlay {
       position: absolute;
       inset: 0;
-      z-index: 5;
+      z-index: 25;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -90,37 +106,40 @@
       pointer-events: none;
       padding: 24px;
       text-align: center;
+      background: rgba(237, 231, 222, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: opacity 0.35s ease;
     }
 
     .loader-card {
       pointer-events: auto;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 22px;
-      padding: 18px 22px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+      background: rgba(255, 253, 249, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 26px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow-float);
       max-width: 310px;
-      color: #1f2937;
-      font-size: 13px;
-      font-weight: 700;
+      color: #231f20;
+      font-size: 14px;
+      font-weight: 800;
       line-height: 1.5;
     }
 
     .loader-card .sub-msg {
       margin-top: 6px;
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 500;
-      color: #64748b;
+      color: #6b635b;
       word-break: break-word;
     }
 
     .retry-btn {
       margin-top: 12px;
       border: none;
-      background: #ea580c;
+      background: var(--accent-grad);
       color: #fff;
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
@@ -138,82 +157,101 @@
       align-items: flex-start;
       pointer-events: none;
       z-index: 15;
-      gap: 10px;
+      gap: 8px;
     }
 
     .pet-card {
       pointer-events: auto;
       background: var(--glass-bg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
       border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 10px 14px;
-      box-shadow: var(--shadow);
-      min-width: 186px;
-      transition: background 0.3s, color 0.3s;
+      border-radius: 24px;
+      padding: 10px 13px;
+      box-shadow: var(--shadow-soft);
+      min-width: 196px;
+      transition: background 0.35s, border-color 0.35s, color 0.35s;
     }
 
     body.night .pet-card,
-    body.night .icon-btn,
+    body.night .icon-pill-group,
     body.night .sub-bar,
     body.night .dock-bar,
     body.night .status-pill {
       background: var(--glass-dark);
-      border-color: rgba(255, 255, 255, 0.14);
-      color: #f3f4f6;
+      border-color: var(--glass-dark-border);
+      color: #f8fafc;
     }
 
-    body.night .stat-label {
-      color: #9ca3af;
+    body.night .stat-label,
+    body.night .stat-val {
+      color: #cbd5e1;
     }
 
     .pet-header {
       display: flex;
       align-items: center;
+      gap: 9px;
+      margin-bottom: 8px;
+    }
+
+    .cat-avatar-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.32);
+      flex-shrink: 0;
+      border: 1.5px solid #fff;
+    }
+
+    .pet-title-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      margin-bottom: 7px;
-      gap: 8px;
+      gap: 6px;
     }
 
     .pet-name {
       font-weight: 800;
       font-size: 15px;
-      letter-spacing: 0.3px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      letter-spacing: 0.2px;
     }
 
     .level-badge {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
+      background: var(--accent-grad);
       color: #fff;
       font-size: 11px;
       font-weight: 800;
-      padding: 2px 8px;
+      padding: 2.5px 9px;
       border-radius: 999px;
-      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+      box-shadow: 0 3px 8px rgba(234, 88, 12, 0.32);
+      letter-spacing: 0.3px;
     }
 
     .stat-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-top: 4px;
+      margin-top: 5px;
       font-size: 11px;
     }
 
     .stat-label {
       width: 34px;
       color: var(--text-sub);
-      font-weight: 600;
+      font-weight: 700;
       flex-shrink: 0;
     }
 
     .bar-track {
       flex: 1;
-      height: 6px;
-      background: rgba(120, 130, 150, 0.22);
+      height: 6.5px;
+      background: rgba(120, 110, 100, 0.16);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -221,59 +259,77 @@
     .bar-fill {
       height: 100%;
       border-radius: 999px;
-      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .fill-xp { background: linear-gradient(90deg, #f472b6, #ec4899); }
-    .fill-food { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
-    .fill-mood { background: linear-gradient(90deg, #34d399, #10b981); }
+    .fill-xp { background: var(--pink-grad); }
+    .fill-food { background: var(--food-grad); }
+    .fill-mood { background: var(--mood-grad); }
+
+    .stat-val {
+      width: 26px;
+      text-align: right;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-sub);
+      font-variant-numeric: tabular-nums;
+    }
 
     .top-actions {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 8px;
+      gap: 7px;
       pointer-events: auto;
     }
 
-    .icon-row {
+    .icon-pill-group {
       display: flex;
-      gap: 7px;
+      align-items: center;
+      gap: 2px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      padding: 4px;
+      box-shadow: var(--shadow-soft);
     }
 
     .icon-btn {
-      width: 38px;
-      height: 38px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      border: 1px solid var(--glass-border);
-      background: var(--glass-bg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: var(--shadow);
+      border: none;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
       cursor: pointer;
-      color: var(--text-main);
-      transition: transform 0.15s ease, background 0.3s;
+      color: inherit;
+      transition: transform 0.15s ease, background 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: rgba(120, 110, 100, 0.1);
     }
 
     .icon-btn:active {
-      transform: scale(0.9);
+      transform: scale(0.88);
     }
 
     .status-pill {
       background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--glass-border);
       border-radius: 999px;
       padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10.5px;
+      font-weight: 700;
       color: var(--text-sub);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
       display: flex;
       align-items: center;
       gap: 5px;
@@ -284,52 +340,62 @@
       height: 7px;
       border-radius: 50%;
       background: #10b981;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22);
     }
-    .sync-dot.cloud { background: #3b82f6; }
+    .sync-dot.cloud {
+      background: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
 
-    /* Floating Speech / Hint Bubble */
+    /* Cute Floating Speech Bubble */
     #speech-bubble {
       position: absolute;
-      top: 126px;
+      top: 132px;
       left: 50%;
-      transform: translateX(-50%) translateY(-6px);
-      background: rgba(255, 255, 255, 0.92);
-      color: #1f2937;
-      padding: 7px 15px;
+      transform: translateX(-50%) translateY(-6px) scale(0.95);
+      background: rgba(255, 253, 249, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      color: #231f20;
+      padding: 8px 16px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 10px 26px rgba(45, 32, 18, 0.14);
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
       white-space: nowrap;
       z-index: 14;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     #speech-bubble.show {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translateX(-50%) translateY(0) scale(1);
     }
 
-    /* Level Up Banner */
+    /* Level Up Celebration Banner */
     #levelup-banner {
       position: absolute;
-      top: 32%;
+      top: 34%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0.82);
-      background: linear-gradient(135deg, rgba(255, 251, 235, 0.96), rgba(254, 243, 199, 0.96));
+      transform: translate(-50%, -50%) scale(0.8);
+      background: linear-gradient(145deg, rgba(255, 252, 240, 0.98), rgba(254, 243, 199, 0.98));
       border: 2px solid #f59e0b;
-      border-radius: 24px;
-      padding: 18px 24px;
+      border-radius: 28px;
+      padding: 20px 24px;
       text-align: center;
-      box-shadow: 0 18px 45px rgba(217, 119, 6, 0.32);
+      box-shadow: 0 22px 54px rgba(217, 119, 6, 0.35);
       z-index: 30;
       pointer-events: none;
       opacity: 0;
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-      width: 82%;
-      max-width: 320px;
+      transition: all 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 84%;
+      max-width: 325px;
     }
 
     #levelup-banner.show {
@@ -341,6 +407,7 @@
       margin: 0 0 6px;
       color: #b45309;
       font-size: 19px;
+      font-weight: 900;
     }
 
     #levelup-banner p {
@@ -348,10 +415,10 @@
       color: #78350f;
       font-size: 13px;
       font-weight: 600;
-      line-height: 1.45;
+      line-height: 1.48;
     }
 
-    /* Bottom Controls */
+    /* Bottom Interactive Controls */
     .hud-bottom {
       position: absolute;
       bottom: max(16px, env(safe-area-inset-bottom));
@@ -368,16 +435,16 @@
     .sub-bar {
       pointer-events: auto;
       display: flex;
-      gap: 8px;
+      gap: 6px;
       background: var(--glass-bg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
       border: 1px solid var(--glass-border);
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: 999px;
-      box-shadow: var(--shadow);
-      transition: opacity 0.2s, transform 0.2s;
-      min-height: 36px;
+      box-shadow: var(--shadow-soft);
+      transition: opacity 0.22s, transform 0.22s;
+      min-height: 38px;
     }
 
     .sub-bar.hidden {
@@ -389,7 +456,7 @@
     .sub-chip {
       border: none;
       background: transparent;
-      padding: 6px 12px;
+      padding: 6px 13px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
@@ -397,17 +464,22 @@
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
-      transition: background 0.2s, color 0.2s;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .sub-chip:active {
+      transform: scale(0.94);
     }
 
     .sub-chip.active {
-      background: var(--accent);
+      background: var(--accent-grad);
       color: #fff;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.28);
     }
 
     .sub-chip.locked {
-      opacity: 0.48;
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
@@ -415,21 +487,21 @@
       pointer-events: auto;
       width: 100%;
       background: var(--glass-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px) saturate(170%);
+      -webkit-backdrop-filter: blur(20px) saturate(170%);
       border: 1px solid var(--glass-border);
-      border-radius: 26px;
-      padding: 8px;
+      border-radius: 28px;
+      padding: 7px;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 6px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-float);
     }
 
     .dock-btn {
       border: none;
       background: transparent;
-      border-radius: 18px;
+      border-radius: 20px;
       padding: 9px 4px;
       display: flex;
       flex-direction: column;
@@ -437,49 +509,59 @@
       gap: 4px;
       cursor: pointer;
       color: inherit;
-      transition: all 0.18s ease;
+      transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .dock-btn:active {
+      transform: scale(0.92);
     }
 
     .dock-btn .emoji {
       font-size: 22px;
       line-height: 1;
+      transition: transform 0.22s ease;
     }
 
     .dock-btn .label {
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
+      letter-spacing: 0.2px;
     }
 
     .dock-btn.active {
-      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      background: var(--accent-grad);
       color: #fff;
-      box-shadow: 0 6px 16px rgba(234, 88, 12, 0.32);
+      box-shadow: 0 8px 20px rgba(234, 88, 12, 0.34);
       transform: translateY(-2px);
     }
 
-    /* Floating Emoji Particles */
+    .dock-btn.active .emoji {
+      transform: scale(1.12);
+    }
+
+    /* Floating Heart / Sparkle Particles */
     .float-particle {
       position: absolute;
       pointer-events: none;
-      font-size: 20px;
+      font-size: 21px;
       font-weight: 800;
       z-index: 20;
-      animation: floatUp 1.1s ease-out forwards;
+      animation: floatUp 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     @keyframes floatUp {
-      0% { opacity: 1; transform: translate(-50%, 0) scale(0.7); }
-      50% { opacity: 1; transform: translate(-50%, -28px) scale(1.15); }
-      100% { opacity: 0; transform: translate(-50%, -58px) scale(0.95); }
+      0% { opacity: 1; transform: translate(-50%, 0) scale(0.65); }
+      45% { opacity: 1; transform: translate(-50%, -32px) scale(1.18); }
+      100% { opacity: 0; transform: translate(-50%, -66px) scale(0.95); }
     }
 
     /* Settings & Cloud Sync Modal */
     .modal-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      background: rgba(15, 20, 32, 0.52);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 40;
       display: none;
       align-items: center;
@@ -492,15 +574,16 @@
     }
 
     .modal-card {
-      background: #ffffff;
-      color: #1f2937;
+      background: #fffdf9;
+      color: #231f20;
       width: 100%;
       max-width: 390px;
-      max-height: 84%;
+      max-height: 85%;
       overflow-y: auto;
-      border-radius: 26px;
+      border-radius: 28px;
       padding: 20px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.36);
+      border: 1px solid rgba(255, 255, 255, 0.9);
     }
 
     .modal-header {
@@ -518,26 +601,28 @@
 
     .close-modal {
       border: none;
-      background: #f3f4f6;
-      width: 30px;
-      height: 30px;
+      background: #f3efe9;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      font-size: 16px;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
+      color: #57534e;
     }
 
     .section-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 12px 14px;
+      background: #f8f5f0;
+      border: 1px solid #ebe4d8;
+      border-radius: 18px;
+      padding: 13px 14px;
       margin-bottom: 12px;
     }
 
     .section-box h4 {
       margin: 0 0 6px;
       font-size: 13px;
-      color: #0f172a;
+      color: #1c1917;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -546,8 +631,8 @@
     .section-box p {
       margin: 0 0 10px;
       font-size: 12px;
-      color: #475569;
-      line-height: 1.45;
+      color: #57534e;
+      line-height: 1.48;
     }
 
     .btn-row {
@@ -560,26 +645,27 @@
       flex: 1;
       min-width: 110px;
       border: none;
-      border-radius: 12px;
-      padding: 9px 12px;
+      border-radius: 14px;
+      padding: 10px 12px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: transform 0.15s, opacity 0.2s;
     }
 
-    .action-pill-btn:active { opacity: 0.8; }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-warm { background: #ea580c; color: #fff; }
-    .btn-neutral { background: #e2e8f0; color: #1e293b; }
+    .action-pill-btn:active { transform: scale(0.96); opacity: 0.85; }
+    .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+    .btn-warm { background: var(--accent-grad); color: #fff; }
+    .btn-neutral { background: #e7e2d8; color: #292524; }
     .btn-danger { background: #fee2e2; color: #b91c1c; }
 
     .sync-textarea {
       width: 100%;
       height: 54px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 8px;
+      border: 1px solid #d6cfc2;
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 10px;
       font-size: 11px;
       font-family: monospace;
       resize: none;
@@ -590,8 +676,8 @@
       margin: 0;
       padding-left: 16px;
       font-size: 12px;
-      color: #334155;
-      line-height: 1.6;
+      color: #44403c;
+      line-height: 1.65;
     }
 
     .unlock-list li.done {
@@ -603,12 +689,13 @@
 <body>
   <div id="app-shell">
     <div id="canvas-container"></div>
+    <div class="vignette-overlay"></div>
 
     <!-- Loading / Diagnostic Overlay -->
     <div id="loader-overlay">
       <div class="loader-card" id="loader-card">
-        <div id="loader-title">🐾 正在喚醒花喵喵 3D 場景...</div>
-        <div class="sub-msg" id="loader-sub">首次載入 3D 引擎需時約 1–2 秒</div>
+        <div id="loader-title">🐾 正在精雕細琢花喵喵 3D 模型...</div>
+        <div class="sub-msg" id="loader-sub">載入高精細虎斑毛絨材質與光影</div>
       </div>
     </div>
 
@@ -616,25 +703,49 @@
     <div class="hud-top">
       <div class="pet-card">
         <div class="pet-header">
-          <div class="pet-name">🐱 花喵喵</div>
-          <span class="level-badge" id="ui-level">Lv.1</span>
+          <div class="cat-avatar-badge" aria-hidden="true">
+            <!-- Custom SVG Mini Portrait of HuaMiaoMiao (Tabby + White Nose Blaze + Green Eyes) -->
+            <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
+              <path d="M12 24L8 6L26 16Z" fill="#8C6239"/>
+              <path d="M14 21L11 10L23 17Z" fill="#F4A4A8"/>
+              <path d="M52 24L56 6L38 16Z" fill="#8C6239"/>
+              <path d="M50 21L53 10L41 17Z" fill="#F4A4A8"/>
+              <ellipse cx="32" cy="36" rx="23" ry="20" fill="#9E7145"/>
+              <path d="M27 18L29 25M32 17L32 25M37 18L35 25" stroke="#2B1E14" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M32 27L42 43C44 48 39 54 32 54C25 54 20 48 22 43L32 27Z" fill="#FFFDF9"/>
+              <ellipse cx="22" cy="34" rx="4.2" ry="4.6" fill="#7D963E"/>
+              <ellipse cx="22" cy="34" rx="1.6" ry="3.4" fill="#141712"/>
+              <circle cx="20.8" cy="32.5" r="1.1" fill="#FFFFFF"/>
+              <ellipse cx="42" cy="34" rx="4.2" ry="4.6" fill="#7D963E"/>
+              <ellipse cx="42" cy="34" rx="1.6" ry="3.4" fill="#141712"/>
+              <circle cx="40.8" cy="32.5" r="1.1" fill="#FFFFFF"/>
+              <polygon points="29,42 35,42 32,45.5" fill="#F28B93"/>
+            </svg>
+          </div>
+          <div class="pet-title-wrap">
+            <div class="pet-name">花喵喵</div>
+            <span class="level-badge" id="ui-level">Lv.1</span>
+          </div>
         </div>
         <div class="stat-row">
           <span class="stat-label">好感度</span>
           <div class="bar-track"><div class="bar-fill fill-xp" id="bar-xp" style="width: 15%"></div></div>
+          <span class="stat-val" id="val-xp">15%</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">飽足度</span>
           <div class="bar-track"><div class="bar-fill fill-food" id="bar-food" style="width: 75%"></div></div>
+          <span class="stat-val" id="val-food">75%</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">心情值</span>
           <div class="bar-track"><div class="bar-fill fill-mood" id="bar-mood" style="width: 80%"></div></div>
+          <span class="stat-val" id="val-mood">80%</span>
         </div>
       </div>
 
       <div class="top-actions">
-        <div class="icon-row">
+        <div class="icon-pill-group">
           <button class="icon-btn" id="btn-cam" title="重置視角">🎯</button>
           <button class="icon-btn" id="btn-daynight" title="切換日夜光影">☀️</button>
           <button class="icon-btn" id="btn-sound" title="音效開關">🔊</button>
@@ -648,7 +759,7 @@
     </div>
 
     <!-- Speech Bubble -->
-    <div id="speech-bubble">喵～摸摸我個頭仔！</div>
+    <div id="speech-bubble">🐾 喵～摸摸我個頭仔！</div>
 
     <!-- Level Up Celebration Banner -->
     <div id="levelup-banner">
@@ -658,10 +769,8 @@
 
     <!-- Bottom Interactive Controls -->
     <div class="hud-bottom">
-      <!-- Contextual Sub-options -->
       <div class="sub-bar" id="sub-bar"></div>
 
-      <!-- 4 Core Action Modes -->
       <div class="dock-bar">
         <button class="dock-btn active" data-mode="pet">
           <span class="emoji">🤚</span>
@@ -759,7 +868,7 @@
     };
 
     // =========================================================================
-    // 1. Game State & Dual-Track Persistence (LocalStorage + Firebase Firestore)
+    // 1. Game State & Dual-Track Persistence
     // =========================================================================
     const SAVE_KEY = 'huamiaomiao_save_v1';
     const XP_PER_LEVEL = [0, 100, 220, 380, 580, 9999];
@@ -771,14 +880,13 @@
       mood: 80,
       dayMode: true,
       soundOn: true,
-      accessory: 'none', // 'none' | 'crown' | 'bowtie'
+      accessory: 'none',
       updatedAt: Date.now()
     };
 
     let state = loadLocalState();
     let activeMode = 'pet';
     let activeSubTool = 'head';
-    let sceneReady = false;
     let sceneHooks = {
       applyAccessoryVisuals: () => {},
       applyDayNightVisuals: () => {},
@@ -819,16 +927,23 @@
       el.textContent = text;
       el.classList.add('show');
       clearTimeout(speechTimeout);
-      speechTimeout = setTimeout(() => el.classList.remove('show'), 2600);
+      speechTimeout = setTimeout(() => el.classList.remove('show'), 2700);
     }
 
     function updateHUD() {
       document.getElementById('ui-level').textContent = `Lv.${state.level}`;
       const maxXP = XP_PER_LEVEL[state.level] || 100;
       const xpPct = state.level >= 5 ? 100 : Math.min(100, Math.round((state.xp / maxXP) * 100));
+      const foodPct = Math.round(state.satiety);
+      const moodPct = Math.round(state.mood);
+
       document.getElementById('bar-xp').style.width = `${xpPct}%`;
-      document.getElementById('bar-food').style.width = `${Math.round(state.satiety)}%`;
-      document.getElementById('bar-mood').style.width = `${Math.round(state.mood)}%`;
+      document.getElementById('bar-food').style.width = `${foodPct}%`;
+      document.getElementById('bar-mood').style.width = `${moodPct}%`;
+
+      document.getElementById('val-xp').textContent = state.level >= 5 ? 'MAX' : `${xpPct}%`;
+      document.getElementById('val-food').textContent = `${foodPct}%`;
+      document.getElementById('val-mood').textContent = `${moodPct}%`;
 
       document.querySelectorAll('#unlock-list li').forEach((li) => {
         const req = Number(li.dataset.lvl);
@@ -843,7 +958,7 @@
     }
 
     // =========================================================================
-    // 2. Web Audio API Procedural Sound Synthesizer (Zero External Audio Files)
+    // 2. Web Audio API Procedural Sound Synthesizer
     // =========================================================================
     class CatAudioEngine {
       constructor() {
@@ -873,27 +988,27 @@
         const gain = this.ctx.createGain();
 
         osc.type = 'triangle';
-        const base = 460 * pitchScale;
-        osc.frequency.setValueAtTime(base * 0.85, now);
-        osc.frequency.exponentialRampToValueAtTime(base * 1.38, now + 0.14);
-        osc.frequency.exponentialRampToValueAtTime(base * 0.78, now + 0.52);
+        const base = 470 * pitchScale;
+        osc.frequency.setValueAtTime(base * 0.86, now);
+        osc.frequency.exponentialRampToValueAtTime(base * 1.42, now + 0.14);
+        osc.frequency.exponentialRampToValueAtTime(base * 0.76, now + 0.54);
 
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(950, now);
-        filter.frequency.exponentialRampToValueAtTime(1450, now + 0.15);
-        filter.frequency.exponentialRampToValueAtTime(750, now + 0.52);
-        filter.Q.value = 3.2;
+        filter.frequency.setValueAtTime(980, now);
+        filter.frequency.exponentialRampToValueAtTime(1480, now + 0.15);
+        filter.frequency.exponentialRampToValueAtTime(760, now + 0.54);
+        filter.Q.value = 3.1;
 
         gain.gain.setValueAtTime(0.001, now);
         gain.gain.linearRampToValueAtTime(0.18, now + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.56);
 
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(this.ctx.destination);
 
         osc.start(now);
-        osc.stop(now + 0.56);
+        osc.stop(now + 0.57);
       }
 
       playPurr() {
@@ -911,7 +1026,7 @@
         const mainGain = this.ctx.createGain();
 
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(54, now);
+        osc.frequency.setValueAtTime(52, now);
 
         lfo.type = 'sine';
         lfo.frequency.setValueAtTime(26, now);
@@ -919,7 +1034,7 @@
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(190, now);
+        filter.frequency.setValueAtTime(185, now);
 
         mainGain.gain.setValueAtTime(0.001, now);
         mainGain.gain.linearRampToValueAtTime(0.06, now + 0.06);
@@ -946,7 +1061,7 @@
         if (now - this.lastBellTime < 0.25) return;
         this.lastBellTime = now;
 
-        const freqs = [2480, 3720, 5190];
+        const freqs = [2520, 3780, 5240];
         freqs.forEach((f, idx) => {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
@@ -954,7 +1069,7 @@
           osc.frequency.setValueAtTime(f + (Math.random() - 0.5) * 40, now);
 
           gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.045 / (idx + 1), now + 0.008);
+          gain.gain.linearRampToValueAtTime(0.042 / (idx + 1), now + 0.008);
           gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
 
           osc.connect(gain);
@@ -982,7 +1097,7 @@
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = 1800;
+        filter.frequency.value = 1850;
 
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.14, now);
@@ -1049,7 +1164,7 @@
     const audio = new CatAudioEngine();
 
     // =========================================================================
-    // 3. Bind All UI Controls Synchronously FIRST (Never Blocked by 3D CDN)
+    // 3. Synchronous UI Control Binding
     // =========================================================================
     function bindAllUIControls() {
       document.body.classList.toggle('night', !state.dayMode);
@@ -1166,7 +1281,7 @@
     }
 
     // =========================================================================
-    // 4. Firebase Cloud Sync Initialization
+    // 4. Firebase Cloud Sync
     // =========================================================================
     async function initFirebase() {
       if (!FIREBASE_CONFIG.apiKey || !FIREBASE_CONFIG.projectId) {
@@ -1244,7 +1359,7 @@
     }
 
     // =========================================================================
-    // 5. Multi-CDN Resilient Three.js Loader & 3D Scene Builder
+    // 5. Multi-CDN Three.js Loader & Ultra-Detailed Sculpted HuaMiaoMiao 3D
     // =========================================================================
     async function loadThreeWithFallback() {
       const cdns = [
@@ -1278,7 +1393,6 @@
           }
         } catch (err) {
           lastErr = err;
-          console.warn(`CDN ${cdn.name} failed:`, err);
         }
       }
       throw lastErr || new Error('無法載入 Three.js 3D 模組');
@@ -1296,12 +1410,12 @@
         const height = Math.max(1, container.clientHeight || window.innerHeight);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xe6ebf3);
-        scene.fog = new THREE.Fog(0xe6ebf3, 8, 22);
+        scene.background = new THREE.Color(0xede6dc);
+        scene.fog = new THREE.Fog(0xede6dc, 7.5, 20);
 
-        const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 60);
-        const defaultCamPos = new THREE.Vector3(0.15, 1.85, 4.1);
-        const defaultTarget = new THREE.Vector3(0, 0.85, 0);
+        const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 60);
+        const defaultCamPos = new THREE.Vector3(0.28, 1.72, 3.85);
+        const defaultTarget = new THREE.Vector3(0.05, 0.78, 0.05);
         camera.position.copy(defaultCamPos);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -1310,120 +1424,192 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.08;
+        renderer.toneMappingExposure = 1.06;
         container.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.copy(defaultTarget);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.07;
-        controls.minDistance = 2.0;
-        controls.maxDistance = 6.5;
+        controls.dampingFactor = 0.065;
+        controls.minDistance = 1.85;
+        controls.maxDistance = 6.2;
         controls.maxPolarAngle = Math.PI * 0.485;
-        controls.minPolarAngle = 0.25;
+        controls.minPolarAngle = 0.22;
 
-        // Lighting
-        const hemiLight = new THREE.HemisphereLight(0xfffaf0, 0xd8c3a5, 1.05);
+        // Three-Point Studio + Warm Sunbeam Lighting
+        const hemiLight = new THREE.HemisphereLight(0xfffcf5, 0xd8c3a8, 1.15);
         scene.add(hemiLight);
 
-        const dirLight = new THREE.DirectionalLight(0xfff4e2, 1.55);
-        dirLight.position.set(3.2, 5.5, 3.8);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        dirLight.shadow.camera.near = 1;
-        dirLight.shadow.camera.far = 15;
-        const d = 3.5;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.0005;
-        scene.add(dirLight);
+        const sunLight = new THREE.DirectionalLight(0xfff2dc, 1.65);
+        sunLight.position.set(2.8, 5.2, 3.6);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 15;
+        const d = 3.2;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.bias = -0.0004;
+        scene.add(sunLight);
 
-        const rimLight = new THREE.DirectionalLight(0xffe0b5, 0.55);
-        rimLight.position.set(-3.0, 2.5, -3.5);
+        const rimLight = new THREE.DirectionalLight(0xffe4c4, 0.75);
+        rimLight.position.set(-2.8, 2.4, -3.2);
         scene.add(rimLight);
 
-        // Procedural Textures
-        function createWoodTexture() {
+        const fillLight = new THREE.DirectionalLight(0xe0ecff, 0.35);
+        fillLight.position.set(-3.2, 1.8, 2.8);
+        scene.add(fillLight);
+
+        // =====================================================================
+        // High-Resolution Procedural Textures + Fur Bump & Velvet Rim Shader
+        // =====================================================================
+        function createFurBumpTexture() {
           const c = document.createElement('canvas');
           c.width = 512;
           c.height = 512;
           const ctx = c.getContext('2d');
-          ctx.fillStyle = '#dec09a';
+          ctx.fillStyle = '#808080';
           ctx.fillRect(0, 0, 512, 512);
 
-          const plankH = 64;
-          for (let y = 0; y < 512; y += plankH) {
-            const shade = (Math.random() - 0.5) * 14;
-            ctx.fillStyle = `rgb(${222 + shade}, ${190 + shade}, ${150 + shade})`;
-            ctx.fillRect(0, y, 512, plankH - 2);
+          for (let i = 0; i < 9000; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            const len = 7 + Math.random() * 9;
+            const ang = (Math.random() - 0.5) * 0.26;
+            const v = Math.floor(95 + Math.random() * 115);
+            ctx.strokeStyle = `rgb(${v},${v},${v})`;
+            ctx.lineWidth = 1.15;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + Math.sin(ang) * len, y + Math.cos(ang) * len);
+            ctx.stroke();
+          }
+          const tex = new THREE.CanvasTexture(c);
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(3, 3);
+          return tex;
+        }
 
-            ctx.strokeStyle = 'rgba(155, 112, 68, 0.14)';
-            ctx.lineWidth = 1.2;
-            for (let g = 0; g < 10; g++) {
+        const furBumpTex = createFurBumpTexture();
+
+        function applyVelvetFurShader(material, rimColorHex = 0xfff3e0, rimPower = 2.6, rimStrength = 0.28) {
+          material.bumpMap = furBumpTex;
+          material.bumpScale = 0.0085;
+          material.onBeforeCompile = (shader) => {
+            shader.uniforms.uRimColor = { value: new THREE.Color(rimColorHex) };
+            shader.uniforms.uRimPower = { value: rimPower };
+            shader.uniforms.uRimStrength = { value: rimStrength };
+
+            shader.fragmentShader = shader.fragmentShader
+              .replace(
+                '#include <common>',
+                `#include <common>
+                uniform vec3 uRimColor;
+                uniform float uRimPower;
+                uniform float uRimStrength;`
+              )
+              .replace(
+                '#include <dithering_fragment>',
+                `float fresnelTerm = pow(1.0 - max(dot(normalize(vNormal), normalize(vViewPosition)), 0.0), uRimPower);
+                gl_FragColor.rgb += uRimColor * fresnelTerm * uRimStrength;
+                #include <dithering_fragment>`
+              );
+          };
+          return material;
+        }
+
+        function createWoodTexture() {
+          const c = document.createElement('canvas');
+          c.width = 1024;
+          c.height = 1024;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#e2c7a4';
+          ctx.fillRect(0, 0, 1024, 1024);
+
+          const plankH = 128;
+          for (let y = 0; y < 1024; y += plankH) {
+            const shade = (Math.random() - 0.5) * 12;
+            ctx.fillStyle = `rgb(${226 + shade}, ${198 + shade}, ${162 + shade})`;
+            ctx.fillRect(0, y, 1024, plankH - 2);
+
+            ctx.strokeStyle = 'rgba(162, 118, 72, 0.12)';
+            ctx.lineWidth = 1.6;
+            for (let g = 0; g < 16; g++) {
               ctx.beginPath();
               const gy = y + Math.random() * plankH;
               ctx.moveTo(0, gy);
-              ctx.bezierCurveTo(170, gy + (Math.random() - 0.5) * 6, 340, gy + (Math.random() - 0.5) * 6, 512, gy);
+              ctx.bezierCurveTo(340, gy + (Math.random() - 0.5) * 9, 680, gy + (Math.random() - 0.5) * 9, 1024, gy);
               ctx.stroke();
             }
 
-            ctx.fillStyle = 'rgba(130, 92, 55, 0.28)';
-            ctx.fillRect(0, y + plankH - 2, 512, 2);
+            ctx.fillStyle = 'rgba(135, 96, 58, 0.24)';
+            ctx.fillRect(0, y + plankH - 2, 1024, 2);
           }
 
           const tex = new THREE.CanvasTexture(c);
           tex.wrapS = THREE.RepeatWrapping;
           tex.wrapT = THREE.RepeatWrapping;
-          tex.repeat.set(6, 6);
+          tex.repeat.set(5, 5);
           tex.colorSpace = THREE.SRGBColorSpace;
           return tex;
         }
 
         function createTabbyFurTexture(withWhiteBelly = false) {
           const c = document.createElement('canvas');
-          c.width = 512;
-          c.height = 512;
+          c.width = 1024;
+          c.height = 1024;
           const ctx = c.getContext('2d');
 
-          const grad = ctx.createLinearGradient(0, 0, 0, 512);
-          grad.addColorStop(0, '#785536');
-          grad.addColorStop(0.5, '#9b7148');
-          grad.addColorStop(1, '#845d3b');
+          // Rich warm golden-ochre tabby base (matching IMG_2933 & IMG_4901)
+          const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+          grad.addColorStop(0, '#6e4d30');
+          grad.addColorStop(0.45, '#9d7247');
+          grad.addColorStop(1, '#7f5936');
           ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, 512, 512);
+          ctx.fillRect(0, 0, 1024, 1024);
 
-          ctx.strokeStyle = '#261c14';
+          // Bold dark charcoal-brown swirling/mackerel tabby stripes
+          ctx.strokeStyle = '#221811';
           ctx.lineCap = 'round';
-          for (let i = 0; i < 16; i++) {
-            const x = (i / 16) * 512 + 12;
-            ctx.lineWidth = 10 + (i % 3) * 5;
+          for (let i = 0; i < 18; i++) {
+            const x = (i / 18) * 1024 + 24;
+            ctx.lineWidth = 18 + (i % 3) * 9;
             ctx.beginPath();
-            ctx.moveTo(x, 20);
-            ctx.quadraticCurveTo(x + Math.sin(i) * 28, 256, x - Math.cos(i) * 22, 492);
+            ctx.moveTo(x, 30);
+            ctx.bezierCurveTo(
+              x + Math.sin(i * 1.2) * 58, 340,
+              x - Math.cos(i * 0.9) * 52, 680,
+              x + Math.sin(i) * 35, 995
+            );
             ctx.stroke();
           }
 
-          for (let i = 0; i < 3200; i++) {
-            const fx = Math.random() * 512;
-            const fy = Math.random() * 512;
-            ctx.strokeStyle = Math.random() > 0.5 ? 'rgba(255, 238, 214, 0.14)' : 'rgba(30, 20, 12, 0.16)';
-            ctx.lineWidth = 1.2;
+          // Fine multi-tone hair strands for organic plush look
+          for (let i = 0; i < 11000; i++) {
+            const fx = Math.random() * 1024;
+            const fy = Math.random() * 1024;
+            const r = Math.random();
+            ctx.strokeStyle = r > 0.55
+              ? 'rgba(255, 236, 208, 0.14)'
+              : r > 0.25 ? 'rgba(28, 19, 12, 0.16)' : 'rgba(185, 130, 74, 0.14)';
+            ctx.lineWidth = 1.4;
             ctx.beginPath();
             ctx.moveTo(fx, fy);
-            ctx.lineTo(fx + (Math.random() - 0.5) * 4, fy + 8);
+            ctx.lineTo(fx + (Math.random() - 0.5) * 6, fy + 14);
             ctx.stroke();
           }
 
           if (withWhiteBelly) {
-            const bellyGrad = ctx.createRadialGradient(256, 395, 25, 256, 395, 175);
-            bellyGrad.addColorStop(0, '#fcfaf7');
-            bellyGrad.addColorStop(0.75, '#f7f3ec');
-            bellyGrad.addColorStop(1, 'rgba(247, 243, 236, 0)');
+            const bellyGrad = ctx.createRadialGradient(512, 810, 45, 512, 810, 350);
+            bellyGrad.addColorStop(0, '#fffdf9');
+            bellyGrad.addColorStop(0.72, '#faf6ef');
+            bellyGrad.addColorStop(1, 'rgba(250, 246, 239, 0)');
             ctx.fillStyle = bellyGrad;
-            ctx.fillRect(0, 210, 512, 302);
+            ctx.fillRect(0, 420, 1024, 604);
           }
 
           const tex = new THREE.CanvasTexture(c);
@@ -1433,56 +1619,77 @@
 
         function createCatFaceTexture() {
           const c = document.createElement('canvas');
-          c.width = 512;
-          c.height = 512;
+          c.width = 1024;
+          c.height = 1024;
           const ctx = c.getContext('2d');
 
-          ctx.fillStyle = '#9c7044';
-          ctx.fillRect(0, 0, 512, 512);
+          // Warm golden-amber tabby face base
+          ctx.fillStyle = '#a27446';
+          ctx.fillRect(0, 0, 1024, 1024);
 
-          ctx.fillStyle = '#4a3522';
-          ctx.fillRect(0, 0, 512, 165);
+          // Darker tabby crown
+          const crownGrad = ctx.createLinearGradient(0, 0, 0, 360);
+          crownGrad.addColorStop(0, '#3e2b1b');
+          crownGrad.addColorStop(1, 'rgba(62, 43, 27, 0)');
+          ctx.fillStyle = crownGrad;
+          ctx.fillRect(0, 0, 1024, 360);
 
-          // Classic Forehead "M" Tabby Stripes
-          ctx.strokeStyle = '#1f160f';
-          ctx.lineWidth = 8;
+          // Classic Forehead "M" Tabby Stripes (IMG_4905)
+          ctx.strokeStyle = '#1e150e';
+          ctx.lineWidth = 14;
           ctx.lineCap = 'round';
-          const mLines = [215, 238, 256, 274, 297];
-          mLines.forEach((lx, idx) => {
+          const mOffsets = [-82, -42, 0, 42, 82];
+          mOffsets.forEach((off, idx) => {
             ctx.beginPath();
-            ctx.moveTo(lx, 125);
-            ctx.quadraticCurveTo(lx + (idx - 2) * 5, 175, lx + (idx - 2) * 9, 222);
+            ctx.moveTo(512 + off, 230);
+            ctx.quadraticCurveTo(512 + off * 1.15, 335, 512 + off * 1.3 + (idx - 2) * 8, 435);
             ctx.stroke();
           });
 
+          // Cheek Tabby Swirls & Eyeliner Stripes (IMG_4905)
           [-1, 1].forEach((dir) => {
-            for (let r = 0; r < 3; r++) {
+            // Iconic tabby eyeliner extending from outer eye corner
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.moveTo(512 + dir * 155, 495);
+            ctx.quadraticCurveTo(512 + dir * 245, 510, 512 + dir * 320, 475);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(512 + dir * 150, 525);
+            ctx.quadraticCurveTo(512 + dir * 240, 565, 512 + dir * 315, 555);
+            ctx.stroke();
+
+            for (let r = 0; r < 2; r++) {
+              ctx.lineWidth = 14;
               ctx.beginPath();
-              ctx.arc(256 + dir * 115, 285 + r * 22, 42, 0.2, Math.PI - 0.2);
+              ctx.arc(512 + dir * 225, 600 + r * 42, 76, 0.25, Math.PI - 0.25);
               ctx.stroke();
             }
           });
 
-          // Signature Inverted-V White Nose Blaze ("白鼻心")
-          ctx.fillStyle = '#fcfaf6';
+          // Signature Inverted-V White Nose Blaze ("白鼻心" from IMG_4905)
+          ctx.fillStyle = '#fffdf9';
           ctx.beginPath();
-          ctx.moveTo(256, 212);
-          ctx.lineTo(298, 288);
-          ctx.quadraticCurveTo(335, 345, 256, 385);
-          ctx.quadraticCurveTo(177, 345, 214, 288);
+          ctx.moveTo(512, 420);
+          ctx.lineTo(598, 578);
+          ctx.quadraticCurveTo(675, 690, 512, 770);
+          ctx.quadraticCurveTo(349, 690, 426, 578);
           ctx.closePath();
           ctx.fill();
 
-          ctx.fillRect(160, 345, 192, 167);
+          // White chin & neck transition
+          ctx.fillRect(320, 695, 384, 329);
 
-          for (let i = 0; i < 2400; i++) {
-            const fx = Math.random() * 512;
-            const fy = Math.random() * 512;
-            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-            ctx.lineWidth = 1;
+          // Delicate fur strokes across face
+          for (let i = 0; i < 8500; i++) {
+            const fx = Math.random() * 1024;
+            const fy = Math.random() * 1024;
+            ctx.strokeStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.09)' : 'rgba(30,20,12,0.08)';
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
             ctx.moveTo(fx, fy);
-            ctx.lineTo(fx, fy + 6);
+            ctx.lineTo(fx + (Math.random() - 0.5) * 4, fy + 11);
             ctx.stroke();
           }
 
@@ -1491,10 +1698,12 @@
           return tex;
         }
 
-        // Room Floor & Backdrop Wall
+        // =====================================================================
+        // Cozy Sunlit Room Environment
+        // =====================================================================
         const floorMat = new THREE.MeshStandardMaterial({
           map: createWoodTexture(),
-          roughness: 0.72,
+          roughness: 0.68,
           metalness: 0.04
         });
         const floor = new THREE.Mesh(new THREE.CircleGeometry(14, 64), floorMat);
@@ -1502,29 +1711,54 @@
         floor.receiveShadow = true;
         scene.add(floor);
 
-        const wallMat = new THREE.MeshStandardMaterial({
-          color: 0xf4ece1,
-          roughness: 0.92
-        });
-        const backWall = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 8, 48, 1, true, Math.PI * 0.65, Math.PI * 0.7), wallMat);
-        backWall.position.y = 3.9;
+        // Soft Woven Cream Rug under HuaMiaoMiao
+        const rugMat = applyVelvetFurShader(
+          new THREE.MeshStandardMaterial({ color: 0xf7f1e6, roughness: 0.92 }),
+          0xffffff, 2.2, 0.16
+        );
+        const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.48, 0.018, 48), rugMat);
+        rug.position.set(-0.08, 0.009, 0.12);
+        rug.receiveShadow = true;
+        scene.add(rug);
+
+        // Curved Cozy Room Wall & Baseboard Molding
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xf6efe4, roughness: 0.92 });
+        const backWall = new THREE.Mesh(
+          new THREE.CylinderGeometry(10.5, 10.5, 7.5, 56, 1, true, Math.PI * 0.62, Math.PI * 0.76),
+          wallMat
+        );
+        backWall.position.y = 3.7;
         backWall.material.side = THREE.BackSide;
         scene.add(backWall);
 
-        // Cardboard Staircase Cat Scratcher
+        const baseboardMat = new THREE.MeshStandardMaterial({ color: 0xd9c3a6, roughness: 0.75 });
+        const baseboard = new THREE.Mesh(
+          new THREE.CylinderGeometry(10.45, 10.45, 0.24, 56, 1, true, Math.PI * 0.62, Math.PI * 0.76),
+          baseboardMat
+        );
+        baseboard.position.y = 0.12;
+        baseboard.material.side = THREE.BackSide;
+        scene.add(baseboard);
+
+        // Detailed Cardboard Staircase Cat Scratcher (紙皮階梯貓抓板 from IMG_2933)
         const scratcherGroup = new THREE.Group();
-        scratcherGroup.position.set(1.25, 0, -0.75);
+        scratcherGroup.position.set(1.26, 0, -0.72);
         scratcherGroup.rotation.y = -0.38;
         scene.add(scratcherGroup);
 
-        const kraftMat = new THREE.MeshStandardMaterial({ color: 0xb9854e, roughness: 0.88 });
-        const scratchPadMat = new THREE.MeshStandardMaterial({ color: 0x996b3d, roughness: 0.95 });
-        const slotMat = new THREE.MeshStandardMaterial({ color: 0x694624, roughness: 0.9 });
+        const kraftMat = new THREE.MeshStandardMaterial({ color: 0xbc8850, roughness: 0.86 });
+        const scratchPadMat = new THREE.MeshStandardMaterial({
+          color: 0x996a3b,
+          roughness: 0.95,
+          bumpMap: furBumpTex,
+          bumpScale: 0.006
+        });
+        const slotMat = new THREE.MeshStandardMaterial({ color: 0x664321, roughness: 0.9 });
 
         const steps = [
-          { w: 0.85, h: 0.34, d: 0.68, x: 0, z: 0.32 },
-          { w: 0.85, h: 0.64, d: 0.56, x: 0, z: -0.26 },
-          { w: 0.85, h: 0.92, d: 0.48, x: 0, z: -0.76 }
+          { w: 0.88, h: 0.34, d: 0.68, x: 0, z: 0.32 },
+          { w: 0.88, h: 0.64, d: 0.56, x: 0, z: -0.26 },
+          { w: 0.88, h: 0.92, d: 0.48, x: 0, z: -0.76 }
         ];
 
         steps.forEach((s) => {
@@ -1534,107 +1768,235 @@
           box.receiveShadow = true;
           scratcherGroup.add(box);
 
-          const pad = new THREE.Mesh(new THREE.BoxGeometry(s.w - 0.04, 0.03, s.d - 0.04), scratchPadMat);
-          pad.position.set(s.x, s.h + 0.015, s.z);
+          const pad = new THREE.Mesh(new THREE.BoxGeometry(s.w - 0.04, 0.032, s.d - 0.04), scratchPadMat);
+          pad.position.set(s.x, s.h + 0.016, s.z);
           pad.receiveShadow = true;
           scratcherGroup.add(pad);
 
-          const tab = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.14), slotMat);
-          tab.position.set(-s.w / 2 - 0.005, s.h * 0.65, s.z);
-          scratcherGroup.add(tab);
+          [-1, 1].forEach((sideSign) => {
+            const tab = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.042, 0.15), slotMat);
+            tab.position.set(sideSign * (s.w / 2 + 0.004), s.h * 0.64, s.z);
+            scratcherGroup.add(tab);
+          });
         });
 
-        // Build HuaMiaoMiao 3D Character Rig
+        // =====================================================================
+        // 6. Sculpted High-Detail 3D Model of 花喵喵
+        // =====================================================================
         const catRoot = new THREE.Group();
         scene.add(catRoot);
 
-        const bodyMat = new THREE.MeshStandardMaterial({ map: createTabbyFurTexture(true), roughness: 0.84 });
-        const tabbyLegMat = new THREE.MeshStandardMaterial({ map: createTabbyFurTexture(false), roughness: 0.84 });
-        const pureWhiteMat = new THREE.MeshStandardMaterial({ color: 0xfcfaf6, roughness: 0.82 });
-        const faceMat = new THREE.MeshStandardMaterial({ map: createCatFaceTexture(), roughness: 0.82 });
-        const pinkMat = new THREE.MeshStandardMaterial({ color: 0xf29ca3, roughness: 0.6 });
+        const bodyMat = applyVelvetFurShader(
+          new THREE.MeshStandardMaterial({ map: createTabbyFurTexture(true), roughness: 0.86 }),
+          0xffe6c2, 2.5, 0.28
+        );
+        const tabbyLegMat = applyVelvetFurShader(
+          new THREE.MeshStandardMaterial({ map: createTabbyFurTexture(false), roughness: 0.86 }),
+          0xffe6c2, 2.5, 0.26
+        );
+        const pureWhiteMat = applyVelvetFurShader(
+          new THREE.MeshStandardMaterial({ color: 0xfffdf9, roughness: 0.84 }),
+          0xffffff, 2.3, 0.30
+        );
+        const faceMat = applyVelvetFurShader(
+          new THREE.MeshStandardMaterial({ map: createCatFaceTexture(), roughness: 0.84 }),
+          0xffe8c8, 2.6, 0.25
+        );
+        const pinkSkinMat = new THREE.MeshStandardMaterial({
+          color: 0xf4979e,
+          roughness: 0.52,
+          metalness: 0.02
+        });
 
+        // --- A. Sculpted Feline Torso (Organic Chest, Tapered Waist, Rounded Haunches) ---
         const torsoGroup = new THREE.Group();
         torsoGroup.position.set(0, 0.62, 0);
         catRoot.add(torsoGroup);
 
-        const torsoMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.56, 16, 24), bodyMat);
-        torsoMesh.rotation.x = Math.PI / 2;
-        torsoMesh.scale.set(1.04, 1.0, 0.96);
+        const torsoGeo = new THREE.SphereGeometry(0.36, 48, 40);
+        const tPos = torsoGeo.attributes.position;
+        for (let i = 0; i < tPos.count; i++) {
+          let x = tPos.getX(i);
+          let y = tPos.getY(i);
+          let z = tPos.getZ(i);
+
+          // Elongate along Z (spine)
+          z *= 1.52;
+          // Taper slightly at waist, broaden softly at ribcage & muscular haunches
+          const zNorm = z / 0.54;
+          const haunchBulge = 1.0 + 0.08 * Math.exp(-Math.pow(zNorm + 0.55, 2) * 3.5);
+          const chestBulge = 1.0 + 0.05 * Math.exp(-Math.pow(zNorm - 0.55, 2) * 3.5);
+          x *= haunchBulge * chestBulge * 0.96;
+
+          // Subtle spinal arch on top & plump belly underneath
+          if (y > 0) {
+            y *= 0.94;
+            y += 0.025 * Math.cos(zNorm * 1.4);
+          } else {
+            y *= 1.02;
+          }
+          tPos.setXYZ(i, x, y, z);
+        }
+        torsoGeo.computeVertexNormals();
+
+        const torsoMesh = new THREE.Mesh(torsoGeo, bodyMat);
         torsoMesh.castShadow = true;
         torsoMesh.receiveShadow = true;
         torsoGroup.add(torsoMesh);
 
-        const chestMesh = new THREE.Mesh(new THREE.SphereGeometry(0.31, 20, 16), pureWhiteMat);
-        chestMesh.position.set(0, 0.03, 0.27);
-        chestMesh.scale.set(0.95, 1.05, 0.85);
-        chestMesh.castShadow = true;
-        torsoGroup.add(chestMesh);
+        // Sculpted Neck & Plush White Chest Bib ("白胸毛")
+        const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.25, 0.26, 28), bodyMat);
+        neckMesh.position.set(0, 0.21, 0.36);
+        neckMesh.rotation.x = 0.48;
+        neckMesh.castShadow = true;
+        torsoGroup.add(neckMesh);
 
+        const chestRuff = new THREE.Mesh(new THREE.SphereGeometry(0.28, 32, 24), pureWhiteMat);
+        chestRuff.position.set(0, 0.05, 0.34);
+        chestRuff.scale.set(0.92, 1.08, 0.88);
+        chestRuff.castShadow = true;
+        torsoGroup.add(chestRuff);
+
+        // --- B. Sculpted Organic Feline Head (Cheek Jowls, Brow Ridge, Tapered Muzzle) ---
         const headGroup = new THREE.Group();
-        headGroup.position.set(0, 0.34, 0.44);
+        headGroup.position.set(0, 0.36, 0.45);
         torsoGroup.add(headGroup);
 
-        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.31, 28, 24), faceMat);
+        const headGeo = new THREE.SphereGeometry(0.315, 52, 44);
+        const hPos = headGeo.attributes.position;
+        for (let i = 0; i < hPos.count; i++) {
+          let x = hPos.getX(i);
+          let y = hPos.getY(i);
+          let z = hPos.getZ(i);
+
+          // Slightly wider feline cheekbones / jowls
+          const cheekFactor = Math.exp(-Math.pow((y + 0.06) / 0.14, 2));
+          x *= 1.07 + 0.08 * cheekFactor;
+
+          // Gently flatten top of skull between ears
+          if (y > 0.16) {
+            y = 0.16 + (y - 0.16) * 0.78;
+          }
+
+          // Taper front face subtly toward muzzle
+          if (z > 0) {
+            z *= 1.03;
+            x *= 1.0 - 0.08 * (z / 0.32);
+          }
+          hPos.setXYZ(i, x, y, z);
+        }
+        headGeo.computeVertexNormals();
+
+        const headMesh = new THREE.Mesh(headGeo, faceMat);
         headMesh.rotation.y = -Math.PI / 2;
-        headMesh.scale.set(1.06, 0.96, 1.02);
         headMesh.castShadow = true;
         headGroup.add(headMesh);
 
-        const muzzleMesh = new THREE.Mesh(new THREE.SphereGeometry(0.145, 18, 16), pureWhiteMat);
-        muzzleMesh.position.set(0, -0.065, 0.25);
-        muzzleMesh.scale.set(1.18, 0.85, 0.92);
-        headGroup.add(muzzleMesh);
+        // Sculpted Left & Right Whisker Pads (圓潤鬍鬚墊)
+        const whiskerPads = [];
+        [-1, 1].forEach((side) => {
+          const pad = new THREE.Mesh(new THREE.SphereGeometry(0.095, 24, 20), pureWhiteMat);
+          pad.position.set(side * 0.068, -0.068, 0.275);
+          pad.scale.set(1.12, 0.88, 1.05);
+          pad.castShadow = true;
+          headGroup.add(pad);
+          whiskerPads.push(pad);
+        });
 
-        const noseMesh = new THREE.Mesh(new THREE.SphereGeometry(0.034, 14, 12), pinkMat);
-        noseMesh.position.set(0, -0.025, 0.365);
-        noseMesh.scale.set(1.2, 0.85, 0.8);
-        headGroup.add(noseMesh);
+        // Sculpted Lower Chin / Jaw (Animates when meowing/eating/licking)
+        const jawGroup = new THREE.Group();
+        jawGroup.position.set(0, -0.105, 0.21);
+        headGroup.add(jawGroup);
 
-        const tongueMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.024, 0.04, 8, 12), pinkMat);
-        tongueMesh.position.set(0, -0.105, 0.33);
-        tongueMesh.rotation.x = Math.PI / 2.6;
+        const chinMesh = new THREE.Mesh(new THREE.SphereGeometry(0.092, 22, 18), pureWhiteMat);
+        chinMesh.position.set(0, -0.015, 0.045);
+        chinMesh.scale.set(1.05, 0.65, 1.05);
+        jawGroup.add(chinMesh);
+
+        // Cute Pink Tongue attached to Jaw
+        const tongueMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.024, 0.045, 10, 14), pinkSkinMat);
+        tongueMesh.position.set(0, 0.012, 0.10);
+        tongueMesh.rotation.x = Math.PI / 2.3;
+        tongueMesh.scale.set(1.15, 1.0, 0.45);
         tongueMesh.visible = false;
-        headGroup.add(tongueMesh);
+        jawGroup.add(tongueMesh);
 
-        // Eyes
-        const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf4f7ec, roughness: 0.2 });
-        const irisMat = new THREE.MeshStandardMaterial({ color: 0x768f3c, roughness: 0.15 });
-        const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0d0f0c });
-        const eyelidMat = new THREE.MeshStandardMaterial({ color: 0x8b633c, roughness: 0.85 });
+        // Sculpted Triangular Pink Nose + Nostrils
+        const noseGroup = new THREE.Group();
+        noseGroup.position.set(0, -0.022, 0.362);
+        headGroup.add(noseGroup);
+
+        const noseMain = new THREE.Mesh(new THREE.SphereGeometry(0.032, 20, 16), pinkSkinMat);
+        noseMain.scale.set(1.22, 0.82, 0.78);
+        noseGroup.add(noseMain);
+
+        const nostrilMat = new THREE.MeshStandardMaterial({ color: 0xb8525b, roughness: 0.7 });
+        [-1, 1].forEach((s) => {
+          const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.008, 10, 8), nostrilMat);
+          nostril.position.set(s * 0.015, -0.005, 0.021);
+          noseGroup.add(nostril);
+        });
+
+        // Multi-Layered Expressive Olive-Green Eyes
+        const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf4f7ec, roughness: 0.25 });
+        const irisMat = new THREE.MeshStandardMaterial({ color: 0x7b963d, roughness: 0.18 });
+        const limbalMat = new THREE.MeshStandardMaterial({ color: 0x3f521e, roughness: 0.25 });
+        const pupilMat = new THREE.MeshBasicMaterial({ color: 0x0a0c09 });
+        const eyelidMat = new THREE.MeshStandardMaterial({ color: 0x8d633b, roughness: 0.85 });
+        const eyeRimMat = new THREE.MeshStandardMaterial({ color: 0x261a12, roughness: 0.65 });
 
         const pupils = [];
         const eyelids = [];
 
         [-1, 1].forEach((side) => {
           const eyeWrap = new THREE.Group();
-          eyeWrap.position.set(side * 0.115, 0.045, 0.265);
-          eyeWrap.rotation.y = side * 0.22;
+          eyeWrap.position.set(side * 0.118, 0.048, 0.268);
+          eyeWrap.rotation.y = side * 0.21;
+          eyeWrap.rotation.z = -side * 0.06;
           headGroup.add(eyeWrap);
 
-          eyeWrap.add(new THREE.Mesh(new THREE.SphereGeometry(0.056, 18, 16), eyeWhiteMat));
+          // Subtle dark feline eye rim
+          const eyeRim = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.006, 10, 28), eyeRimMat);
+          eyeRim.position.z = 0.016;
+          eyeRim.scale.set(1.06, 0.94, 1.0);
+          eyeWrap.add(eyeRim);
 
-          const iris = new THREE.Mesh(new THREE.SphereGeometry(0.046, 18, 16), irisMat);
-          iris.position.z = 0.018;
+          eyeWrap.add(new THREE.Mesh(new THREE.SphereGeometry(0.056, 24, 20), eyeWhiteMat));
+
+          const limbal = new THREE.Mesh(new THREE.SphereGeometry(0.048, 22, 18), limbalMat);
+          limbal.position.z = 0.017;
+          eyeWrap.add(limbal);
+
+          const iris = new THREE.Mesh(new THREE.SphereGeometry(0.044, 22, 18), irisMat);
+          iris.position.z = 0.022;
           eyeWrap.add(iris);
 
-          const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.026, 14, 12), pupilMat);
-          pupil.position.z = 0.042;
-          pupil.scale.set(0.65, 1.15, 0.5);
+          const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.027, 18, 16), pupilMat);
+          pupil.position.z = 0.044;
+          pupil.scale.set(0.58, 1.18, 0.45);
           eyeWrap.add(pupil);
 
-          const catchlight = new THREE.Mesh(
-            new THREE.SphereGeometry(0.01, 8, 8),
+          // Primary & Secondary Glossy Eye Catchlights
+          const catchMain = new THREE.Mesh(
+            new THREE.SphereGeometry(0.0105, 10, 10),
             new THREE.MeshBasicMaterial({ color: 0xffffff })
           );
-          catchlight.position.set(0.014, 0.016, 0.056);
-          eyeWrap.add(catchlight);
+          catchMain.position.set(0.015, 0.017, 0.058);
+          eyeWrap.add(catchMain);
 
+          const catchSub = new THREE.Mesh(
+            new THREE.SphereGeometry(0.005, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+          );
+          catchSub.position.set(-0.013, -0.012, 0.057);
+          eyeWrap.add(catchSub);
+
+          // Happy Squint Eyelid
           const lid = new THREE.Mesh(
-            new THREE.SphereGeometry(0.06, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
+            new THREE.SphereGeometry(0.061, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.56),
             eyelidMat
           );
-          lid.rotation.x = -Math.PI * 0.55;
+          lid.rotation.x = -Math.PI * 0.54;
           lid.visible = false;
           eyeWrap.add(lid);
 
@@ -1642,98 +2004,145 @@
           eyelids.push(lid);
         });
 
-        // Ears
+        // Sculpted Feline Ears (Cupped Front Pinna + Peach Inner Ear + Tuft)
         const ears = [];
         [-1, 1].forEach((side) => {
           const earPivot = new THREE.Group();
-          earPivot.position.set(side * 0.17, 0.24, 0.02);
-          earPivot.rotation.z = -side * 0.24;
-          earPivot.rotation.x = 0.12;
+          earPivot.position.set(side * 0.175, 0.235, 0.01);
+          earPivot.rotation.z = -side * 0.25;
+          earPivot.rotation.x = 0.14;
           headGroup.add(earPivot);
 
-          const outerEar = new THREE.Mesh(new THREE.ConeGeometry(0.115, 0.24, 18), tabbyLegMat);
-          outerEar.position.y = 0.09;
-          outerEar.scale.set(1.0, 1.0, 0.62);
+          const outerGeo = new THREE.ConeGeometry(0.118, 0.25, 24, 6);
+          const oPos = outerGeo.attributes.position;
+          for (let i = 0; i < oPos.count; i++) {
+            let ex = oPos.getX(i);
+            let ey = oPos.getY(i);
+            let ez = oPos.getZ(i);
+            // Flatten front-to-back & gently cup the front face
+            ez *= 0.56;
+            if (ez > 0) ez -= 0.018 * (1 - Math.abs(ex) / 0.12);
+            oPos.setXYZ(i, ex, ey, ez);
+          }
+          outerGeo.computeVertexNormals();
+
+          const outerEar = new THREE.Mesh(outerGeo, tabbyLegMat);
+          outerEar.position.y = 0.095;
           outerEar.castShadow = true;
           earPivot.add(outerEar);
 
-          const innerEar = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.18, 14), pinkMat);
-          innerEar.position.set(0, 0.08, 0.026);
-          innerEar.scale.set(1.0, 1.0, 0.5);
+          const innerEar = new THREE.Mesh(new THREE.ConeGeometry(0.076, 0.185, 18), pinkSkinMat);
+          innerEar.position.set(0, 0.085, 0.022);
+          innerEar.scale.set(0.95, 1.0, 0.42);
           earPivot.add(innerEar);
 
           ears.push(earPivot);
         });
 
-        // Whiskers
-        const whiskerMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.72 });
+        // Graceful Cheek Whiskers + Eyebrow Whiskers
+        const whiskerMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.78 });
         [-1, 1].forEach((side) => {
-          for (let w = 0; w < 3; w++) {
+          // 4 Cheek whiskers per side
+          for (let w = 0; w < 4; w++) {
             const pts = [
-              new THREE.Vector3(side * 0.11, -0.055 - w * 0.015, 0.28),
-              new THREE.Vector3(side * 0.25, -0.045 - w * 0.022, 0.31),
-              new THREE.Vector3(side * 0.38, -0.06 - w * 0.03, 0.27)
+              new THREE.Vector3(side * 0.095, -0.052 - w * 0.013, 0.295),
+              new THREE.Vector3(side * 0.24, -0.042 - w * 0.019, 0.325),
+              new THREE.Vector3(side * 0.40, -0.058 - w * 0.027, 0.275)
             ];
             const curve = new THREE.CatmullRomCurve3(pts);
-            const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(10));
-            headGroup.add(new THREE.Line(geo, whiskerMat));
+            headGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(12)), whiskerMat));
+          }
+          // 2 Eyebrow whiskers per side
+          for (let b = 0; b < 2; b++) {
+            const bPts = [
+              new THREE.Vector3(side * (0.09 + b * 0.03), 0.125, 0.245),
+              new THREE.Vector3(side * (0.14 + b * 0.04), 0.185, 0.265),
+              new THREE.Vector3(side * (0.19 + b * 0.05), 0.235, 0.235)
+            ];
+            const bCurve = new THREE.CatmullRomCurve3(bPts);
+            headGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bCurve.getPoints(10)), whiskerMat));
           }
         });
 
-        // Collar + Gold Bell + White AirTag
+        // --- C. Detailed Collar, Rose-Gold Bell & Apple AirTag (IMG_4905 & IMG_2933) ---
         const collarGroup = new THREE.Group();
-        collarGroup.position.set(0, 0.17, 0.31);
-        collarGroup.rotation.x = 0.52;
+        collarGroup.position.set(0, 0.19, 0.34);
+        collarGroup.rotation.x = 0.50;
         torsoGroup.add(collarGroup);
 
-        collarGroup.add(new THREE.Mesh(
-          new THREE.TorusGeometry(0.245, 0.022, 12, 32),
-          new THREE.MeshStandardMaterial({ color: 0xc9a382, roughness: 0.65 })
-        ));
+        const collarStrap = new THREE.Mesh(
+          new THREE.TorusGeometry(0.242, 0.021, 16, 40),
+          new THREE.MeshStandardMaterial({ color: 0xcab092, roughness: 0.65 })
+        );
+        collarGroup.add(collarStrap);
 
+        // Detailed Rose-Gold Jingle Bell (with equatorial rim & sound slit)
         const bellPivot = new THREE.Group();
-        bellPivot.position.set(0, -0.25, 0.03);
+        bellPivot.position.set(0, -0.248, 0.028);
         collarGroup.add(bellPivot);
 
-        const goldBell = new THREE.Mesh(
-          new THREE.SphereGeometry(0.046, 18, 16),
-          new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.88, roughness: 0.16 })
-        );
-        goldBell.position.y = -0.035;
+        const bellMat = new THREE.MeshStandardMaterial({ color: 0xf4a940, metalness: 0.90, roughness: 0.15 });
+        const bellRing = new THREE.Mesh(new THREE.TorusGeometry(0.016, 0.004, 8, 16), bellMat);
+        bellRing.position.y = -0.008;
+        bellPivot.add(bellRing);
+
+        const goldBell = new THREE.Mesh(new THREE.SphereGeometry(0.046, 24, 20), bellMat);
+        goldBell.position.y = -0.042;
         bellPivot.add(goldBell);
 
+        const bellEquator = new THREE.Mesh(new THREE.TorusGeometry(0.0465, 0.0045, 8, 24), bellMat);
+        bellEquator.position.y = -0.042;
+        bellEquator.rotation.x = Math.PI / 2;
+        bellPivot.add(bellEquator);
+
+        const bellSlit = new THREE.Mesh(
+          new THREE.BoxGeometry(0.042, 0.008, 0.012),
+          new THREE.MeshBasicMaterial({ color: 0x2b1908 })
+        );
+        bellSlit.position.set(0, -0.072, 0.032);
+        bellPivot.add(bellSlit);
+
+        // Detailed Apple AirTag + Light-Grey Silicone Holder (IMG_2933)
         const airTagGroup = new THREE.Group();
-        airTagGroup.position.set(-0.23, -0.09, 0.03);
-        airTagGroup.rotation.y = -0.85;
+        airTagGroup.position.set(-0.228, -0.088, 0.028);
+        airTagGroup.rotation.y = -0.82;
         collarGroup.add(airTagGroup);
 
         const tagHolder = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.056, 0.056, 0.024, 20),
-          new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.5 })
+          new THREE.CylinderGeometry(0.058, 0.058, 0.022, 28),
+          new THREE.MeshStandardMaterial({ color: 0xd6dae0, roughness: 0.55 })
         );
         tagHolder.rotation.x = Math.PI / 2;
         airTagGroup.add(tagHolder);
 
-        const airTagCore = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.042, 0.042, 0.028, 20),
-          new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.15, roughness: 0.2 })
+        const airTagWhite = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.043, 0.043, 0.026, 28),
+          new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.18 })
         );
-        airTagCore.rotation.x = Math.PI / 2;
-        airTagGroup.add(airTagCore);
+        airTagWhite.rotation.x = Math.PI / 2;
+        airTagGroup.add(airTagWhite);
 
-        // Lv.5 Cosmetics
+        // Lv.5 Unlockable Cosmetics (Royal Crown & Gentleman Bowtie)
         const crownGroup = new THREE.Group();
-        crownGroup.position.set(0, 0.30, 0.02);
+        crownGroup.position.set(0, 0.285, 0.02);
         crownGroup.visible = false;
         headGroup.add(crownGroup);
 
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.85, roughness: 0.2 });
-        crownGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.08, 0.06, 16), goldMat));
+        const crownGoldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.88, roughness: 0.18 });
+        crownGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.078, 0.058, 20), crownGoldMat));
+        const gemColors = [0xef4444, 0x3b82f6, 0x10b981, 0xec4899, 0x8b5cf6];
         for (let p = 0; p < 5; p++) {
           const ang = (p / 5) * Math.PI * 2;
-          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.024, 0.055, 8), goldMat);
+          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.024, 0.056, 10), crownGoldMat);
           spike.position.set(Math.cos(ang) * 0.082, 0.048, Math.sin(ang) * 0.082);
           crownGroup.add(spike);
+
+          const gem = new THREE.Mesh(
+            new THREE.SphereGeometry(0.011, 10, 10),
+            new THREE.MeshStandardMaterial({ color: gemColors[p], metalness: 0.2, roughness: 0.15 })
+          );
+          gem.position.set(Math.cos(ang) * 0.088, 0.0, Math.sin(ang) * 0.088);
+          crownGroup.add(gem);
         }
 
         const bowtieGroup = new THREE.Group();
@@ -1751,87 +2160,141 @@
           bowtieGroup.add(wing);
         });
 
-        // Legs (Solid Pure White Left Front Leg = +X)
-        function createCatLeg(isPureWhiteLeg) {
+        // --- D. Anatomically Sculpted 4 Legs + 4-Toed Paws + Pink Jellybean Pads ---
+        function createDetailedCatLeg(isPureWhiteLeg, isHindLeg = false) {
           const legPivot = new THREE.Group();
           const upperMat = isPureWhiteLeg ? pureWhiteMat : tabbyLegMat;
+          // Hind legs transition to pure white lower socks (IMG_2933 & IMG_4901)
+          const lowerMat = (isPureWhiteLeg || isHindLeg) ? pureWhiteMat : tabbyLegMat;
 
-          const limb = new THREE.Mesh(new THREE.CapsuleGeometry(0.076, 0.30, 12, 16), upperMat);
-          limb.position.y = -0.17;
-          limb.castShadow = true;
-          legPivot.add(limb);
+          // Upper muscular shoulder / thigh
+          const upperLimb = new THREE.Mesh(
+            new THREE.CapsuleGeometry(isHindLeg ? 0.088 : 0.076, 0.17, 14, 20),
+            upperMat
+          );
+          upperLimb.position.set(0, -0.10, isHindLeg ? -0.015 : 0.01);
+          upperLimb.rotation.x = isHindLeg ? 0.18 : -0.08;
+          upperLimb.castShadow = true;
+          legPivot.add(upperLimb);
 
-          const paw = new THREE.Mesh(new THREE.SphereGeometry(0.084, 16, 14), pureWhiteMat);
-          paw.position.set(0, -0.34, 0.025);
-          paw.scale.set(1.02, 0.72, 1.24);
-          paw.castShadow = true;
-          legPivot.add(paw);
+          // Lower forearm / shin
+          const lowerLimb = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.064, 0.17, 14, 20),
+            lowerMat
+          );
+          lowerLimb.position.set(0, -0.25, isHindLeg ? -0.005 : 0.015);
+          lowerLimb.rotation.x = isHindLeg ? -0.14 : 0.06;
+          lowerLimb.castShadow = true;
+          legPivot.add(lowerLimb);
 
-          const bean = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), pinkMat);
-          bean.position.set(0, -0.385, 0.025);
-          bean.scale.set(1.1, 0.4, 1.0);
-          legPivot.add(bean);
+          // Sculpted Multi-Toe Paw Group
+          const pawGroup = new THREE.Group();
+          pawGroup.position.set(0, -0.355, 0.03);
+          legPivot.add(pawGroup);
+
+          const pawBase = new THREE.Mesh(new THREE.SphereGeometry(0.076, 20, 16), pureWhiteMat);
+          pawBase.scale.set(1.04, 0.68, 1.18);
+          pawBase.castShadow = true;
+          pawGroup.add(pawBase);
+
+          // 4 Individual Plump Feline Toes + Pink Toe Beans Underneath
+          const toeOffsets = [-0.042, -0.015, 0.015, 0.042];
+          const toeZOffsets = [0.056, 0.072, 0.072, 0.056];
+          toeOffsets.forEach((tx, idx) => {
+            const toe = new THREE.Mesh(new THREE.SphereGeometry(0.025, 14, 12), pureWhiteMat);
+            toe.position.set(tx, -0.008, toeZOffsets[idx]);
+            toe.scale.set(0.95, 0.78, 1.18);
+            toe.castShadow = true;
+            pawGroup.add(toe);
+
+            const toeBean = new THREE.Mesh(new THREE.SphereGeometry(0.013, 10, 8), pinkSkinMat);
+            toeBean.position.set(tx, -0.026, toeZOffsets[idx] - 0.004);
+            toeBean.scale.set(1.0, 0.45, 1.1);
+            pawGroup.add(toeBean);
+          });
+
+          // Central Pink Metacarpal Pad
+          const centralPad = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 10), pinkSkinMat);
+          centralPad.position.set(0, -0.028, 0.012);
+          centralPad.scale.set(1.18, 0.42, 0.95);
+          pawGroup.add(centralPad);
 
           return legPivot;
         }
 
-        const legFL = createCatLeg(true);
-        legFL.position.set(0.17, 0.44, 0.25);
+        // Anatomical Left Front Leg (+X) = 100% SOLID PURE WHITE!
+        const legFL = createDetailedCatLeg(true, false);
+        legFL.position.set(0.175, 0.44, 0.27);
         catRoot.add(legFL);
 
-        const legFR = createCatLeg(false);
-        legFR.position.set(-0.17, 0.44, 0.25);
+        const legFR = createDetailedCatLeg(false, false);
+        legFR.position.set(-0.175, 0.44, 0.27);
         catRoot.add(legFR);
 
-        const legBL = createCatLeg(false);
-        legBL.position.set(0.18, 0.44, -0.25);
+        const legBL = createDetailedCatLeg(false, true);
+        legBL.position.set(0.185, 0.44, -0.27);
         catRoot.add(legBL);
 
-        const legBR = createCatLeg(false);
-        legBR.position.set(-0.18, 0.44, -0.25);
+        const legBR = createDetailedCatLeg(false, true);
+        legBR.position.set(-0.185, 0.44, -0.27);
         catRoot.add(legBR);
 
         const allLegs = [legFL, legFR, legBL, legBR];
 
-        // Tail
+        // --- E. Lush 8-Segment Ringed Tabby Tail (IMG_2933) ---
         const tailSegments = [];
         const tailBase = new THREE.Group();
-        tailBase.position.set(0, 0.14, -0.38);
+        tailBase.position.set(0, 0.14, -0.44);
         torsoGroup.add(tailBase);
 
+        const darkRingMat = applyVelvetFurShader(
+          new THREE.MeshStandardMaterial({ color: 0x241a13, roughness: 0.86 }),
+          0xffe6c2, 2.5, 0.24
+        );
+
         let parentJoint = tailBase;
-        for (let i = 0; i < 6; i++) {
+        const numTailSegs = 8;
+        for (let i = 0; i < numTailSegs; i++) {
           const joint = new THREE.Group();
-          if (i > 0) joint.position.set(0, 0.105, -0.02);
-          const rTop = 0.056 * (1 - i * 0.09);
-          const rBot = 0.062 * (1 - i * 0.09);
-          const segMat = (i % 2 === 0) ? tabbyLegMat : new THREE.MeshStandardMaterial({ color: 0x261c14, roughness: 0.85 });
-          const segMesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, 0.12, 12), segMat);
-          segMesh.position.y = 0.055;
+          if (i > 0) joint.position.set(0, 0.088, -0.015);
+          const rTop = 0.056 * (1 - i * 0.075);
+          const rBot = 0.061 * (1 - i * 0.075);
+          const segMat = (i % 2 === 0 && i < 7) ? tabbyLegMat : darkRingMat;
+          const segMesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, 0.10, 16), segMat);
+          segMesh.position.y = 0.048;
           segMesh.castShadow = true;
           joint.add(segMesh);
+
+          if (i === numTailSegs - 1) {
+            const tipSphere = new THREE.Mesh(new THREE.SphereGeometry(rTop, 14, 12), darkRingMat);
+            tipSphere.position.y = 0.098;
+            joint.add(tipSphere);
+          }
+
           parentJoint.add(joint);
           tailSegments.push(joint);
           parentJoint = joint;
         }
 
-        // Interactive Props
+        // =====================================================================
+        // 7. Interactive Props (Ceramic Bowl, Churu Treat, Feather Wand, Laser)
+        // =====================================================================
         const bowlGroup = new THREE.Group();
         bowlGroup.position.set(-0.55, 0, 0.72);
         bowlGroup.visible = false;
         scene.add(bowlGroup);
 
         const bowlMesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.22, 0.26, 0.11, 24),
-          new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25 })
+          new THREE.CylinderGeometry(0.22, 0.26, 0.11, 28),
+          new THREE.MeshStandardMaterial({ color: 0xfffdf9, roughness: 0.22 })
         );
         bowlMesh.position.y = 0.055;
         bowlMesh.castShadow = true;
         bowlGroup.add(bowlMesh);
 
         const kibbleHeap = new THREE.Mesh(
-          new THREE.SphereGeometry(0.18, 16, 12),
-          new THREE.MeshStandardMaterial({ color: 0x7c4a21, roughness: 0.9 })
+          new THREE.SphereGeometry(0.18, 20, 14),
+          new THREE.MeshStandardMaterial({ color: 0x7c4a21, roughness: 0.9, bumpMap: furBumpTex, bumpScale: 0.008 })
         );
         kibbleHeap.position.y = 0.09;
         kibbleHeap.scale.set(1, 0.35, 1);
@@ -1841,14 +2304,14 @@
         churuGroup.visible = false;
         scene.add(churuGroup);
         const tubeBody = new THREE.Mesh(
-          new THREE.BoxGeometry(0.08, 0.28, 0.025),
-          new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.4 })
+          new THREE.BoxGeometry(0.085, 0.28, 0.025),
+          new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.38 })
         );
         tubeBody.rotation.x = -0.6;
         churuGroup.add(tubeBody);
         const treatPaste = new THREE.Mesh(
-          new THREE.SphereGeometry(0.026, 12, 10),
-          new THREE.MeshStandardMaterial({ color: 0xfbd38d, roughness: 0.3 })
+          new THREE.SphereGeometry(0.026, 14, 12),
+          new THREE.MeshStandardMaterial({ color: 0xfbd38d, roughness: 0.28 })
         );
         treatPaste.position.set(0, 0.13, 0.09);
         churuGroup.add(treatPaste);
@@ -1857,7 +2320,7 @@
         wandGroup.visible = false;
         scene.add(wandGroup);
         const rod = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.008, 0.012, 0.85, 8),
+          new THREE.CylinderGeometry(0.008, 0.012, 0.85, 10),
           new THREE.MeshStandardMaterial({ color: 0xe2e8f0 })
         );
         rod.position.set(0.25, 0.35, 0);
@@ -1867,8 +2330,8 @@
         const featherCluster = new THREE.Group();
         [0xf472b6, 0x38bdf8, 0xfbbf24].forEach((col, idx) => {
           const f = new THREE.Mesh(
-            new THREE.ConeGeometry(0.045, 0.18, 8),
-            new THREE.MeshStandardMaterial({ color: col, roughness: 0.6 })
+            new THREE.ConeGeometry(0.045, 0.18, 10),
+            new THREE.MeshStandardMaterial({ color: col, roughness: 0.58 })
           );
           f.position.set((idx - 1) * 0.03, -0.06, 0);
           f.rotation.z = (idx - 1) * 0.35;
@@ -1878,14 +2341,16 @@
         wandGroup.add(featherCluster);
 
         const laserDot = new THREE.Mesh(
-          new THREE.SphereGeometry(0.038, 14, 12),
+          new THREE.SphereGeometry(0.036, 16, 14),
           new THREE.MeshBasicMaterial({ color: 0xff1e27 })
         );
         laserDot.visible = false;
         scene.add(laserDot);
-        laserDot.add(new THREE.PointLight(0xff1e27, 0.9, 1.4));
+        laserDot.add(new THREE.PointLight(0xff1e27, 1.0, 1.5));
 
-        // Interaction State Machine
+        // =====================================================================
+        // 8. Interaction Raycasting & Animation State Machine
+        // =====================================================================
         const raycaster = new THREE.Raycaster();
         const pointerNDC = new THREE.Vector2();
         const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.02);
@@ -1915,7 +2380,7 @@
           el.style.left = `${clientX - rect.left}px`;
           el.style.top = `${clientY - rect.top}px`;
           document.getElementById('app-shell').appendChild(el);
-          setTimeout(() => el.remove(), 1100);
+          setTimeout(() => el.remove(), 1150);
         }
 
         function gainXP(amount, foodDelta = 0, moodDelta = 0) {
@@ -1995,7 +2460,7 @@
           if (actionState !== 'belly') actionState = 'petted';
           audio.playPurr();
           if (Math.random() < 0.25) audio.playBell();
-          if (Math.random() < 0.35) spawnFloatingEmoji('💗', cx, cy);
+          if (Math.random() < 0.38) spawnFloatingEmoji('💗', cx, cy);
           gainXP(4, 0, 2);
         }
 
@@ -2003,8 +2468,8 @@
           const targetPt = new THREE.Vector3();
           if (activeMode === 'play' && activeSubTool === 'laser') {
             raycaster.ray.intersectPlane(floorPlane, targetPt);
-            targetPt.x = THREE.MathUtils.clamp(targetPt.x, -2.2, 2.2);
-            targetPt.z = THREE.MathUtils.clamp(targetPt.z, -1.8, 2.2);
+            targetPt.x = THREE.MathUtils.clamp(targetPt.x, -2.1, 2.1);
+            targetPt.z = THREE.MathUtils.clamp(targetPt.z, -1.7, 2.1);
             targetPt.y = 0.02;
             toyWorldPos.copy(targetPt);
             laserDot.position.copy(toyWorldPos);
@@ -2013,8 +2478,8 @@
             gainXP(3, -0.5, 2);
           } else if (activeMode === 'play' && activeSubTool === 'feather') {
             raycaster.ray.intersectPlane(toyPlane, targetPt);
-            targetPt.x = THREE.MathUtils.clamp(targetPt.x, -2.0, 2.0);
-            targetPt.z = THREE.MathUtils.clamp(targetPt.z, -1.4, 2.0);
+            targetPt.x = THREE.MathUtils.clamp(targetPt.x, -1.9, 1.9);
+            targetPt.z = THREE.MathUtils.clamp(targetPt.z, -1.3, 1.9);
             targetPt.y = 0.72;
             toyWorldPos.copy(targetPt);
             wandGroup.position.copy(toyWorldPos);
@@ -2024,9 +2489,9 @@
             gainXP(3, -0.5, 2);
           } else if (activeMode === 'feed' && activeSubTool === 'churu') {
             raycaster.ray.intersectPlane(toyPlane, targetPt);
-            targetPt.x = THREE.MathUtils.clamp(targetPt.x, -1.5, 1.5);
-            targetPt.z = THREE.MathUtils.clamp(targetPt.z, -1.0, 1.8);
-            targetPt.y = 0.85;
+            targetPt.x = THREE.MathUtils.clamp(targetPt.x, -1.4, 1.4);
+            targetPt.z = THREE.MathUtils.clamp(targetPt.z, -0.9, 1.7);
+            targetPt.y = 0.86;
             toyWorldPos.copy(targetPt);
             churuGroup.position.copy(toyWorldPos);
             actionState = 'licking';
@@ -2083,7 +2548,7 @@
             chip.addEventListener('click', () => {
               audio.unlock();
               if (!unlocked) {
-                showSpeech(`好感度升到 Lv.${item.minLvl} 就會解鎖呢項互動！`);
+                showSpeech(`🔒 好感度升到 Lv.${item.minLvl} 就會解鎖呢項互動！`);
                 return;
               }
               activeSubTool = item.id;
@@ -2106,20 +2571,20 @@
             actionState = 'idle';
             targetCatPos.set(0, 0, 0);
             targetCatRotY = 0;
-            showSpeech('用手指喺花喵喵頭仔或下巴輕輕掃動～');
+            showSpeech('🐾 用手指喺花喵喵頭仔或下巴輕輕掃動～');
           } else if (toolId === 'belly') {
             actionState = 'belly';
-            targetCatPos.set(0, 0, 0.1);
+            targetCatPos.set(0, 0, 0.12);
             targetCatRotY = 0;
             audio.playMeow(1.08);
-            showSpeech('花喵喵翻開白肚腩踩奶啦！摸摸肚仔～');
+            showSpeech('💕 花喵喵翻開白肚腩踩奶啦！摸摸肚仔～');
           } else if (toolId === 'crown') {
             const order = ['none', 'crown', 'bowtie'];
             state.accessory = order[(order.indexOf(state.accessory) + 1) % order.length];
             applyAccessoryVisuals();
             saveState(true);
             const names = { none: '除下飾物', crown: '戴上小皇冠 👑', bowtie: '戴上紳士領結 🎀' };
-            showSpeech(`已為花喵喵${names[state.accessory]}！`);
+            showSpeech(`✨ 已為花喵喵${names[state.accessory]}！`);
           } else if (toolId === 'kibble') {
             bowlGroup.visible = true;
             targetCatPos.set(-0.22, 0, 0.42);
@@ -2127,7 +2592,7 @@
             actionState = 'eating';
             actionTimer = 3.5;
             audio.playMeow(0.96);
-            showSpeech('開餐啦！花喵喵大啖食緊乾糧～');
+            showSpeech('🥣 開餐啦！花喵喵大啖食緊乾糧～');
             gainXP(12, 18, 6);
           } else if (toolId === 'churu') {
             churuGroup.visible = true;
@@ -2136,28 +2601,28 @@
             targetCatRotY = 0;
             actionState = 'licking';
             actionTimer = 3.2;
-            showSpeech('拖動肉泥條靠近花喵喵嘴仔！');
+            showSpeech('🥢 拖動肉泥條靠近花喵喵嘴仔！');
           } else if (toolId === 'feather') {
             wandGroup.visible = true;
             wandGroup.position.set(0.35, 0.78, 0.9);
-            showSpeech('喺畫面拖動手指揮動羽毛逗貓棒！');
+            showSpeech('🪶 喺畫面拖動手指揮動羽毛逗貓棒！');
           } else if (toolId === 'laser') {
             laserDot.visible = true;
             laserDot.position.set(-0.4, 0.02, 0.95);
-            showSpeech('移動手指控制地上嘅雷射筆紅點！');
+            showSpeech('🔴 移動手指控制地上嘅雷射筆紅點！');
           } else if (toolId === 'scratch') {
             targetCatPos.set(0.72, 0, -0.35);
             targetCatRotY = 1.1;
             actionState = 'scratching';
             actionTimer = 3.4;
-            showSpeech('嚓嚓嚓～花喵喵喺紙皮階梯貓抓板磨爪！');
+            showSpeech('📦 嚓嚓嚓～花喵喵喺紙皮階梯貓抓板磨爪！');
             gainXP(10, -2, 10);
           } else if (toolId === 'sleep') {
             targetCatPos.set(0.95, 0.34, -0.45);
             targetCatRotY = -0.45;
             actionState = 'sleeping';
             actionTimer = 8.0;
-            showSpeech('花喵喵跳上紙皮抓板蜷縮瞓覺 Zzz...');
+            showSpeech('💤 花喵喵跳上紙皮抓板蜷縮瞓覺 Zzz...');
             gainXP(6, 0, 8);
           }
         }
@@ -2168,22 +2633,26 @@
         }
 
         function applyDayNightVisuals() {
+          const shell = document.getElementById('app-shell');
           if (state.dayMode) {
-            scene.background.setHex(0xe6ebf3);
-            scene.fog.color.setHex(0xe6ebf3);
-            hemiLight.intensity = 1.05;
-            dirLight.intensity = 1.55;
-            dirLight.color.setHex(0xfff4e2);
+            shell.style.background = 'var(--bg-day)';
+            scene.background.setHex(0xede6dc);
+            scene.fog.color.setHex(0xede6dc);
+            hemiLight.intensity = 1.15;
+            sunLight.intensity = 1.65;
+            sunLight.color.setHex(0xfff2dc);
+            rimLight.intensity = 0.75;
           } else {
-            scene.background.setHex(0x161c2b);
-            scene.fog.color.setHex(0x161c2b);
-            hemiLight.intensity = 0.55;
-            dirLight.intensity = 0.85;
-            dirLight.color.setHex(0xffc98b);
+            shell.style.background = 'var(--bg-night)';
+            scene.background.setHex(0x141928);
+            scene.fog.color.setHex(0x141928);
+            hemiLight.intensity = 0.58;
+            sunLight.intensity = 0.92;
+            sunLight.color.setHex(0xffc98b);
+            rimLight.intensity = 0.95;
           }
         }
 
-        // Hook up scene methods to UI
         sceneHooks.applyAccessoryVisuals = applyAccessoryVisuals;
         sceneHooks.applyDayNightVisuals = applyDayNightVisuals;
         sceneHooks.renderSubBar = renderSubBar;
@@ -2196,10 +2665,12 @@
         applyAccessoryVisuals();
         applyDayNightVisuals();
         renderSubBar();
-        sceneReady = true;
-        loaderOverlay.style.display = 'none';
+        loaderOverlay.style.opacity = '0';
+        setTimeout(() => (loaderOverlay.style.display = 'none'), 350);
 
-        // Main 60fps Animation Loop
+        // =====================================================================
+        // 9. Main 60fps Organic Animation Loop
+        // =====================================================================
         const clock = new THREE.Clock();
         let crunchTick = 0;
 
@@ -2208,8 +2679,8 @@
           const dt = Math.min(clock.getDelta(), 0.05);
           const t = clock.getElapsedTime();
 
-          state.satiety = Math.max(10, state.satiety - dt * 0.18);
-          state.mood = Math.max(15, state.mood - dt * 0.12);
+          state.satiety = Math.max(10, state.satiety - dt * 0.16);
+          state.mood = Math.max(15, state.mood - dt * 0.11);
 
           if (petTimer > 0) {
             petTimer -= dt;
@@ -2227,9 +2698,9 @@
             const toToy = new THREE.Vector3().subVectors(toyWorldPos, catRoot.position);
             toToy.y = 0;
             const dist = toToy.length();
-            if (dist > 0.55) {
+            if (dist > 0.56) {
               toToy.normalize();
-              targetCatPos.copy(catRoot.position).addScaledVector(toToy, dt * 1.9);
+              targetCatPos.copy(catRoot.position).addScaledVector(toToy, dt * 1.95);
               targetCatPos.x = THREE.MathUtils.clamp(targetCatPos.x, -1.8, 1.8);
               targetCatPos.z = THREE.MathUtils.clamp(targetCatPos.z, -1.3, 1.8);
             }
@@ -2240,29 +2711,35 @@
           const rotDiff = Math.atan2(Math.sin(targetCatRotY - catRoot.rotation.y), Math.cos(targetCatRotY - catRoot.rotation.y));
           catRoot.rotation.y += rotDiff * Math.min(1, dt * 6);
 
-          const breath = Math.sin(t * 2.6) * 0.015;
+          const breath = Math.sin(t * 2.5) * 0.014;
           catRoot.rotation.z = THREE.MathUtils.lerp(catRoot.rotation.z, 0, dt * 7);
           torsoGroup.position.y = 0.62 + breath;
           torsoGroup.rotation.z = 0;
           torsoGroup.rotation.x = 0;
           headGroup.rotation.set(0, 0, 0);
+          jawGroup.rotation.x = 0;
           tongueMesh.visible = false;
 
+          // Pupil dilation & Eyelid state
           const isDilated = actionState === 'chasing' || actionState === 'licking';
           pupils.forEach((p) => {
-            const targetScaleX = isDilated ? 1.05 : 0.65;
+            const targetScaleX = isDilated ? 1.05 : 0.58;
             p.scale.x = THREE.MathUtils.lerp(p.scale.x, targetScaleX, dt * 8);
           });
           const closeEyes = actionState === 'petted' || actionState === 'sleeping';
           eyelids.forEach((lid) => (lid.visible = closeEyes));
 
           if (actionState === 'petted') {
-            headGroup.rotation.z = Math.sin(t * 5) * 0.14;
+            headGroup.rotation.z = Math.sin(t * 4.8) * 0.14;
             headGroup.rotation.x = -0.18;
             bellPivot.rotation.z = Math.sin(t * 14) * 0.25;
+            // Relaxed airplane ears when being petted
+            ears[0].rotation.z = -0.36;
+            ears[1].rotation.z = 0.36;
           } else if (actionState === 'eating') {
             torsoGroup.rotation.x = 0.26;
-            headGroup.rotation.x = 0.35 + Math.sin(t * 14) * 0.14;
+            headGroup.rotation.x = 0.34 + Math.sin(t * 14) * 0.14;
+            jawGroup.rotation.x = Math.max(0, Math.sin(t * 14) * 0.32);
             crunchTick += dt;
             if (crunchTick > 0.32) {
               crunchTick = 0;
@@ -2271,8 +2748,9 @@
             }
           } else if (actionState === 'licking') {
             headGroup.rotation.x = -0.14 + Math.sin(t * 15) * 0.08;
-            tongueMesh.visible = Math.sin(t * 15) > -0.2;
-            tongueMesh.scale.z = 0.8 + Math.sin(t * 15) * 0.35;
+            jawGroup.rotation.x = 0.22 + Math.sin(t * 15) * 0.14;
+            tongueMesh.visible = Math.sin(t * 15) > -0.25;
+            tongueMesh.scale.y = 0.85 + Math.sin(t * 15) * 0.35;
           } else if (actionState === 'scratching') {
             torsoGroup.rotation.x = -0.22;
             legFL.rotation.x = -0.95 + Math.sin(t * 18) * 0.45;
@@ -2300,10 +2778,13 @@
             legBL.rotation.x = -0.45 + Math.cos(t * 7.5) * 0.22;
             legBR.rotation.x = -0.45 - Math.cos(t * 7.5) * 0.22;
           } else {
-            headGroup.rotation.y = Math.sin(t * 0.9) * 0.12;
-            headGroup.rotation.z = Math.cos(t * 0.7) * 0.05;
+            headGroup.rotation.y = Math.sin(t * 0.85) * 0.13;
+            headGroup.rotation.z = Math.cos(t * 0.65) * 0.05;
+            ears[0].rotation.z = -0.25 + Math.sin(t * 2.1) * 0.04;
+            ears[1].rotation.z = 0.25 - Math.cos(t * 1.8) * 0.04;
           }
 
+          // Leg Gait when walking/chasing
           const moveSpeed = catRoot.position.distanceTo(targetCatPos);
           if (moveSpeed > 0.04 && actionState !== 'belly' && actionState !== 'sleeping') {
             const stride = Math.sin(t * 15) * 0.55;
@@ -2311,20 +2792,18 @@
             legBR.rotation.x = stride;
             legFR.rotation.x = -stride;
             legBL.rotation.x = -stride;
-            bellPivot.rotation.z = Math.sin(t * 15) * 0.22;
-          } else if (actionState !== 'scratching' && actionState !== 'belly') {
+            bellPivot.rotation.z = Math.sin(t * 15) * 0.24;
+          } else if (actionState !== 'scratching' && actionState !== 'belly' && actionState !== 'sleeping') {
             allLegs.forEach((l) => (l.rotation.x = THREE.MathUtils.lerp(l.rotation.x, 0, dt * 8)));
             bellPivot.rotation.z = THREE.MathUtils.lerp(bellPivot.rotation.z, 0, dt * 6);
           }
 
-          ears[0].rotation.z = -0.24 + Math.sin(t * 2.2) * 0.04;
-          ears[1].rotation.z = 0.24 - Math.cos(t * 1.9) * 0.04;
-
-          const tailSpeed = actionState === 'chasing' ? 8.5 : actionState === 'petted' ? 4.2 : 2.1;
-          const tailAmp = actionState === 'sleeping' ? 0.04 : 0.18;
+          // Lush 8-Segment Tail Wave
+          const tailSpeed = actionState === 'chasing' ? 8.5 : actionState === 'petted' ? 4.2 : 2.0;
+          const tailAmp = actionState === 'sleeping' ? 0.03 : 0.14;
           tailSegments.forEach((seg, idx) => {
-            seg.rotation.z = Math.sin(t * tailSpeed - idx * 0.55) * tailAmp;
-            seg.rotation.x = 0.22 + Math.cos(t * (tailSpeed * 0.7) - idx * 0.4) * (tailAmp * 0.6);
+            seg.rotation.z = Math.sin(t * tailSpeed - idx * 0.48) * tailAmp;
+            seg.rotation.x = 0.18 + Math.cos(t * (tailSpeed * 0.7) - idx * 0.35) * (tailAmp * 0.55);
           });
 
           controls.update();
@@ -2344,14 +2823,14 @@
         console.error('3D Scene initialization failed:', err);
         loaderCard.innerHTML = `
           <div>⚠️ 3D 畫面暫時無法載入</div>
-          <div class="sub-msg">請檢查網絡連線（需要載入 Three.js 模組），或改用 Safari / Chrome 瀏覽器直接開啟網址。<br>錯誤詳情：${err?.message || err}</div>
+          <div class="sub-msg">請檢查網絡連線，或改用 Safari / Chrome 瀏覽器直接開啟網址。<br>錯誤詳情：${err?.message || err}</div>
           <button class="retry-btn" onclick="location.reload()">🔄 重新載入</button>
         `;
       }
     }
 
     // =========================================================================
-    // 6. Boot Sequence (UI First -> 3D Engine + Cloud Sync in Parallel)
+    // 10. Boot Sequence
     // =========================================================================
     bindAllUIControls();
     initFirebase();
