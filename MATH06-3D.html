@@ -291,7 +291,7 @@ const grenades = [], bombs = [];
 let heroGun = null, toastTimer = 0;
 const COMP_INTERVALS = [[1.2, 2.4], [2.2, 4], [3.5, 6]];   // 三階段：貓 / 無人機開槍間隔（秒）；後期都繼續幫手，等學生玩耐啲
 let facadeDay = null, hemiLight = null, sunLight = null, skylineMat = null;
-let nightMode = true, neonBase = 1.05;
+let nightMode = false, neonBase = 1.05;   // 預設日頭（Nelson 指定）
 const buildingMats = [], glowMats = [], trimMats = [], cloudMats = [], glowLights = [];
 const groundRefs = {};
 const fogBanks = [], nobori = [], survivors = [];
@@ -1811,6 +1811,7 @@ function initScene(){
   }
   placeCamera();
   applyMode();
+  setAutoRotate(true);   // 一開遊戲就預設開自動轉（開始畫面背後都會輕輕搖擺）
   window.addEventListener("resize", ()=>{
     camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight); placeCamera();
@@ -2174,6 +2175,7 @@ function startGame(cls, sid){
   $('hud').classList.remove('hidden');
   $('panel').classList.remove('hidden');
   placeCamera();
+  setAutoRotate(true);   // 每局預設開自動轉（Nelson 指定嘅預設）
   updateHUD(); showQuestion();
   for(const s of army) scene.remove(s.g);
   army = [];
