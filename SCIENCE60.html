@@ -2635,7 +2635,8 @@
             cableCars: [],
             spinners: [],
             bobbers: [],
-            dolphins: []
+            dolphins: [],
+            wavers: []
         };
 
         let cameraMode = 'follow';
@@ -3027,7 +3028,7 @@
             if (sceneInitialized) return;
 
             tileCoords = generateTrackCoordinates();
-            animatedProps = { turbines: [], boats: [], clouds: [], waterfallDrops: [], walkers: [], birds: [], cableCars: [], spinners: [], bobbers: [], dolphins: [] };
+            animatedProps = { turbines: [], boats: [], clouds: [], waterfallDrops: [], walkers: [], birds: [], cableCars: [], spinners: [], bobbers: [], dolphins: [], wavers: [] };
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1ea3bf);
@@ -4123,6 +4124,49 @@
             animatedProps.dolphins.push({ mesh: g, cx, cz, radius, speed, phase, leap: phase * 2.7 });
         }
 
+        // 終點旗（2026-11-23 Nelson 要求）：火箭隔離一支高旗，紅旗金邊白字「終點」，輕輕飄揚，遠遠都睇到
+        function buildFinishFlag() {
+            const g = new THREE.Group();
+            g.position.set(-0.9, 3.3, -1.6);
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.44, 0.22, 8), lowPolyMat(0xd6d3d1));
+            base.position.y = 0.11;
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 6), lowPolyMat(0x475569));
+            pole.position.y = 1.8;
+            pole.castShadow = true;
+            const ball = new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 5), lowPolyMat(0xfbbf24, { emissive: 0xd97706, emissiveIntensity: 0.35 }));
+            ball.position.y = 3.56;
+            g.add(base, pole, ball);
+
+            const cv = document.createElement('canvas');
+            cv.width = 256;
+            cv.height = 160;
+            const cx2 = cv.getContext('2d');
+            cx2.fillStyle = '#ef4444';
+            cx2.fillRect(0, 0, 256, 160);
+            cx2.strokeStyle = '#fbbf24';
+            cx2.lineWidth = 10;
+            cx2.strokeRect(5, 5, 246, 150);
+            cx2.fillStyle = '#ffffff';
+            cx2.font = '900 84px "PingFang HK", "Microsoft JhengHei", sans-serif';
+            cx2.textAlign = 'center';
+            cx2.textBaseline = 'middle';
+            cx2.fillText('終點', 128, 86);
+            const tex = new THREE.CanvasTexture(cv);
+            tex.anisotropy = 4;
+            const faceMat = new THREE.MeshBasicMaterial({ map: tex });
+            const edgeMat = lowPolyMat(0xef4444);
+
+            const flagPivot = new THREE.Group();
+            flagPivot.position.set(0.05, 3.02, 0);
+            const cloth = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.02, 0.04), [edgeMat, edgeMat, edgeMat, edgeMat, faceMat, faceMat]);
+            cloth.position.x = 0.88;
+            cloth.castShadow = true;
+            flagPivot.add(cloth);
+            g.add(flagPivot);
+            scene.add(g);
+            animatedProps.wavers.push({ obj: flagPivot, base: 0, amp: 0.16, speed: 1, phase: 0 });
+        }
+
         function buildIslandFillAndLife() {
             // 堤壩：承托 54→55 爬坡段（路面已喺 generateTrackCoordinates 提早爬升到頂）
             const cwPts = [];
@@ -4171,6 +4215,8 @@
             createDolphin(-14, -38, 7.5, 0.19, 0);
             createDolphin(-14, -38, 7.5, 0.19, 2.4);
             createDolphin(24, 40, 6.5, 0.21, 1.2);
+
+            buildFinishFlag();
         }
 
         function buildLowPolyScienceLandmarks() {
@@ -5344,6 +5390,10 @@
 
             animatedProps.bobbers.forEach(b => {
                 b.obj.position.y = b.baseY + Math.sin(now * 0.0016 * b.speed + b.phase) * b.amp;
+            });
+
+            animatedProps.wavers.forEach(w => {
+                w.obj.rotation.y = w.base + Math.sin(now * 0.0022 * w.speed + w.phase) * w.amp;
             });
 
             animatedProps.dolphins.forEach(d => {
