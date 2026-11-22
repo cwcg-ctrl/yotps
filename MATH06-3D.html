@@ -1849,9 +1849,9 @@ function animate(){
     // 慢鏡運鏡：唔再不停旋轉 — 以開啟嗰陣嘅角度為中心輕輕左右搖擺，
     // 主力係緩慢拉近拉遠 + 角度微調，睇得舒服唔頭暈（平滑追蹤目標值，開關都唔會跳）
     const blend = Math.min(1, dt * 1.4);
-    Cam.az  += ((Cam.autoAz + Math.sin(t * .05) * .45) - Cam.az) * blend;
-    Cam.pol += ((.62 + Math.sin(t * .07) * .16) - Cam.pol) * blend;
-    Cam.rad += ((Cam.autoRad * (1 + Math.sin(t * .06 + 1.3) * .13)) - Cam.rad) * blend;
+    Cam.az  += ((Cam.autoAz + Math.sin(t * .13) * .5) - Cam.az) * blend;
+    Cam.pol += ((.62 + Math.sin(t * .17) * .19) - Cam.pol) * blend;
+    Cam.rad += ((Cam.autoRad * (1 + Math.sin(t * .15 + 1.3) * .16)) - Cam.rad) * blend;
   }
   placeCamera();
   for(const c of clouds){ c.position.x += dt * .35; if(c.position.x > 55) c.position.x = -55; }
