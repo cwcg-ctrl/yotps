@@ -47,6 +47,7 @@
     <div id="protLabel" class="hidden bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-emerald-300 shadow text-sm sm:text-base whitespace-nowrap">🪖 軍隊保護中：<span id="protSec">30</span> 秒</div>
     <div id="armyLabel" class="hidden bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-sky-300 shadow text-sm sm:text-base whitespace-nowrap">🪖 軍隊支援中：<span id="armySec">10</span> 秒</div>
     <div id="phaseLabel" class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-indigo-300 shadow text-sm sm:text-base">第 1 階段：加減熱身</div>
+    <div id="itemBar" class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-slate-100 shadow text-sm sm:text-base whitespace-nowrap">🧰×0 💣×0 ❄️×0</div>
   </div>
   <div class="flex gap-2 pointer-events-auto shrink-0 ml-auto">
     <button id="armyBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">🪖 軍隊支援 <span id="energyPips">・・・</span></button>
@@ -350,8 +351,8 @@ const S = {
   playing:false, over:false, hearts:5, kills:0, right:0, wrong:0,
   elapsed:0, spawnTimer:1, jamUntil:0, qNo:0,
   q:null, qStart:0, lastTry:0, lockUntil:0,
-  weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, protDone:false, playerKills:0,
-  lastHurt:-99, regenT:0, idleT:0
+  weapon:1, grenadeT:8, freezeT:0, freezeCd:0, healCd:30, protDone:false, playerKills:0,
+  lastHurt:-99, regenT:0, idleT:0, items:{ med:0, gre:0, fre:0 }, dropT:15, medCd:0, greCd:0
 };
 const BREACH_R = 2.6, SPAWN_R = 25, HERO_Y = 1.69;
 </script>
@@ -2042,30 +2043,112 @@ function updateIdleBanner(){
   el.innerHTML = html;
   el.classList.remove('hidden');
 }
+/* ===== 物資道具（2026-11-23 Nelson 要求）：空投（降落傘動畫）+ 擊殺掉落 18%；三種道具儲起自動用，每種最多 3 件 ===== */
+const ITEM_DEFS = { med:{ icon:"🧰", name:"醫療包", color:0xff8fa3 }, gre:{ icon:"💣", name:"手榴彈", color:0xffd43b }, fre:{ icon:"❄️", name:"冰封道具", color:0x7be0ff } };
+const ITEM_KEYS = ["med", "gre", "fre"];
+const drops = [], orbs = [];
+function rollItemType(){ const r = Math.random(); return r < .40 ? "med" : (r < .75 ? "gre" : "fre"); }   // 醫療包 40% / 手榴彈 35% / 冰封 25%
+function updateItemsUI(){
+  const el = $('itemBar');
+  if(el) el.textContent = "🧰×" + (S.items.med || 0) + " 💣×" + (S.items.gre || 0) + " ❄️×" + (S.items.fre || 0);
+}
+function dropOrb(pos, type){
+  const m = ball(.24, ITEM_DEFS[type].color, pos.x, 1.3, pos.z, scene, { emissive: 0x666666, roughness: .4 });
+  m.castShadow = false;
+  m.material.transparent = true;
+  orbs.push({ m, t: 0 });
+}
+function gainItem(type, pos){
+  if((S.items[type] || 0) >= 3){
+    const others = ITEM_KEYS.filter(k => k !== type && (S.items[k] || 0) < 3);
+    if(!others.length) return false;
+    type = others[Math.random() * others.length | 0];
+  }
+  S.items[type]++;
+  updateItemsUI();
+  const d = ITEM_DEFS[type];
+  showToast(d.icon + " 執到" + d.name + "！（×" + S.items[type] + "）");
+  if(pos) dropOrb(pos, type);
+  return true;
+}
+function spawnAirdrop(){
+  const ang = Math.random() * Math.PI * 2, rad = 5 + Math.random() * 4;
+  const x = Math.cos(ang) * rad, z = Math.sin(ang) * rad;
+  const g = new THREE.Group();
+  box(.95, .95, .95, 0xb08968, 0, 0, 0, g);
+  box(1.0, .22, 1.0, 0x6f4e37, 0, .1, 0, g);
+  box(1.0, .22, 1.0, 0x6f4e37, 0, -.28, 0, g);
+  const canopy = new THREE.Mesh(new THREE.SphereGeometry(1.55, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshLambertMaterial({ color: 0xff922b, side: THREE.DoubleSide }));
+  canopy.scale.y = .55;
+  canopy.position.y = 2.1;
+  g.add(canopy);
+  box(.05, 1.3, .05, 0x8a5a3b, .55, 1.25, .55, g);
+  box(.05, 1.3, .05, 0x8a5a3b, -.55, 1.25, -.55, g);
+  box(.05, 1.3, .05, 0x8a5a3b, .55, 1.25, -.55, g);
+  box(.05, 1.3, .05, 0x8a5a3b, -.55, 1.25, .55, g);
+  g.position.set(x, 26, z);
+  scene.add(g);
+  drops.push({ g, canopy, x, z, y: 26, t: 0, landed: 0 });
+  showToast("🪂 物資空投嚟喇！");
+}
+function updateDrops(dt){
+  for(let i = drops.length - 1; i >= 0; i--){
+    const d = drops[i];
+    if(!d.landed){
+      d.t += dt;
+      d.y -= dt * (3 + d.y * .16);
+      if(d.y <= .55){ d.y = .55; d.landed = .0001; }
+      const sw = Math.min(1, d.y / 12);
+      d.g.position.set(d.x + Math.sin(d.t * 1.7) * 1.1 * sw, d.y, d.z + Math.cos(d.t * 1.35) * 1.1 * sw);
+      d.g.rotation.z = Math.sin(d.t * 1.7) * .09 * sw;
+      d.g.rotation.x = Math.cos(d.t * 1.4) * .07 * sw;
+    } else {
+      d.landed += dt;
+      const k = Math.max(.01, 1 - d.landed * 2.4);
+      d.canopy.scale.set(k, .55 * k, k);
+      if(d.landed > .7){
+        burst(new THREE.Vector3(d.x, 1, d.z), 0xffd43b);
+        gainItem(rollItemType(), null);
+        scene.remove(d.g);
+        drops.splice(i, 1);
+      }
+    }
+  }
+}
+function updateOrbs(dt){
+  for(let i = orbs.length - 1; i >= 0; i--){
+    const o = orbs[i];
+    o.t += dt;
+    o.m.position.y += dt * 1.6;
+    o.m.material.opacity = Math.max(0, 1 - o.t / .9);
+    if(o.t >= .9){ scene.remove(o.m); orbs.splice(i, 1); }
+  }
+}
 function autoActions(dt){
   const helpOn = (S.idleT || 0) < IDLE_LIMIT;   // 掛機夠 15 秒：自動系統暫停（軍隊/保護士兵唔受影響，係獎勵同開局禮物）
-  // 自動手榴彈：每 16 秒掉去最密嘅喪屍群
-  if(helpOn) S.grenadeT -= dt;
-  if(helpOn && S.grenadeT <= 0){
-    let best = null, bestN = 1;
+  // 手榴彈道具：有存貨 + 喪屍群夠密（≥3 隻擠埋一齊）就自動掟（唔再免費，靠空投/擊殺掉落補給）
+  if(S.greCd > 0) S.greCd -= dt;
+  if(helpOn && S.greCd <= 0 && (S.items.gre || 0) > 0){
+    let best = null, bestN = 2;
     for(const z of zombies){
       if(z.userData.dead) continue;
       let n = 0;
       for(const o of zombies) if(!o.userData.dead && o.position.distanceTo(z.position) < 4) n++;
       if(n > bestN){ bestN = n; best = z; }
     }
-    if(best){ throwGrenade(best.position); S.grenadeT = 16; }
-    else S.grenadeT = 3;
+    if(best){ S.items.gre--; S.greCd = 5; updateItemsUI(); throwGrenade(best.position); }
   }
-  // 自動冰封：多隻喪屍埋身就凍結減速 5 秒（冷卻 45 秒）
+  // 冰封道具：有存貨 + 多隻喪屍埋身就自動開（唔再免費）
   if(S.freezeT > 0) S.freezeT -= dt;
   if(S.freezeCd > 0) S.freezeCd -= dt;
-  if(helpOn && S.freezeCd <= 0 && S.freezeT <= 0){
+  if(helpOn && (S.items.fre || 0) > 0 && S.freezeCd <= 0 && S.freezeT <= 0){
     let near = 0;
     for(const z of zombies) if(!z.userData.dead && z.userData.rad < 13) near++;
     if(near >= 5){
-      S.freezeT = 5; S.freezeCd = 45;
-      showToast("❄️ 冰封！喪屍慢晒 5 秒");
+      S.items.fre--; S.freezeT = 5; S.freezeCd = 20;
+      updateItemsUI();
+      showToast("❄️ 冰封道具使用！喪屍慢晒 5 秒");
     }
   }
   $('freezeFx').style.opacity = S.freezeT > 0 ? 1 : 0;
@@ -2087,6 +2170,18 @@ function autoActions(dt){
     burst(new THREE.Vector3(0, HERO_Y + 2, 0), 0x69db7c);
     showToast("❤️ 自動補血 +1");
   }
+  // 醫療包道具：得返 2 格心或以下自動用（排喺免費自動補血之後，免費嗰個用得就唔好嘥道具）
+  if(S.medCd > 0) S.medCd -= dt;
+  if(helpOn && S.medCd <= 0 && (S.items.med || 0) > 0 && S.hearts > 0 && S.hearts <= 2){
+    S.items.med--; S.medCd = 5;
+    S.hearts = Math.min(5, S.hearts + 1);
+    updateHUD(); updateItemsUI();
+    burst(new THREE.Vector3(0, HERO_Y + 2, 0), 0x69db7c);
+    showToast("🧰 醫療包自動使用 +1 ❤️");
+  }
+  // 物資空投：約每 25 秒一次（第一次約 15 秒，等學生早啲見到個機制）
+  S.dropT -= dt;
+  if(S.dropT <= 0){ S.dropT = 20 + Math.random() * 10; spawnAirdrop(); }
   updateIdleBanner();
 }
 function companionShoot(tip, target, color){
@@ -2129,6 +2224,7 @@ function damageZombie(z, dmg, byPlayer){
   burst(z.position.clone().setY(1.6), 0xc0f299);
   if(z.userData.hp <= 0){
     z.userData.dead = true; S.kills++;
+    if(Math.random() < .18) gainItem(rollItemType(), z.position);   // 擊殺掉落：18% 出道具（Nelson 定嘅豐富率）
     if(byPlayer){ S.playerKills++; checkWeaponUpgrade(); }   // 武器升級只計自己答啱題親手打死嘅
     updateHUD();
     z.userData.dying = .28;
@@ -2294,9 +2390,9 @@ function startGame(cls, sid){
   DataLog.start(cls, sid);
   Object.assign(S, { playing:true, over:false, hearts:5, kills:0, right:0, wrong:0,
                      elapsed:0, spawnTimer:1.0, nextWave:145 + Math.random()*15, phaseWarned:false, phaseJumped:false, jamUntil:0, qNo:0, lockUntil:0,
-                     weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, playerKills:0,
+                     weapon:1, grenadeT:8, freezeT:0, freezeCd:0, healCd:30, playerKills:0,
                      lastHurt:-99, regenT:0, mistakes:[], tipT:0, guessStreak:0, qPicked:false,
-                     energy:0, firstStreak:0, armyT:0, idleT:0 });
+                     energy:0, firstStreak:0, armyT:0, idleT:0, items:{ med:0, gre:0, fre:0 }, dropT:15, medCd:0, greCd:0 });
   if(heroGun){ heroGun.scale.setScalar(1); heroGun.children[0].material.color.set(0xff922b); }
   for(const g of grenades) scene.remove(g.m);
   grenades.length = 0;
@@ -2311,6 +2407,11 @@ function startGame(cls, sid){
   placeCamera();
   setAutoRotate(true);   // 每局預設開自動轉（Nelson 指定嘅預設）
   updateHUD(); showQuestion();
+  for(const d of drops) scene.remove(d.g);
+  drops.length = 0;
+  for(const o of orbs) scene.remove(o.m);
+  orbs.length = 0;
+  updateItemsUI();
   startBGM();   // 背景音樂：緊張電子 loop，跟戰況升級（同一個靜音掣控制）
   for(const s of army) scene.remove(s.g);
   army = [];
@@ -2537,6 +2638,8 @@ function animate(){
     g.m.position.y += Math.sin(k * Math.PI) * 3.2;
     if(k >= 1){ explodeGrenade(g.to); scene.remove(g.m); grenades.splice(i, 1); }
   }
+  updateDrops(dt);
+  updateOrbs(dt);
   // 主角瞄準最接近城堡嗰隻
   const target = nearestZombie();
   let catTarget = null, droneTarget = null;   // 細貓同無人機各自嘅目標，唔再同主角同步望同一隻
