@@ -58,6 +58,12 @@
     <select id="clsFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
       <option value="">全部班別</option>
     </select>
+    <label class="font-bold text-slate-500 text-sm">排序</label>
+    <select id="sortSel" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+      <option value="recent">最新活動</option>
+      <option value="scoreDesc">成績：高 → 低</option>
+      <option value="scoreAsc">成績：低 → 高</option>
+    </select>
     <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。「剷除已篩選數據」會照而家揀咗嘅遊戲 + 班別嚟刪。</span>
   </div>
 
@@ -66,6 +72,11 @@
     <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">答題總數</div><div id="stAnswers" class="text-3xl font-black">0</div></div>
     <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">全班正確率</div><div id="stAcc" class="text-3xl font-black">—</div></div>
     <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">平均反應時間</div><div id="stMs" class="text-3xl font-black">—</div></div>
+  </div>
+
+  <div id="chartBox" class="hidden bg-white rounded-2xl shadow p-4 mb-5">
+    <div class="text-sm font-black text-slate-500 mb-3">📊 學生正確率一覽（跟而家嘅篩選同排序）</div>
+    <div id="chartBars" class="space-y-2"></div>
   </div>
 
   <div id="studentList" class="space-y-3"></div>
@@ -123,6 +134,7 @@ if(!FIREBASE_CONFIG){
   $("logoutBtn").addEventListener("click", ()=> firebase.auth().signOut());
   $("gameFilter").addEventListener("change", render);
   $("clsFilter").addEventListener("change", render);
+  $("sortSel").addEventListener("change", render);
   $("clearBtn").addEventListener("click", deleteFiltered);
   $("studentList").addEventListener("click", e => {
     const b = e.target.closest(".delBtn");
@@ -179,6 +191,11 @@ function fmtClock(ts){
 function render(flash){
   const f = $("clsFilter").value, gf = $("gameFilter").value;
   const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf));
+  const accOf = s => s.answers.length ? Math.round(s.answers.filter(a => a.ok).length / s.answers.length * 100) : 0;
+  const scoreOf = s => s.session ? (s.session.score ?? s.session.kills ?? accOf(s)) : accOf(s);
+  const sortMode = $("sortSel").value;
+  if(sortMode === "scoreDesc") list.sort((a,b)=> scoreOf(b) - scoreOf(a) || b.last - a.last);
+  else if(sortMode === "scoreAsc") list.sort((a,b)=> scoreOf(a) - scoreOf(b) || b.last - a.last);
   const ans = list.flatMap(s => s.answers);
   const right = ans.filter(a => a.ok).length;
   $("stSessions").textContent = list.length;
@@ -186,6 +203,17 @@ function render(flash){
   $("stAcc").textContent = ans.length ? Math.round(right / ans.length * 100) + "%" : "—";
   $("stMs").textContent = ans.length ? Math.round(ans.reduce((s,a)=> s + (a.ms||0), 0) / ans.length / 100) / 10 + " 秒" : "—";
   $("emptyMsg").classList.toggle("hidden", list.length > 0);
+  const shown = list.slice(0, 30);
+  $("chartBox").classList.toggle("hidden", !shown.length);
+  $("chartBars").innerHTML = shown.map(s => {
+    const acc = accOf(s);
+    const color = acc >= 80 ? "bg-emerald-400" : (acc >= 50 ? "bg-amber-400" : "bg-rose-400");
+    return `<div class="flex items-center gap-2 text-xs font-bold">
+      <span class="w-24 shrink-0 text-slate-500">${s.cls} 班 ${s.sid} 號</span>
+      <div class="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden"><div class="${color} h-full rounded-full" style="width:${acc}%"></div></div>
+      <span class="w-10 text-right">${acc}%</span>
+    </div>`;
+  }).join("") + (list.length > 30 ? `<div class="text-xs text-slate-400 font-bold pt-1">只顯示頭 30 位（共 ${list.length} 位）</div>` : "");
   $("studentList").innerHTML = list.map(s => {
     const n = s.answers.length;
     const r = s.answers.filter(a => a.ok).length;
