@@ -1487,6 +1487,26 @@
         window.addEventListener('pageshow', resumeSharedAudio);
         document.addEventListener('pointerdown', resumeSharedAudio);
 
+        /* iOS 實機有時會將 AudioContext 卡死：resume 撳極都唔返，甚至扮 running 但 currentTime 唔再行 —
+           看門狗每 0.5 秒檢查：音樂播緊嗰陣時間唔行就先試 resume，連續 3 次都唔行就成個 context 換新（呢隻 game 每個音都係即時起 osc，換 context 就得） */
+        const sciAudioWatch = { lastT: -1, stuck: 0 };
+        setInterval(() => {
+            if (!sharedAudioCtx || !bgmPlaying) { sciAudioWatch.stuck = 0; if (sharedAudioCtx) sciAudioWatch.lastT = sharedAudioCtx.currentTime; return; }
+            const t = sharedAudioCtx.currentTime;
+            if (sharedAudioCtx.state === 'running' && t > sciAudioWatch.lastT + 0.001) sciAudioWatch.stuck = 0; else sciAudioWatch.stuck++;
+            sciAudioWatch.lastT = t;
+            if (sciAudioWatch.stuck >= 3) {
+                const old = sharedAudioCtx;
+                try {
+                    sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    sharedAudioCtx.resume().catch(() => {});
+                } catch (e) {}
+                if (old && old !== sharedAudioCtx && old.close) old.close().catch(() => {});
+                sciAudioWatch.stuck = 0;
+                sciAudioWatch.lastT = sharedAudioCtx ? sharedAudioCtx.currentTime : -1;
+            } else if (sharedAudioCtx.state !== 'running') resumeSharedAudio();
+        }, 500);
+
         function playSynthVoice(ctx, freq, startTime, durationSec, waveType, peakGain) {
             if (!ctx || !freq) return;
             const osc = ctx.createOscillator();
