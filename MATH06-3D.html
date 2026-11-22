@@ -60,6 +60,7 @@
 <!-- 卡彈提示 -->
 <div id="jamBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-rose-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC">🔫 卡彈！支槍要抖一抖…</div>
 <div id="warnBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC text-center whitespace-nowrap">⚠️ 唔好亂撞！用心諗清楚先好答<div class="text-sm sm:text-base font-bold mt-0.5">偵測到連續亂撞 — 今次卡彈 <span id="warnSec">3</span> 秒</div></div>
+<div id="idleBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl text-center whitespace-nowrap">⚠️ 幫手就嚟停火！快啲答題呀</div>
 
 <!-- 題目 + 四選一 -->
 <div id="panel" class="hidden fixed bottom-0 inset-x-0 z-20 px-3 pb-3">
@@ -231,10 +232,91 @@ const sfxHit   = ()=>{ beep(520,.08,"triangle",.06); beep(760,.1,"triangle",.05,
 const sfxHurt  = ()=>{ beep(220,.3,"sawtooth",.08); beep(150,.35,"sawtooth",.07,.08); };
 const sfxOver  = ()=>{ [440,349,293,220].forEach((f,i)=>beep(f,.25,"triangle",.07,i*.16)); };
 
+/* ================= 背景音樂（WebAudio 合成 loop：緊張電子風，跟戰況升級） ================= */
+const BGM = { on:false, step:0, nextT:0, timer:null, master:null, drum:null, lead:null, noiseBuf:null };
+const BGM_ROOTS = [55, 55, 43.65, 41.20];                                   // 每小節根音：A1 A1 F1 E1
+const BGM_ARPS  = [[220, 261.63, 329.63, 440], [220, 261.63, 329.63, 440],
+                   [174.61, 220, 261.63, 349.23], [164.81, 207.65, 246.94, 329.63]];   // Am / Am / F / E 琶音
+const BGM_ARP_PAT = [0, 1, 2, 3, 2, 1, 2, 3];
+function bgmTone(freq, t, dur, type, vol, dest){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + dur);
+}
+function bgmNoise(t, dur, vol, dest, freq){
+  if(!BGM.noiseBuf){
+    BGM.noiseBuf = AC.createBuffer(1, AC.sampleRate * .3, AC.sampleRate);
+    const d = BGM.noiseBuf.getChannelData(0);
+    for(let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = AC.createBufferSource(); src.buffer = BGM.noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = freq; f.Q.value = .8;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(dest); src.start(t); src.stop(t + dur);
+}
+function bgmKick(t){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(130, t);
+  o.frequency.exponentialRampToValueAtTime(42, t + .12);
+  g.gain.setValueAtTime(.5, t);
+  g.gain.exponentialRampToValueAtTime(.0001, t + .16);
+  o.connect(g); g.connect(BGM.drum); o.start(t); o.stop(t + .18);
+}
+function bgmStep(s, t){
+  const bar = (s / 8) | 0, st = s % 8, root = BGM_ROOTS[bar], arp = BGM_ARPS[bar];
+  bgmTone(st === 4 || st === 7 ? root * 2 : root, t, .22, "sawtooth", .13, BGM.master);        // 駕駛感 bass
+  if(st === 0 || st === 4) bgmTone(root, t, .3, "sine", .22, BGM.master);                        // sub 脈衝
+  bgmTone(arp[BGM_ARP_PAT[st]], t, .18, "triangle", .05, BGM.master);                            // 琶音墊底
+  if(st === 0){ bgmTone(root * 4, t, 1.6, "triangle", .028, BGM.master); bgmTone(root * 6, t, 1.6, "triangle", .02, BGM.master); }  // 小節和弦墊
+  // 以下係「激烈層」，由 drum/lead gain 控制（平時靜音）：第三階段或喪屍潮期間先出聲
+  if(st === 0 || st === 4) bgmKick(t);
+  if(st === 2 || st === 6) bgmNoise(t, .12, .3, BGM.drum, 1800);                                 // snare
+  if(st % 2 === 1) bgmNoise(t, .04, .12, BGM.drum, 7000);                                        // hi-hat
+  if(st % 2 === 0) bgmTone(arp[BGM_ARP_PAT[st]] * 2, t, .14, "square", .032, BGM.lead);          // 高八度 lead
+}
+function bgmTick(){
+  if(!BGM.on || !AC) return;
+  const intense = phaseOf(S.elapsed) >= 2 || S.elapsed < (S.waveBoostUntil || 0);
+  const t = AC.currentTime;
+  BGM.master.gain.setTargetAtTime(muted ? 0 : .4, t, .1);
+  BGM.drum.gain.setTargetAtTime(intense ? .85 : 0, t, .25);
+  BGM.lead.gain.setTargetAtTime(intense ? .8 : 0, t, .25);
+  while(BGM.nextT < t + .14){
+    bgmStep(BGM.step, BGM.nextT);
+    BGM.step = (BGM.step + 1) % 32;
+    BGM.nextT += 60 / 112 / 2;   // 112 BPM 八分音符
+  }
+}
+function startBGM(){
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if(AC.state === "suspended") AC.resume();
+    if(!BGM.master){
+      BGM.master = AC.createGain(); BGM.master.gain.value = 0; BGM.master.connect(AC.destination);
+      BGM.drum = AC.createGain(); BGM.drum.gain.value = 0; BGM.drum.connect(BGM.master);
+      BGM.lead = AC.createGain(); BGM.lead.gain.value = 0; BGM.lead.connect(BGM.master);
+    }
+    if(BGM.on) return;
+    BGM.on = true; BGM.step = 0; BGM.nextT = AC.currentTime + .08;
+    BGM.timer = setInterval(bgmTick, 27);
+  }catch(e){}
+}
+function stopBGM(){
+  BGM.on = false;
+  if(BGM.timer){ clearInterval(BGM.timer); BGM.timer = null; }
+  if(BGM.master && AC) BGM.master.gain.setTargetAtTime(0, AC.currentTime, .1);
+}
+
 /* ================= 題目 ================= */
 const PHASE_NAMES = ["第 1 階段：加減熱身","第 2 階段：乘數加入","第 3 階段：四則大混戰"];
 function killPhase(){ return S.playerKills >= 15 ? 2 : (S.playerKills >= 6 ? 1 : 0); }   // 擊殺階段：只計主角親手擊殺（6 隻入第 2、15 隻入第 3，2026-11-23 加快咗升階段）；幫手力度、出怪密度、喪屍血量跟呢個
 const ARMY_COST = 3;   // 儲滿 3 格能量可以叫一次軍隊支援（10 秒）
+const IDLE_LIMIT = 15;   // 15 秒冇答題（啱錯都計）→ 貓/無人機停火 + 自動系統暫停（2026-11-23 Nelson 定：防學生掛機唔死）
 function phaseOf(t){ return Math.max(killPhase(), S.elapsed >= 90 ? 2 : 0); }   // 題目階段：90 秒強制入第 3 階段，防學生掛機淨答加減；淨係影響題目類型同階段牌
 function genQuestion(elapsed){
   const ph = phaseOf(elapsed);
@@ -268,7 +350,7 @@ const S = {
   elapsed:0, spawnTimer:1, jamUntil:0, qNo:0,
   q:null, qStart:0, lastTry:0, lockUntil:0,
   weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, protDone:false, playerKills:0,
-  lastHurt:-99, regenT:0
+  lastHurt:-99, regenT:0, idleT:0
 };
 const BREACH_R = 2.6, SPAWN_R = 25, HERO_Y = 1.69;
 </script>
@@ -1839,6 +1921,7 @@ function triggerWave(){
   const n = 10 + (Math.random() * 4 | 0);
   for(let i = 0; i < n && zombies.length < 55; i++) spawnZombie();
   S.nextWave = S.elapsed + 35 + Math.random() * 30;   // 下一波：35–65 秒後隨機再嚟
+  S.waveBoostUntil = S.elapsed + 12;   // 喪屍潮期間 BGM 激烈層開 12 秒
 }
 function spawnZombie(){
   const g = buildZombieMesh();
@@ -1922,10 +2005,36 @@ function explodeGrenade(pos){
     if(z.position.distanceTo(pos) < 3.2) damageZombie(z, 2);
   }
 }
+let idleUiKey = "";
+function updateIdleBanner(){
+  const el = $('idleBanner');
+  if(!el) return;
+  let key = "hide", cls = "", html = "";
+  if(S.playing && !S.over){
+    const idle = S.idleT || 0;
+    if(idle >= IDLE_LIMIT){
+      key = "off";
+      cls = "bg-rose-600";
+      html = "🐱💤 幫手休息中 — 答一題，佢哋即刻返嚟幫你！";
+    } else if(idle >= IDLE_LIMIT - 5){
+      const left = Math.ceil(IDLE_LIMIT - idle);
+      key = "w" + left;
+      cls = "bg-amber-500";
+      html = "⚠️ 幫手就嚟停火！快啲答題呀（仲有 " + left + " 秒）";
+    }
+  }
+  if(key === idleUiKey) return;
+  idleUiKey = key;
+  if(key === "hide"){ el.classList.add('hidden'); return; }
+  el.className = "fixed left-1/2 top-[16%] -translate-x-1/2 z-30 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl text-center whitespace-nowrap " + cls;
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
 function autoActions(dt){
+  const helpOn = (S.idleT || 0) < IDLE_LIMIT;   // 掛機夠 15 秒：自動系統暫停（軍隊/保護士兵唔受影響，係獎勵同開局禮物）
   // 自動手榴彈：每 16 秒掉去最密嘅喪屍群
-  S.grenadeT -= dt;
-  if(S.grenadeT <= 0){
+  if(helpOn) S.grenadeT -= dt;
+  if(helpOn && S.grenadeT <= 0){
     let best = null, bestN = 1;
     for(const z of zombies){
       if(z.userData.dead) continue;
@@ -1939,7 +2048,7 @@ function autoActions(dt){
   // 自動冰封：多隻喪屍埋身就凍結減速 5 秒（冷卻 45 秒）
   if(S.freezeT > 0) S.freezeT -= dt;
   if(S.freezeCd > 0) S.freezeCd -= dt;
-  if(S.freezeCd <= 0 && S.freezeT <= 0){
+  if(helpOn && S.freezeCd <= 0 && S.freezeT <= 0){
     let near = 0;
     for(const z of zombies) if(!z.userData.dead && z.userData.rad < 13) near++;
     if(near >= 5){
@@ -1949,7 +2058,7 @@ function autoActions(dt){
   }
   $('freezeFx').style.opacity = S.freezeT > 0 ? 1 : 0;
   // 血量緩慢回復：冇俾喪屍打中（冇扣心）12 秒後，每 10 秒回一格
-  if(S.hearts < 5 && S.elapsed - S.lastHurt >= 12){
+  if(helpOn && S.hearts < 5 && S.elapsed - S.lastHurt >= 12){
     S.regenT += dt;
     if(S.regenT >= 10){
       S.regenT = 0;
@@ -1960,12 +2069,13 @@ function autoActions(dt){
   } else S.regenT = 0;
   // 自動補血：得返 2 格心或以下就補一格（冷卻 75 秒）
   if(S.healCd > 0) S.healCd -= dt;
-  if(S.healCd <= 0 && S.hearts > 0 && S.hearts <= 2){
+  if(helpOn && S.healCd <= 0 && S.hearts > 0 && S.hearts <= 2){
     S.hearts = Math.min(5, S.hearts + 1); S.healCd = 75;
     updateHUD();
     burst(new THREE.Vector3(0, HERO_Y + 2, 0), 0x69db7c);
     showToast("❤️ 自動補血 +1");
   }
+  updateIdleBanner();
 }
 function companionShoot(tip, target, color){
   sfxShoot();
@@ -2104,6 +2214,7 @@ function buildAnalysis(){
 
 function pickOption(btn){
   if(!S.playing || S.over) return;
+  S.idleT = 0;   // 有答題（啱錯都計）→ 掛機計時重置，幫手即刻返嚟
   const now = performance.now();
   if(now < S.jamUntil || now < S.lockUntil || btn.disabled) return;
   const chosen = parseInt(btn.dataset.val, 10);
@@ -2162,7 +2273,7 @@ function startGame(cls, sid){
                      elapsed:0, spawnTimer:1.0, nextWave:145 + Math.random()*15, phaseWarned:false, phaseJumped:false, jamUntil:0, qNo:0, lockUntil:0,
                      weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, playerKills:0,
                      lastHurt:-99, regenT:0, mistakes:[], tipT:0, guessStreak:0, qPicked:false,
-                     energy:0, firstStreak:0, armyT:0 });
+                     energy:0, firstStreak:0, armyT:0, idleT:0 });
   if(heroGun){ heroGun.scale.setScalar(1); heroGun.children[0].material.color.set(0xff922b); }
   for(const g of grenades) scene.remove(g.m);
   grenades.length = 0;
@@ -2177,6 +2288,7 @@ function startGame(cls, sid){
   placeCamera();
   setAutoRotate(true);   // 每局預設開自動轉（Nelson 指定嘅預設）
   updateHUD(); showQuestion();
+  startBGM();   // 背景音樂：緊張電子 loop，跟戰況升級（同一個靜音掣控制）
   for(const s of army) scene.remove(s.g);
   army = [];
   $("armyLabel").classList.add("hidden");
@@ -2185,7 +2297,7 @@ function startGame(cls, sid){
   showToast("🪖 新手保護期：軍隊會保護你 30 秒！");
 }
 function gameOver(){
-  S.over = true; S.playing = false; sfxOver();
+  S.over = true; S.playing = false; sfxOver(); stopBGM(); $('idleBanner').classList.add('hidden'); idleUiKey = "hide";
   $('ovTime').textContent = fmt(S.elapsed);
   $('ovKills').textContent = S.playerKills;   // 完場顯示都只計自己親手擊殺
   $('ovRight').textContent = S.right;
@@ -2383,6 +2495,7 @@ function animate(){
 
   if(S.playing && !S.over){
     S.elapsed += dt;
+    S.idleT = (S.idleT || 0) + dt;   // 掛機計時：15 秒冇答題就停幫手（pickOption 會重置）
     S.spawnTimer -= dt;
     if(S.spawnTimer <= 0) doSpawn();
     if(S.elapsed >= (S.nextWave || 1e9)) triggerWave();   // 約 2 分半開始，隨機出現喪屍潮
@@ -2475,7 +2588,7 @@ function animate(){
       }
     }
   }
-  if(S.playing && !S.over && target && compGunTip && droneTip){
+  if(S.playing && !S.over && target && compGunTip && droneTip && (S.idleT || 0) < IDLE_LIMIT){
     const iv = COMP_INTERVALS[killPhase()];
     compTimers.cat -= dt;
     if(compTimers.cat <= 0){ compTimers.cat = iv[0]; companionShoot(compGunTip, target, 0x7be0ff); }
