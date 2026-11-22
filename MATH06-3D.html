@@ -111,8 +111,8 @@
 <!-- 完場畫面 -->
 <div id="overScreen" class="hidden fixed inset-0 z-40 flex bg-slate-900/30 backdrop-blur-[2px] px-4 overflow-y-auto">
   <div class="bg-slate-900/70 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center m-auto">
-    <div class="text-5xl mb-1">🏰💥</div>
-    <h2 class="text-3xl font-black text-white">城堡失守啦！</h2>
+    <div class="text-5xl mb-1">🧟</div>
+    <h2 class="text-3xl font-black text-white">你已被感染了！</h2>
     <p class="text-slate-300 font-bold mt-1">不過你已經好努力守住咗 💪</p>
     <div class="grid grid-cols-2 gap-3 mt-5 text-left">
       <div class="bg-white/10 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⏱ 存活時間</div><div id="ovTime" class="text-2xl font-black text-white">0:00</div></div>
@@ -124,6 +124,7 @@
     <div id="ovAnalysis" class="mt-4 text-left"></div>
     <p id="sendStatus" class="text-xs text-slate-400 mt-3"></p>
     <button id="againBtn" class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 transition">再守一次 🔄</button>
+    <a id="homeBtn" href="https://cwcg-ctrl.github.io/yotps/" class="mt-3 w-full bg-white/10 hover:bg-white/20 text-white text-lg font-black py-3 rounded-2xl shadow transition flex items-center justify-center gap-2">🏠 回到首頁</a>
     <button id="csvBtn" class="mt-3 text-slate-300 underline text-sm font-bold">下載今次記錄（CSV）</button>
   </div>
 </div>
@@ -1944,6 +1945,17 @@ function nearestZombie(){
   for(const z of zombies){ if(!z.userData.dead && z.userData.rad < br){ br = z.userData.rad; best = z; } }
   return best;
 }
+function helperTarget(fromPos, avoid){
+  // 幫手自己揀目標：揀離自己最近嗰隻，盡量唔好同主角打同一隻（全場得返嗰隻嗰陣先重疊）— 製造各人望唔同方向打怪嘅感覺（2026-11-23 Nelson 要求）
+  let best = null, bd = 1e9, fb = null, fd = 1e9;
+  for(const z of zombies){
+    if(z.userData.dead) continue;
+    const d = z.position.distanceTo(fromPos);
+    if(z === avoid){ if(d < fd){ fd = d; fb = z; } continue; }
+    if(d < bd){ bd = d; best = z; }
+  }
+  return best || fb;
+}
 function shoot(target, dmg){
   sfxShoot();
   const from = new THREE.Vector3(); gunTip.getWorldPosition(from);
@@ -2133,7 +2145,18 @@ function breach(z){
   burst(z.position.clone().setY(1.2), 0xff8fa3);
   $('dmgFlash').style.opacity = 1;
   setTimeout(()=> $('dmgFlash').style.opacity = 0, 180);
-  if(S.hearts <= 0) gameOver();
+  if(S.hearts <= 0){
+    if((S.energy || 0) >= ARMY_COST && !(S.armyT > 0)){
+      // 滿能量臨死自動救援（2026-11-23 Nelson 要求 + 補充）：儲滿能量「仲未用過」先會自動啟動 — 軍隊已經出緊嗰陣唔觸發；觸發就能量用晒，軍隊支援自動開 + 回 1 格血，唔使死
+      S.hearts = 1;
+      S.energy = 0;
+      spawnArmy();
+      updateEnergyUI();
+      updateHUD();
+      burst(new THREE.Vector3(0, HERO_Y + 2, 0), 0x69db7c);
+      showToast("⚡🪖 緊急救援！軍隊到場 + 回 1 格血！");
+    } else gameOver();
+  }
 }
 
 /* ================= 題目 + 四選一 ================= */
@@ -2516,6 +2539,7 @@ function animate(){
   }
   // 主角瞄準最接近城堡嗰隻
   const target = nearestZombie();
+  let catTarget = null, droneTarget = null;   // 細貓同無人機各自嘅目標，唔再同主角同步望同一隻
   if(hero){
     if(target){
       const dx = target.position.x - hero.position.x, dz = target.position.z - hero.position.z;
@@ -2527,14 +2551,16 @@ function animate(){
   // AI 同伴：細貓企車頂一齊瞄準、無人機盤旋；自動射最近喪屍，介入跟三階段遞減
   if(compCat){
     compCat.position.y = HERO_Y + Math.sin(t * 2.2 + 1.2) * .04;
-    if(target) compCat.rotation.y = Math.atan2(target.position.x - compCat.position.x, target.position.z - compCat.position.z) + Math.PI;
+    catTarget = helperTarget(compCat.position, target);
+    if(catTarget) compCat.rotation.y = Math.atan2(catTarget.position.x - compCat.position.x, catTarget.position.z - compCat.position.z) + Math.PI;
     if(compTail) compTail.rotation.y = Math.sin(t * 3.1) * .3;
   }
   if(drone){
     droneAng += dt * .55;
     drone.position.set(Math.cos(droneAng) * 2.3, 4.25 + Math.sin(t * 1.8) * .25, Math.sin(droneAng) * 2.3);
     for(const r of droneRotors) r.rotation.y += dt * 42;
-    if(target) drone.rotation.y = Math.atan2(target.position.x - drone.position.x, target.position.z - drone.position.z) + Math.PI;
+    droneTarget = helperTarget(drone.position, target);
+    if(droneTarget) drone.rotation.y = Math.atan2(droneTarget.position.x - drone.position.x, droneTarget.position.z - drone.position.z) + Math.PI;
   }
   // 新手保護期：軍隊圍住玩家射擊，30 秒後撤退
   if(soldiers.length){
@@ -2591,10 +2617,10 @@ function animate(){
   if(S.playing && !S.over && target && compGunTip && droneTip && (S.idleT || 0) < IDLE_LIMIT){
     const iv = COMP_INTERVALS[killPhase()];
     compTimers.cat -= dt;
-    if(compTimers.cat <= 0){ compTimers.cat = iv[0]; companionShoot(compGunTip, target, 0x7be0ff); }
+    if(compTimers.cat <= 0){ compTimers.cat = iv[0]; companionShoot(compGunTip, catTarget || target, 0x7be0ff); }
     if(iv[1] !== Infinity){
       compTimers.drone -= dt;
-      if(compTimers.drone <= 0){ compTimers.drone = iv[1]; companionShoot(droneTip, target, 0xb2f2bb); }
+      if(compTimers.drone <= 0){ compTimers.drone = iv[1]; companionShoot(droneTip, droneTarget || target, 0xb2f2bb); }
     }
   }
   // 場景飛機：直升機同戰機得閒飛過（戰機留尾煙）
