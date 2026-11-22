@@ -231,7 +231,7 @@
                 <span class="text-[11px] font-black text-stone-500 shrink-0">航程</span>
                 <div class="grid grid-cols-2 gap-2 flex-1">
                     <button id="len60Btn" type="button" onclick="selectGameLength(60)" class="w-full py-2 px-3 rounded-xl border-2 border-amber-500 bg-gradient-to-r from-amber-50/95 to-orange-50/80 shadow-sm text-[13px] font-black text-stone-800 transition-all cursor-pointer">🏁 完整航程・60 格</button>
-                    <button id="len30Btn" type="button" onclick="selectGameLength(30)" class="w-full py-2 px-3 rounded-xl border-2 border-stone-200/90 bg-white/80 hover:bg-white text-[13px] font-black text-stone-800 transition-all cursor-pointer">⚡ 短局・30 格</button>
+                    <button id="len30Btn" type="button" onclick="selectGameLength(30)" class="w-full py-2 px-3 rounded-xl border-2 border-stone-200/90 bg-white/80 hover:bg-white text-[13px] font-black text-stone-800 transition-all cursor-pointer">⚡ 短局・全圖 31 站</button>
                 </div>
             </div>
 
@@ -528,7 +528,7 @@
             </div>
             <ul class="space-y-2.5 text-xs sm:text-sm text-stone-700 mb-5 leading-relaxed">
                 <li class="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                    <span class="font-black text-amber-900">1. 精準衝線規則：</span>由第 0 格出發，率先抵達並停在 <span class="font-bold">終點格</span> 者勝出（完整航程第 60 格／短局第 30 格，開始前揀）；若擲骰超過終點，多出的步數會向後折返。
+                    <span class="font-black text-amber-900">1. 精準衝線規則：</span>由第 0 格出發，率先抵達並停在 <span class="font-bold">終點格</span> 者勝出（完整航程：第 60 格／短局：雙數格消失，沿單數格飛全圖，第 60 格太空總署做終點）；若擲骰超過終點，多出的步數會向後折返。
                 </li>
                 <li class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
                     <span class="font-black text-emerald-900">2. 隨機三題科學挑戰：</span>每格均設有 3 條香港小學科學題隨機抽選！<span class="font-bold text-emerald-700">答對獎勵前進 1 格</span>並有機會獲得手牌；答錯則後退 1 格檢討。
@@ -1179,11 +1179,30 @@
             };
         }
 
+        // 短局抽題：全題庫 random，但用四範疇洗牌牌組輪流派，保證四瓣平均（Nelson 2026-11-23 要求）
+        function pickShortQuestion() {
+            if (!state.catDeck || state.catDeck.length === 0) {
+                state.catDeck = ['life', 'energy', 'earth', 'stem'];
+                for (let i = state.catDeck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [state.catDeck[i], state.catDeck[j]] = [state.catDeck[j], state.catDeck[i]];
+                }
+            }
+            const cat = state.catDeck.pop();
+            const tilesOfCat = BOARD_TILES.filter(t => t.cat === cat && t.questions && t.questions.length);
+            const srcTile = tilesOfCat[Math.floor(Math.random() * tilesOfCat.length)];
+            const q = pickRandomTileQuestion(srcTile);
+            return { ...q, cat, srcTileId: srcTile.id };
+        }
+
         // ==================== 3. 遊戲核心狀態與音效系統 ====================
         const state = {
             sessionId: 0,
             mode: 'ai',
             targetTile: 60,
+            gameLength: 'full',
+            stops: null,
+            catDeck: [],
             started: false,
             gameOver: false,
             isMoving: false,
@@ -1286,7 +1305,7 @@
                 const opts = state.activeQuizOpts || [];
                 const chosen = opts[selectedIdx] ? opts[selectedIdx].text : '';
                 const correctText = qObj.opts[qObj.ans];
-                const cat = tile.cat || 'stem';
+                const cat = qObj.cat || tile.cat || 'stem';
                 st.qn += 1;
                 const bc = st.byCat[cat] || (st.byCat[cat] = { r: 0, w: 0 });
                 if (isCorrect) { st.right += 1; bc.r += 1; }
@@ -1639,7 +1658,7 @@
             if (b60) b60.className = n === 60 ? onCls : offCls;
             if (b30) b30.className = n === 30 ? onCls : offCls;
             const tc = document.getElementById('targetChip');
-            if (tc) tc.textContent = `終點 ${n} 格`;
+            if (tc) tc.textContent = n === 30 ? '短局・終點 60 格' : '終點 60 格';
         }
 
         function selectGameMode(mode) {
@@ -1705,7 +1724,14 @@
         function startGame() {
             state.sessionId += 1;
             const currentSession = state.sessionId;
-            state.targetTile = selectedTarget;
+            // 短局（Nelson 2026-11-23 設計）：雙數格消失，淨單數格 + 第 60 格太空總署做停點，全圖 31 站；
+            // 完整模式就 0–60 逐格行。targetTile 永遠係 60（終點），長短局只係停點表唔同。
+            state.gameLength = selectedTarget === 30 ? 'short' : 'full';
+            state.targetTile = 60;
+            state.stops = state.gameLength === 'short'
+                ? [0, ...Array.from({ length: 30 }, (_, i) => i * 2 + 1), 60]
+                : Array.from({ length: 61 }, (_, i) => i);
+            state.catDeck = [];
 
             startBackgroundMusic();
             playTone(523.25, '16n');
@@ -1764,6 +1790,7 @@
             try {
                 initThreeScene();
                 applyLightingToScene();
+                applyStopVisibility();
                 resetCameraPan();
                 onWindowResize();
                 create3DPlayerTokens();
@@ -1774,11 +1801,16 @@
             }
 
             updateHUD();
-            showToast(`🛫 歡迎起飛！率先抵達第 ${state.targetTile} 格者勝出！`);
+            showToast(state.gameLength === 'short'
+                ? '🛫 短局起飛！雙數格已消失，全圖 31 個站，率先抵達太空總署者勝出！'
+                : `🛫 歡迎起飛！率先抵達第 ${state.targetTile} 格者勝出！`);
         }
 
         function resetGameToMenu() {
             state.sessionId += 1;
+            state.stops = Array.from({ length: 61 }, (_, i) => i);
+            state.gameLength = 'full';
+            applyStopVisibility();
             document.getElementById('victoryModal').classList.add('hidden');
             document.getElementById('quizModal').classList.add('hidden');
             document.getElementById('questionBankModal').classList.add('hidden');
@@ -1809,14 +1841,17 @@
             const p0 = state.players[0];
             const p1 = state.players[1];
 
-            document.getElementById('p1PosText').textContent = `${p0.pos} / ${state.targetTile}`;
-            document.getElementById('p1ProgressBar').style.width = `${Math.max(3, (p0.pos / state.targetTile) * 100)}%`;
+            const stopsArr = (state.stops && state.stops.length) ? state.stops : Array.from({ length: 61 }, (_, i) => i);
+            const stopIdxOf = p => Math.max(0, stopsArr.indexOf(p.pos));
+            const isShort = state.gameLength === 'short';
+            document.getElementById('p1PosText').textContent = isShort ? `${stopIdxOf(p0)} / ${stopsArr.length - 1} 站` : `${p0.pos} / 60`;
+            document.getElementById('p1ProgressBar').style.width = `${Math.max(3, (stopIdxOf(p0) / (stopsArr.length - 1)) * 100)}%`;
 
-            document.getElementById('p2PosText').textContent = `${p1.pos} / ${state.targetTile}`;
-            document.getElementById('p2ProgressBar').style.width = `${Math.max(3, (p1.pos / state.targetTile) * 100)}%`;
+            document.getElementById('p2PosText').textContent = isShort ? `${stopIdxOf(p1)} / ${stopsArr.length - 1} 站` : `${p1.pos} / 60`;
+            document.getElementById('p2ProgressBar').style.width = `${Math.max(3, (stopIdxOf(p1) / (stopsArr.length - 1)) * 100)}%`;
 
             const targetChipEl = document.getElementById('targetChip');
-            if (targetChipEl) targetChipEl.textContent = `終點 ${state.targetTile} 格`;
+            if (targetChipEl) targetChipEl.textContent = isShort ? '短局・終點 60 格' : `終點 ${state.targetTile} 格`;
 
             const curP = state.players[state.currentPlayerIdx];
             const p1Badge = document.getElementById('p1Badge');
@@ -2007,7 +2042,7 @@
                 const dvEl = document.getElementById('diceValueDisplay');
                 dvEl.textContent = totalSteps;
                 dvEl.classList.remove('num-pop'); void dvEl.offsetWidth; dvEl.classList.add('num-pop');
-                showToast(`🎲 ${curP.name} 擲出 ${rawRoll} 點，總共前進 ${totalSteps} 格！`);
+                showToast(`🎲 ${curP.name} 擲出 ${rawRoll} 點，總共前進 ${totalSteps} ${state.gameLength === 'short' ? '站' : '格'}！`);
                 movePlayerAlongTrack(curP, totalSteps);
             }, 680);
         }
@@ -2022,21 +2057,24 @@
 
         function movePlayerAlongTrack(player, steps, onArrivalCallback = null) {
             const currentSession = state.sessionId;
+            // 沿停點表行：完整模式停點 = 逐格；短局停點 = 單數格 + 終點（雙數格消失）
+            const stops = (state.stops && state.stops.length) ? state.stops : Array.from({ length: 61 }, (_, i) => i);
             const tilePath = [player.pos];
-            let simPos = player.pos;
+            let stopIdx = stops.indexOf(player.pos);
+            if (stopIdx < 0) stopIdx = 0;
             let direction = steps >= 0 ? 1 : -1;
             let remaining = Math.abs(steps);
 
             while (remaining > 0) {
-                simPos += direction;
-                if (simPos > state.targetTile) {
-                    simPos = state.targetTile - 1;
+                stopIdx += direction;
+                if (stopIdx >= stops.length) {
+                    stopIdx = stops.length - 2;
                     direction = -1;
-                } else if (simPos < 0) {
-                    simPos = 0;
+                } else if (stopIdx < 0) {
+                    stopIdx = 0;
                     break;
                 }
-                tilePath.push(simPos);
+                tilePath.push(stops[stopIdx]);
                 remaining--;
             }
 
@@ -2090,14 +2128,15 @@
         // ==================== 6. 60 格隨機三題科學問答與勝負結算系統 ====================
         function openQuizModal(player, tile) {
             const currentSession = state.sessionId;
-            const qObj = pickRandomTileQuestion(tile);
+            const isShort = state.gameLength === 'short';
+            const qObj = isShort ? pickShortQuestion() : pickRandomTileQuestion(tile);
             state.activeQuizTile = tile;
             state.activeQuizQuestion = qObj;
             state.activeQuizPlayer = player;
             state.quizAnswered = false;
             state.quizOpenAt = Date.now();
 
-            const catInfo = CATEGORIES[tile.cat] || CATEGORIES.stem;
+            const catInfo = CATEGORIES[qObj.cat || tile.cat] || CATEGORIES.stem;
             const modal = document.getElementById('quizModal');
             const topStripe = document.getElementById('quizTopStripe');
             const catBadge = document.getElementById('quizCategoryBadge');
@@ -2113,10 +2152,10 @@
             catBadge.textContent = catInfo.name;
             if (tile.isChance) {
                 tileBadge.className = 'px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-xs font-black text-amber-900';
-                tileBadge.textContent = `第 ${tile.id} 格・🃏 機會挑戰 (${qObj.qIndex + 1}/${qObj.totalForTile})`;
+                tileBadge.textContent = isShort ? `第 ${tile.id} 格・🃏 機會挑戰・🎲 隨機題目` : `第 ${tile.id} 格・🃏 機會挑戰 (${qObj.qIndex + 1}/${qObj.totalForTile})`;
             } else {
                 tileBadge.className = 'px-2.5 py-1 rounded-lg bg-stone-100 text-xs font-black text-stone-600';
-                tileBadge.textContent = `第 ${tile.id} 格・題 ${qObj.qIndex + 1}/${qObj.totalForTile}`;
+                tileBadge.textContent = isShort ? `第 ${tile.id} 格・🎲 全題庫隨機題目` : `第 ${tile.id} 格・題 ${qObj.qIndex + 1}/${qObj.totalForTile}`;
             }
             titleEl.textContent = tile.title;
             qTextEl.textContent = qObj.q;
@@ -2260,7 +2299,9 @@
             }
 
             const bonusStep = isCorrect ? 1 : -1;
-            const targetPos = Math.max(0, Math.min(state.targetTile, player.pos + bonusStep));
+            const stopsArr = (state.stops && state.stops.length) ? state.stops : Array.from({ length: 61 }, (_, i) => i);
+            const curStopIdx = Math.max(0, stopsArr.indexOf(player.pos));
+            const targetPos = stopsArr[Math.max(0, Math.min(stopsArr.length - 1, curStopIdx + bonusStep))];
 
             if (targetPos !== player.pos) {
                 startContinuousFlight(player, [player.pos, targetPos], () => {
@@ -4665,6 +4706,15 @@
             diceAnim.targetQuat = new THREE.Quaternion().setFromEuler(targetEuler);
         }
 
+        // 短局模式將雙數格（停點表以外）嘅棋盤格隱藏，完整模式全部顯示
+        function applyStopVisibility() {
+            if (!tileClickMeshes || !tileClickMeshes.length) return;
+            const stops = (state.stops && state.stops.length) ? state.stops : Array.from({ length: 61 }, (_, i) => i);
+            for (const m of tileClickMeshes) {
+                m.visible = stops.includes(m.userData.tileId);
+            }
+        }
+
         function startContinuousFlight(player, tilePath, onComplete) {
             const token = playerTokens[player.id];
             const finalTile = tilePath[tilePath.length - 1];
@@ -4855,7 +4905,7 @@
                     pointerNDC.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
                     raycaster.setFromCamera(pointerNDC, camera);
-                    const hits = raycaster.intersectObjects(tileClickMeshes, false);
+                    const hits = raycaster.intersectObjects(tileClickMeshes.filter(m => m.visible), false);
                     if (hits.length > 0) {
                         const tileId = hits[0].object.userData.tileId;
                         const tile = BOARD_TILES[tileId];
