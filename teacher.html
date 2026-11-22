@@ -44,7 +44,7 @@
     <span class="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow text-sm font-bold text-slate-500"><span class="livedot"></span>即時更新中</span>
     <span class="flex-1"></span>
     <span id="whoami" class="text-sm font-bold text-slate-500"></span>
-    <button id="clearBtn" class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold rounded-full px-4 py-2 shadow text-sm">🗑 剷除全部數據</button>
+    <button id="clearBtn" class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold rounded-full px-4 py-2 shadow text-sm">🗑 剷除已篩選數據</button>
     <button id="csvBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-full px-4 py-2 shadow text-sm">⬇ 匯出 CSV</button>
     <button id="logoutBtn" class="bg-white hover:bg-slate-50 font-bold rounded-full px-4 py-2 shadow text-sm">登出</button>
   </div>
@@ -58,7 +58,7 @@
     <select id="clsFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
       <option value="">全部班別</option>
     </select>
-    <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。</span>
+    <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。「剷除已篩選數據」會照而家揀咗嘅遊戲 + 班別嚟刪。</span>
   </div>
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -123,7 +123,7 @@ if(!FIREBASE_CONFIG){
   $("logoutBtn").addEventListener("click", ()=> firebase.auth().signOut());
   $("gameFilter").addEventListener("change", render);
   $("clsFilter").addEventListener("change", render);
-  $("clearBtn").addEventListener("click", clearAll);
+  $("clearBtn").addEventListener("click", deleteFiltered);
   $("studentList").addEventListener("click", e => {
     const b = e.target.closest(".delBtn");
     if(b) deleteSession(b.dataset.del);
@@ -249,11 +249,15 @@ async function deleteSession(key){
   try{ await deleteDocs(s.ids); }
   catch(e){ alert("剷除失敗：" + e.message + "\n（如果係權限問題，請跟《設定Firebase_步驟.md》更新 Firestore 規則，容許登入後刪除。）"); }
 }
-async function clearAll(){
-  if(!allRows.length){ alert("而家冇數據可以剷除。"); return; }
-  if(!confirm(`⚠️ 確定要剷除畫面上全部 ${allRows.length} 行數據？\n所有遊戲、所有學生嘅記錄都會冇晒，刪咗冇得復原。`)) return;
-  if(!confirm("再確認一次：真係全部剷除？")) return;
-  try{ await deleteDocs(allRows.map(r => r._id).filter(Boolean)); }
+async function deleteFiltered(){
+  const f = $("clsFilter").value, gf = $("gameFilter").value;
+  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf));
+  const ids = list.flatMap(s => s.ids);
+  if(!ids.length){ alert("而家篩選條件之下冇數據可以剷除。"); return; }
+  const scope = (gf ? gameLabel(gf) : "全部遊戲") + "・" + (f ? f + " 班" : "全部班別");
+  if(!confirm(`⚠️ 確定要剷除【${scope}】嘅全部記錄？\n共 ${list.length} 場、${ids.length} 行，刪咗冇得復原。`)) return;
+  if(!confirm("再確認一次：真係剷除呢批？")) return;
+  try{ await deleteDocs(ids); }
   catch(e){ alert("剷除失敗：" + e.message + "\n（如果係權限問題，請跟《設定Firebase_步驟.md》更新 Firestore 規則，容許登入後刪除。）"); }
 }
 function exportCSV(){
