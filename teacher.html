@@ -242,10 +242,24 @@ function render(flash){
   const f = $("clsFilter").value, gf = $("gameFilter").value, df = $("dateFilter").value;
   const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf) && (!df || dateKey(s.last) === df));
   const accOf = s => s.answers.length ? Math.round(s.answers.filter(a => a.ok).length / s.answers.length * 100) : 0;
-  const scoreOf = s => s.session ? (s.session.score ?? s.session.kills ?? accOf(s)) : accOf(s);
+  // 成績排序規則：未完成（冇 session 成績）一律排最後，唔好用正確率扮成績撈亂；
+  // 揀咗「全部遊戲」嗰陣各遊戲計分唔同（擊殺／分數冇得直接比），改用正確率統一比較；單一遊戲就用返嗰隻遊戲嘅成績
+  const multiGame = new Set(list.map(s => s.game)).size > 1;
+  const scoreOf = s => {
+    if(!s.session) return null;
+    if(multiGame) return s.session.acc ?? accOf(s);
+    return s.session.score ?? s.session.kills ?? s.session.acc ?? accOf(s);
+  };
   const sortMode = $("sortSel").value;
-  if(sortMode === "scoreDesc") list.sort((a,b)=> scoreOf(b) - scoreOf(a) || b.last - a.last);
-  else if(sortMode === "scoreAsc") list.sort((a,b)=> scoreOf(a) - scoreOf(b) || b.last - a.last);
+  const byScore = dir => (a, b) => {
+    const x = scoreOf(a), y = scoreOf(b);
+    if(x == null && y == null) return b.last - a.last;
+    if(x == null) return 1;
+    if(y == null) return -1;
+    return (x - y) * dir || b.last - a.last;
+  };
+  if(sortMode === "scoreDesc") list.sort(byScore(-1));
+  else if(sortMode === "scoreAsc") list.sort(byScore(1));
   const ans = list.flatMap(s => s.answers);
   const right = ans.filter(a => a.ok).length;
   $("stSessions").textContent = list.length;
