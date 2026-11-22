@@ -248,6 +248,7 @@ function render(flash){
   const scoreOf = s => {
     if(!s.session) return null;
     if(multiGame) return s.session.acc ?? accOf(s);
+    if(s.game === "zombie-math-3d") return s.session.right ?? s.answers.filter(a => a.ok).length;   // 喪屍城用「答啱總題數」排名
     return s.session.score ?? s.session.kills ?? s.session.acc ?? accOf(s);
   };
   const sortMode = $("sortSel").value;
@@ -284,7 +285,7 @@ function render(flash){
     const acc = n ? Math.round(r / n * 100) : 0;
     const fast = s.answers.filter(a => (a.ms||0) < 800).length;
     const playing = !s.session && (Date.now() - s.last < 90000);
-    const metric = s.session ? (s.session.kills != null ? "擊倒 " + s.session.kills : (s.session.score != null ? "分數 " + s.session.score : "")) : "";
+    const metric = s.session ? (s.game === "zombie-math-3d" ? "答啱 " + (s.session.right ?? s.right) + " 題" + (s.session.kills != null ? "・擊倒 " + s.session.kills : "") : (s.session.score != null ? "分數 " + s.session.score : (s.session.kills != null ? "擊倒 " + s.session.kills : ""))) : "";
     const status = s.session
       ? `<span class="bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full text-xs font-black">✅ 已完成・${s.session.seconds || 0} 秒${metric ? "・" + metric : ""}</span>`
       : (playing ? `<span class="bg-rose-100 text-rose-500 dark:bg-rose-900/50 dark:text-rose-300 px-2.5 py-1 rounded-full text-xs font-black">🔴 玩緊</span>`
