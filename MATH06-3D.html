@@ -297,7 +297,7 @@ function cyl(rt,rb,h,c,x,y,z,parent,seg,opts){
 }
 /* ================= 鏡頭（可自由轉角度 + 自動旋轉） ================= */
 function defaultRad(){ return innerWidth / innerHeight < .9 ? 68 : 52.5; }   // 直向（iPad 直放）自動拉遠啲，睇晒成個路口
-const Cam = { az: 0, pol: .5, rad: 52.5, auto: false };
+const Cam = { az: 0, pol: .5, rad: 52.5, auto: false, autoAz: 0, autoRad: 52.5 };
 Cam.rad = defaultRad();
 function placeCamera(){
   const k = camera.aspect < .9 ? 1.45 : 1;   // 直屏（平板/電話）拉遠啲
@@ -312,6 +312,7 @@ function placeCamera(){
 }
 function setAutoRotate(on){
   Cam.auto = on;
+  if(on){ Cam.autoAz = Cam.az; Cam.autoRad = Cam.rad; }   // 以而家嘅角度/距離做搖擺中心
   $('rotBtn').classList.toggle('bg-indigo-500', on);
   $('rotBtn').classList.toggle('text-white', on);
   $('rotBtn').classList.toggle('bg-white/85', !on);
@@ -1845,11 +1846,12 @@ function animate(){
   const dt = Math.min(clock.getDelta(), .05);
   const t = clock.elapsedTime;
   if(Cam.auto){
-    // 電影感運鏡：環繞 + 緩慢上下搖 + 拉近拉遠（平滑追蹤目標值，開關都唔會跳）
-    Cam.az += dt * .22;
+    // 慢鏡運鏡：唔再不停旋轉 — 以開啟嗰陣嘅角度為中心輕輕左右搖擺，
+    // 主力係緩慢拉近拉遠 + 角度微調，睇得舒服唔頭暈（平滑追蹤目標值，開關都唔會跳）
     const blend = Math.min(1, dt * 1.4);
-    Cam.pol += ((.68 + Math.sin(t * .16) * .26) - Cam.pol) * blend;
-    Cam.rad += ((46 + Math.sin(t * .11 + 1.3) * 9) - Cam.rad) * blend;
+    Cam.az  += ((Cam.autoAz + Math.sin(t * .05) * .45) - Cam.az) * blend;
+    Cam.pol += ((.62 + Math.sin(t * .07) * .16) - Cam.pol) * blend;
+    Cam.rad += ((Cam.autoRad * (1 + Math.sin(t * .06 + 1.3) * .13)) - Cam.rad) * blend;
   }
   placeCamera();
   for(const c of clouds){ c.position.x += dt * .35; if(c.position.x > 55) c.position.x = -55; }
