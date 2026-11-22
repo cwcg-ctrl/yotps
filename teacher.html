@@ -91,6 +91,13 @@
     <div id="chartBars" class="space-y-2"></div>
   </div>
 
+  <div id="weakBox" class="hidden bg-white dark:bg-slate-800 rounded-2xl shadow p-4 mb-5">
+    <div class="text-sm font-black text-slate-500 dark:text-slate-400 mb-1">🎯 全班弱點分布（跟而家嘅篩選）</div>
+    <div id="weakSummary" class="text-sm font-bold text-rose-500 dark:text-rose-300 mb-3"></div>
+    <div id="weakBars" class="space-y-2"></div>
+    <div id="weakStudents" class="mt-3 flex flex-wrap gap-1.5"></div>
+  </div>
+
   <div id="studentList" class="space-y-3"></div>
   <p id="emptyMsg" class="hidden text-center text-slate-400 font-bold py-10">暫時未有數據 — 學生開始玩之後，呢度會即時出現。</p>
 </div>
@@ -279,6 +286,51 @@ function render(flash){
       <span class="w-10 text-right">${acc}%</span>
     </div>`;
   }).join("") + (list.length > 30 ? `<div class="text-xs text-slate-400 font-bold pt-1">只顯示頭 30 位（共 ${list.length} 位）</div>` : "");
+  // 🎯 全班弱點分布：由篩選後嘅答案即時匯總 — 科學遊戲用答案嘅 cat 分類；喪屍城冇 cat，
+  // 就由題目文字拆運算（格式如「52 − 19」），乘數表規則同遊戲本身 analysisData 一致（× 計兩邊、÷ 計除數）
+  const CAT_NAMES = { life: "🌱 生命與環境", energy: "⚡ 物質、能量和變化", earth: "🌍 地球與太空", stem: "🚀 科學、科技、工程與社會" };
+  const OP_NAMES = { "+": "加數", "-": "減數", "−": "減數", "×": "乘數", "÷": "除數" };
+  const groups = {}, tables = {};
+  const addG = (key, label, ok) => { const g = groups[key] || (groups[key] = { label, n: 0, wrong: 0 }); g.n++; if(!ok) g.wrong++; };
+  for(const a of ans){
+    if(a.cat && CAT_NAMES[a.cat]) addG("cat:" + a.cat, CAT_NAMES[a.cat], a.ok);
+    else if(a.q){
+      const m = String(a.q).match(/(\d+)\s*([+−\-×÷])\s*(\d+)/);
+      if(m){
+        addG("op:" + m[2], OP_NAMES[m[2]] || m[2], a.ok);
+        if(!a.ok && (m[2] === "×" || m[2] === "÷")){
+          const x = +m[1], y = +m[3];
+          if(m[2] === "×"){ tables[x] = (tables[x] || 0) + 1; tables[y] = (tables[y] || 0) + 1; }
+          else tables[y] = (tables[y] || 0) + 1;
+        }
+      }
+    }
+  }
+  const gList = Object.values(groups).filter(g => g.n > 0).sort((a, b) => b.wrong - a.wrong);
+  const totalWrong = ans.filter(a => !a.ok).length;
+  $("weakBox").classList.toggle("hidden", !gList.length);
+  if(gList.length){
+    const worst = gList[0];
+    const tEnt = Object.entries(tables).sort((a, b) => b[1] - a[1])[0];
+    $("weakSummary").textContent = totalWrong
+      ? `全班共錯 ${totalWrong} 題，最多錯係「${worst.label}」：錯 ${worst.wrong} 次，佔全班錯題 ${Math.round(worst.wrong / totalWrong * 100)}%${tEnt ? `；乘數表最弱係 ${tEnt[0]} 的乘數表（涉及錯題 ${tEnt[1]} 次）` : ""} — 下一課可以重點教呢瓣。`
+      : "全班冇答錯，勁！🎉";
+    $("weakBars").innerHTML = gList.map(g => {
+      const acc = Math.round((g.n - g.wrong) / g.n * 100);
+      const color = acc >= 80 ? "bg-emerald-400" : (acc >= 50 ? "bg-amber-400" : "bg-rose-400");
+      return `<div class="flex items-center gap-2 text-xs font-bold">
+        <span class="w-32 sm:w-44 shrink-0 truncate text-slate-500 dark:text-slate-400">${g.label}</span>
+        <div class="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-4 overflow-hidden"><div class="${color} h-full rounded-full" style="width:${acc}%"></div></div>
+        <span class="w-32 text-right shrink-0 whitespace-nowrap">正確率 ${acc}%・錯 ${g.wrong}/${g.n}</span>
+      </div>`;
+    }).join("");
+    const weakCount = {};
+    for(const s of list){ const w = s.session && s.session.weakOp; if(w) weakCount[w] = (weakCount[w] || 0) + 1; }
+    $("weakStudents").innerHTML = Object.entries(weakCount).sort((a, b) => b[1] - a[1]).map(([w, c]) => {
+      const label = Object.values(CAT_NAMES).find(v => v.endsWith(w)) || OP_NAMES[w] || w;
+      return `<span class="bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300 px-2.5 py-1 rounded-full text-xs font-black">弱點係「${label}」：${c} 位學生</span>`;
+    }).join("");
+  }
   $("studentList").innerHTML = list.map(s => {
     const n = s.answers.length;
     const r = s.answers.filter(a => a.ok).length;
