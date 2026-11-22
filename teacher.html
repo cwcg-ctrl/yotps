@@ -113,6 +113,7 @@ const gameLabel = id => GAME_NAMES[id] || ("🎮 " + (id || "未命名遊戲"));
 
 const $ = id => document.getElementById(id);
 let db = null, allRows = [], unsub = null;
+const expandedKeys = new Set();   // 記住邊啲學生卡展開咗，即時更新重畫嗰陣唔好收埋人哋睇緊嗰張
 
 if(!FIREBASE_CONFIG){
   $("notConfigured").classList.remove("hidden");
@@ -155,7 +156,16 @@ if(!FIREBASE_CONFIG){
   $("clearBtn").addEventListener("click", deleteFiltered);
   $("studentList").addEventListener("click", e => {
     const b = e.target.closest(".delBtn");
-    if(b) deleteSession(b.dataset.del);
+    if(b){ deleteSession(b.dataset.del); return; }
+    const h = e.target.closest(".cardHead");
+    if(h){
+      const key = h.dataset.k;
+      const d = document.getElementById("d_" + key.replace(/[^a-zA-Z0-9]/g, "_"));
+      if(d){
+        const nowHidden = d.classList.toggle("hidden");
+        if(nowHidden) expandedKeys.delete(key); else expandedKeys.add(key);
+      }
+    }
   });
   $("csvBtn").addEventListener("click", exportCSV);
 }
@@ -276,7 +286,7 @@ function render(flash){
          <td class="py-1.5">${a.ms} ms ${(a.ms||0) < 800 ? "⚡" : ""}</td>
        </tr>`).join("");
     return `<div class="bg-white dark:bg-slate-800 rounded-2xl shadow overflow-hidden">
-      <button class="w-full flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50" onclick="document.getElementById('d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}').classList.toggle('hidden')">
+      <button class="cardHead w-full flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50" data-k="${s.key.replace(/"/g, "&quot;")}">
         <span class="font-black text-lg">${s.cls} 班 ${s.sid} 號</span>
         <span class="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/60 dark:text-indigo-300 px-2.5 py-1 rounded-full text-xs font-black">${gameLabel(s.game)}</span>
         ${status}
@@ -287,7 +297,7 @@ function render(flash){
         <span class="flex-1"></span>
         <span class="text-xs font-bold text-slate-400">最後活動 ${fmtClock(s.last)}</span>
       </button>
-      <div id="d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}" class="hidden px-4 pb-3">
+      <div id="d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}" class="${expandedKeys.has(s.key) ? "" : "hidden"} px-4 pb-3">
         <table class="w-full text-sm">
           <tr class="text-left text-slate-400 text-xs"><th class="pr-2">#</th><th class="pr-2">題目</th><th class="pr-2">揀咗</th><th class="pr-2">答案</th><th class="pr-2">對錯</th><th>用時</th></tr>
           ${detail || '<tr><td colspan="6" class="py-2 text-slate-400 font-bold">未有答題記錄</td></tr>'}
