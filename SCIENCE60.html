@@ -226,6 +226,15 @@
                 </button>
             </div>
 
+            <!-- 航程長度選擇：完整 60 格 / 短局 30 格 -->
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-[11px] font-black text-stone-500 shrink-0">航程</span>
+                <div class="grid grid-cols-2 gap-2 flex-1">
+                    <button id="len60Btn" type="button" onclick="selectGameLength(60)" class="w-full py-2 px-3 rounded-xl border-2 border-amber-500 bg-gradient-to-r from-amber-50/95 to-orange-50/80 shadow-sm text-[13px] font-black text-stone-800 transition-all cursor-pointer">🏁 完整航程・60 格</button>
+                    <button id="len30Btn" type="button" onclick="selectGameLength(30)" class="w-full py-2 px-3 rounded-xl border-2 border-stone-200/90 bg-white/80 hover:bg-white text-[13px] font-black text-stone-800 transition-all cursor-pointer">⚡ 短局・30 格</button>
+                </div>
+            </div>
+
             <!-- 步驟一行動列：下一步（去填班別學號）+ 題目庫 -->
             <div id="step1Actions" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                 <button id="nextStepBtn" type="button" onclick="goStep2()" class="sm:col-span-8 btn-3d w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-white font-black text-base tracking-wide flex items-center justify-between cursor-pointer group">
@@ -356,7 +365,7 @@
                         <div id="currentTileName" class="text-sm sm:text-base font-black text-stone-900 leading-snug">
                             起點 (第 0 格)
                         </div>
-                        <span class="ml-auto shrink-0 px-1.5 py-0.5 rounded-md bg-stone-100 text-[10px] font-black text-stone-500">終點 60 格</span>
+                        <span id="targetChip" class="ml-auto shrink-0 px-1.5 py-0.5 rounded-md bg-stone-100 text-[10px] font-black text-stone-500">終點 60 格</span>
                     </div>
                     <div id="turnBannerText" class="mt-1 inline-block text-[11px] sm:text-xs font-bold text-teal-800 bg-teal-100/90 px-2 py-0.5 rounded-full">紅機隊，輪到你</div>
                     <div class="hidden md:block mt-1.5 text-[10px] font-semibold text-stone-400">🖐️ 拖曳地圖平移視角・🔍 點擊航點預覽該格 3 條科學題</div>
@@ -432,7 +441,7 @@
 
                     <div class="flex items-center gap-2.5 sm:w-72 shrink-0">
                         <div class="w-14 h-13 rounded-2xl bg-[#efe9dc] border-2 border-[#d6ccb8] shadow-inner flex flex-col items-center justify-center shrink-0 py-1">
-                            <span class="text-[10px] font-extrabold text-stone-500 uppercase">步數</span>
+                            <span class="text-[10px] font-extrabold text-stone-500 uppercase">剩餘步數</span>
                             <span id="diceValueDisplay" class="text-xl font-black text-stone-900 leading-tight">•</span>
                         </div>
                         <button id="rollDiceBtn" type="button" onclick="handleRollDice()" class="btn-3d flex-1 py-3 sm:py-3.5 px-5 rounded-2xl bg-[#115e59] hover:bg-[#0f766e] text-white font-black text-base flex items-center justify-center gap-2 cursor-pointer">
@@ -519,7 +528,7 @@
             </div>
             <ul class="space-y-2.5 text-xs sm:text-sm text-stone-700 mb-5 leading-relaxed">
                 <li class="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                    <span class="font-black text-amber-900">1. 精準衝線規則：</span>由第 0 格出發，率先抵達並停在 <span class="font-bold">第 60 格</span> 者勝出；若擲骰超過 60 格，多出的步數會向後折返。
+                    <span class="font-black text-amber-900">1. 精準衝線規則：</span>由第 0 格出發，率先抵達並停在 <span class="font-bold">終點格</span> 者勝出（完整航程第 60 格／短局第 30 格，開始前揀）；若擲骰超過終點，多出的步數會向後折返。
                 </li>
                 <li class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
                     <span class="font-black text-emerald-900">2. 隨機三題科學挑戰：</span>每格均設有 3 條香港小學科學題隨機抽選！<span class="font-bold text-emerald-700">答對獎勵前進 1 格</span>並有機會獲得手牌；答錯則後退 1 格檢討。
@@ -541,7 +550,7 @@
             <div class="w-20 h-20 rounded-3xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-5xl mx-auto mb-3 shadow-sm">
                 🏆
             </div>
-            <div class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold mb-2">
+            <div id="winnerChip" class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold mb-2">
                 成功抵達第 60 格・香港創科太空總署
             </div>
             <h2 id="winnerTitle" class="text-2xl sm:text-3xl font-black text-stone-800 mb-2">
@@ -551,8 +560,11 @@
                 你憑藉出色的香港小學科學知識與飛行策略，率先完成科學探索之旅！
             </p>
             <div id="victoryAnalysis" class="text-left"></div>
-            <button type="button" onclick="resetGameToMenu()" class="btn-3d w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-base cursor-pointer">
-                🔄 返回封面主選單再玩一局
+            <button type="button" onclick="startGame()" class="btn-3d w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-base cursor-pointer mb-2">
+                🔁 再來一局（同樣設定）
+            </button>
+            <button type="button" onclick="resetGameToMenu()" class="w-full py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-600 font-black text-sm border border-stone-200 transition cursor-pointer">
+                🔄 返回封面主選單
             </button>
         </div>
     </div>
@@ -631,7 +643,7 @@
         const CARD_TEMPLATES = [
             { id: 'plus1', icon: '🔧', name: '精準微調儀', desc: '本回合步數 +1', type: 'modStep', value: 1 },
             { id: 'plus3', icon: '🚀', name: '磁浮推進器', desc: '本回合步數 +3', type: 'modStep', value: 3 },
-            { id: 'minus1', icon: '🪂', name: '氣動減速傘', desc: '本回合步數 -1', type: 'modStep', value: -1 },
+            { id: 'minus1', icon: '🪂', name: '氣動減速傘', desc: '本回合步數 -1（唔想衝過終點嗰陣用）', type: 'modStep', value: -1 },
             { id: 'double', icon: '☀️', name: '太陽能增幅器', desc: '擲骰點數 ×2', type: 'doubleDice', value: 2 }
         ];
 
@@ -1171,6 +1183,7 @@
         const state = {
             sessionId: 0,
             mode: 'ai',
+            targetTile: 60,
             started: false,
             gameOver: false,
             isMoving: false,
@@ -1544,6 +1557,27 @@
             playSynthVoice(ctx, freqVal, ctx.currentTime, durSec, wave, 0.18);
         }
 
+        // 設定持久化：音樂/音效/日照主題記入 localStorage，下次開 game 自動還原
+        function saveSettings() {
+            try {
+                localStorage.setItem('sci60_settings', JSON.stringify({
+                    music: state.musicEnabled, sound: state.soundEnabled, theme: lightingThemeIdx
+                }));
+            } catch (e) { /* localStorage 唔可用就算 */ }
+        }
+
+        function restoreSettings() {
+            try {
+                const s = JSON.parse(localStorage.getItem('sci60_settings') || 'null');
+                if (!s) return;
+                if (typeof s.music === 'boolean') state.musicEnabled = s.music;
+                if (typeof s.sound === 'boolean') state.soundEnabled = s.sound;
+                if (typeof s.theme === 'number' && LIGHTING_THEMES[s.theme]) lightingThemeIdx = s.theme;
+            } catch (e) { /* 讀唔到就用預設 */ }
+            updateAudioButtonsUI();
+            if (typeof applyLightingToScene === 'function') applyLightingToScene();
+        }
+
         function toggleMusic() {
             state.musicEnabled = !state.musicEnabled;
             if (state.musicEnabled && state.soundEnabled) {
@@ -1554,6 +1588,7 @@
                 showToast('🎵 已關閉背景音樂');
             }
             updateAudioButtonsUI();
+            saveSettings();
         }
 
         function toggleSound() {
@@ -1564,6 +1599,7 @@
                 stopBackgroundMusic();
             }
             updateAudioButtonsUI();
+            saveSettings();
             if (state.soundEnabled) {
                 playTone(660, '16n', 'triangle');
             }
@@ -1590,6 +1626,20 @@
             toast._timer = setTimeout(() => {
                 toast.classList.add('hidden');
             }, 2600);
+        }
+
+        // 航程長度選擇（完整 60 格 / 短局 30 格）；startGame 嗰陣寫入 state.targetTile
+        let selectedTarget = 60;
+        function selectGameLength(n) {
+            selectedTarget = n;
+            const onCls = 'w-full py-2 px-3 rounded-xl border-2 border-amber-500 bg-gradient-to-r from-amber-50/95 to-orange-50/80 shadow-sm text-[13px] font-black text-stone-800 transition-all cursor-pointer';
+            const offCls = 'w-full py-2 px-3 rounded-xl border-2 border-stone-200/90 bg-white/80 hover:bg-white text-[13px] font-black text-stone-800 transition-all cursor-pointer';
+            const b60 = document.getElementById('len60Btn');
+            const b30 = document.getElementById('len30Btn');
+            if (b60) b60.className = n === 60 ? onCls : offCls;
+            if (b30) b30.className = n === 30 ? onCls : offCls;
+            const tc = document.getElementById('targetChip');
+            if (tc) tc.textContent = `終點 ${n} 格`;
         }
 
         function selectGameMode(mode) {
@@ -1655,6 +1705,7 @@
         function startGame() {
             state.sessionId += 1;
             const currentSession = state.sessionId;
+            state.targetTile = selectedTarget;
 
             startBackgroundMusic();
             playTone(523.25, '16n');
@@ -1712,17 +1763,18 @@
 
             try {
                 initThreeScene();
+                applyLightingToScene();
                 resetCameraPan();
                 onWindowResize();
                 create3DPlayerTokens();
                 orientDiceToFace(1);
-                document.getElementById('diceValueDisplay').textContent = '1';
+                document.getElementById('diceValueDisplay').textContent = '•';
             } catch (err) {
                 console.warn('3D scene initialization warning:', err);
             }
 
             updateHUD();
-            showToast('🛫 歡迎起飛！率先抵達第 60 格者勝出！');
+            showToast(`🛫 歡迎起飛！率先抵達第 ${state.targetTile} 格者勝出！`);
         }
 
         function resetGameToMenu() {
@@ -1757,11 +1809,14 @@
             const p0 = state.players[0];
             const p1 = state.players[1];
 
-            document.getElementById('p1PosText').textContent = `${p0.pos} / 60`;
-            document.getElementById('p1ProgressBar').style.width = `${Math.max(3, (p0.pos / 60) * 100)}%`;
+            document.getElementById('p1PosText').textContent = `${p0.pos} / ${state.targetTile}`;
+            document.getElementById('p1ProgressBar').style.width = `${Math.max(3, (p0.pos / state.targetTile) * 100)}%`;
 
-            document.getElementById('p2PosText').textContent = `${p1.pos} / 60`;
-            document.getElementById('p2ProgressBar').style.width = `${Math.max(3, (p1.pos / 60) * 100)}%`;
+            document.getElementById('p2PosText').textContent = `${p1.pos} / ${state.targetTile}`;
+            document.getElementById('p2ProgressBar').style.width = `${Math.max(3, (p1.pos / state.targetTile) * 100)}%`;
+
+            const targetChipEl = document.getElementById('targetChip');
+            if (targetChipEl) targetChipEl.textContent = `終點 ${state.targetTile} 格`;
 
             const curP = state.players[state.currentPlayerIdx];
             const p1Badge = document.getElementById('p1Badge');
@@ -1957,6 +2012,14 @@
             }, 680);
         }
 
+        // 剩餘步數倒數顯示（2026-11-23 Nelson 要求：飛緊嗰陣逐格倒數，唔再係死數字）
+        function setStepsDisplay(n) {
+            const el = document.getElementById('diceValueDisplay');
+            if (!el) return;
+            el.textContent = n;
+            el.classList.remove('num-pop'); void el.offsetWidth; el.classList.add('num-pop');
+        }
+
         function movePlayerAlongTrack(player, steps, onArrivalCallback = null) {
             const currentSession = state.sessionId;
             const tilePath = [player.pos];
@@ -1966,8 +2029,8 @@
 
             while (remaining > 0) {
                 simPos += direction;
-                if (simPos > 60) {
-                    simPos = 59;
+                if (simPos > state.targetTile) {
+                    simPos = state.targetTile - 1;
                     direction = -1;
                 } else if (simPos < 0) {
                     simPos = 0;
@@ -1978,6 +2041,7 @@
             }
 
             if (tilePath.length <= 1) {
+                setStepsDisplay(0);
                 if (onArrivalCallback) {
                     onArrivalCallback();
                 } else {
@@ -2005,7 +2069,7 @@
                 return;
             }
 
-            if (tile.isBoost && player.pos < 60) {
+            if (tile.isBoost && player.pos < state.targetTile) {
                 showToast(`⚡ 啟動科學加速蟲洞！${player.name} 額外向前飛躍 3 格！`);
                 playTone(783.99, '16n');
                 setTimeout(() => { if (state.sessionId === currentSession) playTone(1046.5, '8n'); }, 120);
@@ -2013,7 +2077,7 @@
                     if (state.sessionId !== currentSession || !state.started) return;
                     movePlayerAlongTrack(player, 3, () => {
                         if (state.sessionId !== currentSession || !state.started) return;
-                        const landedTile = BOARD_TILES[player.pos] || BOARD_TILES[60];
+                        const landedTile = BOARD_TILES[player.pos] || BOARD_TILES[state.targetTile];
                         openQuizModal(player, landedTile);
                     });
                 }, 480);
@@ -2137,8 +2201,8 @@
                 feedbackBox.className = 'rounded-2xl p-3.5 mb-3 text-xs sm:text-sm leading-relaxed bg-emerald-50 border border-emerald-200';
 
                 let rewardMsg = '🌟 答對了！獲得科研推進獎勵（額外前進 1 格）！';
-                if (player.pos === 60) {
-                    rewardMsg = '🏆 完美通過第 60 格終極挑戰！';
+                if (player.pos === state.targetTile) {
+                    rewardMsg = `🏆 完美通過第 ${state.targetTile} 格終極挑戰！`;
                 } else if (tile.isChance) {
                     if (player.cards.length < 4) {
                         const newCard = drawRandomCard();
@@ -2190,18 +2254,18 @@
                 return;
             }
 
-            if (player.pos === 60 && isCorrect) {
+            if (player.pos === state.targetTile && isCorrect) {
                 triggerVictory(player);
                 return;
             }
 
             const bonusStep = isCorrect ? 1 : -1;
-            const targetPos = Math.max(0, Math.min(60, player.pos + bonusStep));
+            const targetPos = Math.max(0, Math.min(state.targetTile, player.pos + bonusStep));
 
             if (targetPos !== player.pos) {
                 startContinuousFlight(player, [player.pos, targetPos], () => {
                     if (state.sessionId !== currentSession || !state.started) return;
-                    if (player.pos === 60) {
+                    if (player.pos === state.targetTile) {
                         triggerVictory(player);
                     } else {
                         endTurn();
@@ -2275,7 +2339,9 @@
             });
 
             document.getElementById('winnerTitle').textContent = `${winner.name} 榮獲總冠軍！`;
-            document.getElementById('winnerSummary').textContent = `${winner.name} 憑藉出色的香港小學科學知識與飛行策略，率先抵達第 60 格「香港創科太空總署」！`;
+            const targetName = (BOARD_TILES[state.targetTile].title || '').replace(/\s*\(終點\)\s*$/, '');
+            document.getElementById('winnerChip').textContent = `成功抵達第 ${state.targetTile} 格・${targetName}`;
+            document.getElementById('winnerSummary').textContent = `${winner.name} 憑藉出色的香港小學科學知識與飛行策略，率先抵達第 ${state.targetTile} 格「${targetName}」！`;
             document.getElementById('victoryModal').classList.remove('hidden');
         }
 
@@ -4606,10 +4672,12 @@
                 player.pos = finalTile;
                 updateHUD();
                 if (onComplete) onComplete();
+                setStepsDisplay(0);
                 return;
             }
 
             const numLegs = tilePath.length - 1;
+            setStepsDisplay(numLegs);
             const duration = Math.min(9500, Math.max(920, numLegs * 740));
 
             flightAnim = {
@@ -4665,8 +4733,7 @@
             playTone(540, '32n');
         }
 
-        function cycleLightingTheme() {
-            lightingThemeIdx = (lightingThemeIdx + 1) % LIGHTING_THEMES.length;
+        function applyLightingToScene() {
             const theme = LIGHTING_THEMES[lightingThemeIdx];
             const btn = document.getElementById('themeToggleBtn');
             if (btn) btn.textContent = theme.name;
@@ -4680,6 +4747,12 @@
                 dirLight.color.setHex(theme.dirHex);
                 dirLight.intensity = theme.dirInt;
             }
+        }
+
+        function cycleLightingTheme() {
+            lightingThemeIdx = (lightingThemeIdx + 1) % LIGHTING_THEMES.length;
+            applyLightingToScene();
+            saveSettings();
             playTone(680, '32n');
         }
 
@@ -4871,6 +4944,7 @@
 
                 if (legIdx > flightAnim.lastNotifiedLeg) {
                     flightAnim.lastNotifiedLeg = legIdx;
+                    setStepsDisplay(numLegs - legIdx);
                     playTone(392 + toT * 5, '32n', 'triangle');
                     if (legIdx > 0) {
                         flightAnim.player.pos = fromT;
@@ -4908,6 +4982,7 @@
                     }
                     flightAnim.player.pos = finalTile;
                     updateHUD();
+                    setStepsDisplay(0);
 
                     const doneCb = flightAnim.onComplete;
                     flightAnim = null;
@@ -5046,6 +5121,7 @@
         }
 
         window.addEventListener('load', () => {
+            restoreSettings();
             updateAudioButtonsUI();
             updateHUD();
 
