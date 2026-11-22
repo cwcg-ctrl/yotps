@@ -29,7 +29,7 @@
 <div id="dmgFlash"></div>
 
 <div id="freezeFx" class="fixed inset-0 z-10 pointer-events-none bg-sky-300/20 opacity-0 transition-opacity duration-500"></div>
-<div id="toast" class="fixed left-1/2 top-[16%] -translate-x-1/2 z-30 pointer-events-none bg-slate-900/80 text-white font-black text-xl sm:text-2xl px-5 py-2.5 rounded-full shadow-2xl opacity-0 transition-opacity duration-300 whitespace-nowrap"></div>
+<div id="toast" class="fixed left-1/2 top-[188px] sm:top-[16%] -translate-x-1/2 z-30 pointer-events-none bg-slate-900/80 text-white font-black text-xl sm:text-2xl px-5 py-2.5 rounded-full shadow-2xl opacity-0 transition-opacity duration-300 whitespace-nowrap"></div>
 <div id="waveBanner" class="fixed inset-x-0 top-[30%] z-30 pointer-events-none opacity-0" style="transform:translateX(-100%);transition:transform .45s cubic-bezier(.2,.9,.25,1.15), opacity .3s;">
   <div class="bg-gradient-to-r from-rose-700/90 via-rose-600/95 to-rose-700/90 text-white text-center py-3 sm:py-4 shadow-2xl border-y-4 border-rose-300/70">
     <div class="font-black text-2xl sm:text-4xl tracking-widest">🧟 喪屍潮來臨！ 🧟</div>
@@ -59,9 +59,9 @@
 </div>
 
 <!-- 卡彈提示 -->
-<div id="jamBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-rose-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC">🔫 卡彈！支槍要抖一抖…</div>
-<div id="warnBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC text-center whitespace-nowrap">⚠️ 唔好亂撞！用心諗清楚先好答<div class="text-sm sm:text-base font-bold mt-0.5">偵測到連續亂撞 — 今次卡彈 <span id="warnSec">3</span> 秒</div></div>
-<div id="idleBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl text-center whitespace-nowrap">⚠️ 幫手就嚟停火！快啲答題呀</div>
+<div id="jamBanner" class="hidden fixed left-1/2 top-[188px] sm:top-[16%] -translate-x-1/2 z-30 bg-rose-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC">🔫 卡彈！支槍要抖一抖…</div>
+<div id="warnBanner" class="hidden fixed left-1/2 top-[188px] sm:top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC text-center whitespace-nowrap">⚠️ 唔好亂撞！用心諗清楚先好答<div class="text-sm sm:text-base font-bold mt-0.5">偵測到連續亂撞 — 今次卡彈 <span id="warnSec">3</span> 秒</div></div>
+<div id="idleBanner" class="hidden fixed left-1/2 top-[188px] sm:top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl text-center whitespace-nowrap">⚠️ 幫手就嚟停火！快啲答題呀</div>
 
 <!-- 題目 + 四選一 -->
 <div id="panel" class="hidden fixed bottom-0 inset-x-0 z-20 px-3 pb-3">
@@ -125,7 +125,7 @@
     <div id="ovAnalysis" class="mt-4 text-left"></div>
     <p id="sendStatus" class="text-xs text-slate-400 mt-3"></p>
     <button id="againBtn" class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 transition">再守一次 🔄</button>
-    <a id="homeBtn" href="https://cwcg-ctrl.github.io/yotps/" class="mt-3 w-full bg-white/10 hover:bg-white/20 text-white text-lg font-black py-3 rounded-2xl shadow transition flex items-center justify-center gap-2">🏠 回到首頁</a>
+    <button id="homeBtn" class="mt-3 w-full bg-white/10 hover:bg-white/20 text-white text-lg font-black py-3 rounded-2xl shadow transition flex items-center justify-center gap-2">🏠 回到首頁</button>
     <button id="csvBtn" class="mt-3 text-slate-300 underline text-sm font-bold">下載今次記錄（CSV）</button>
   </div>
 </div>
@@ -220,6 +220,7 @@ function beep(freq, dur, type, vol, when){
   if(muted) return;
   try{
     AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if(AC.state !== "running") AC.resume();
     const t = AC.currentTime + (when || 0);
     const o = AC.createOscillator(), g = AC.createGain();
     o.type = type || "square"; o.frequency.setValueAtTime(freq, t);
@@ -233,6 +234,14 @@ const sfxJam   = ()=>{ beep(160,.22,"sawtooth",.07); beep(110,.25,"sawtooth",.06
 const sfxHit   = ()=>{ beep(520,.08,"triangle",.06); beep(760,.1,"triangle",.05,.05); };
 const sfxHurt  = ()=>{ beep(220,.3,"sawtooth",.08); beep(150,.35,"sawtooth",.07,.08); };
 const sfxOver  = ()=>{ [440,349,293,220].forEach((f,i)=>beep(f,.25,"triangle",.07,i*.16)); };
+
+/* 切去其他視窗/App 再返嚟嗰陣，手機會自動暫停 AudioContext — 一返嚟就即刻 resume，唔好俾音樂同音效死晒（2026-11-23 Nelson 報告） */
+function resumeAudio(){
+  try{ if(AC && AC.state !== "running") AC.resume(); }catch(e){}
+}
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) resumeAudio(); });
+window.addEventListener("focus", resumeAudio);
+window.addEventListener("pageshow", resumeAudio);
 
 /* ================= 背景音樂（WebAudio 合成 loop：緊張電子風，跟戰況升級） ================= */
 const BGM = { on:false, step:0, nextT:0, timer:null, master:null, drum:null, lead:null, noiseBuf:null };
@@ -285,6 +294,7 @@ function bgmTick(){
   if(!BGM.on || !AC) return;
   const intense = phaseOf(S.elapsed) >= 2 || S.elapsed < (S.waveBoostUntil || 0);
   const t = AC.currentTime;
+  if(BGM.nextT < t - .25) BGM.nextT = t + .05;   // 背景切走返嚟唔好一次過補播成堆過期音符
   BGM.master.gain.setTargetAtTime(muted ? 0 : .4, t, .1);
   BGM.drum.gain.setTargetAtTime(intense ? .85 : 0, t, .25);
   BGM.lead.gain.setTargetAtTime(intense ? .8 : 0, t, .25);
@@ -1970,6 +1980,8 @@ function nearestZombies(n){
   return zombies.filter(z=>!z.userData.dead).sort((a,b)=>a.userData.rad - b.userData.rad).slice(0, n);
 }
 function playerShoot(){
+  const aimT = nearestZombie();
+  if(aimT && hero) hero.rotation.y = Math.atan2(aimT.position.x - hero.position.x, aimT.position.z - hero.position.z) + Math.PI;   // 只喺開槍嗰一刻先轉向敵人
   if(S.weapon >= 3){
     // Lv.3 機關槍：答啱一題，連射 4 發，分別瞄準最埋身嗰 4 隻（每發傷害 2，一擊必殺）
     const ts = nearestZombies(4);
@@ -2039,7 +2051,7 @@ function updateIdleBanner(){
   if(key === idleUiKey) return;
   idleUiKey = key;
   if(key === "hide"){ el.classList.add('hidden'); return; }
-  el.className = "fixed left-1/2 top-[16%] -translate-x-1/2 z-30 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl text-center whitespace-nowrap " + cls;
+  el.className = "fixed left-1/2 top-[188px] sm:top-[16%] -translate-x-1/2 z-30 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl text-center whitespace-nowrap " + cls;
   el.innerHTML = html;
   el.classList.remove('hidden');
 }
@@ -2440,6 +2452,31 @@ function gameOver(){
   $('hud').classList.add('hidden');
   setTimeout(()=> $('overScreen').classList.remove('hidden'), 700);
 }
+function backToMenu(){
+  // 「回到首頁」= 返去呢隻 game 自己嘅開始畫面，唔係 yotps 主頁（2026-11-23 Nelson 澄清）
+  S.playing = false; S.over = false;
+  stopBGM();
+  for(const z of zombies) scene.remove(z);
+  zombies.length = 0; bullets.length = 0;
+  for(const g of grenades) scene.remove(g.m);
+  grenades.length = 0;
+  for(const b of bombs) scene.remove(b.m);
+  bombs.length = 0;
+  for(const d of drops) scene.remove(d.g);
+  drops.length = 0;
+  for(const o of orbs) scene.remove(o.m);
+  orbs.length = 0;
+  for(const s of army) scene.remove(s.g);
+  army = [];
+  for(const s of soldiers) scene.remove(s.g);
+  soldiers = [];
+  $('overScreen').classList.add('hidden');
+  $('hud').classList.add('hidden');
+  $('panel').classList.add('hidden');
+  $('protLabel').classList.add('hidden');
+  $('armyLabel').classList.add('hidden');
+  $('startScreen').classList.remove('hidden');
+}
 
 /* ================= 主迴圈 ================= */
 function animate(){
@@ -2644,10 +2681,7 @@ function animate(){
   const target = nearestZombie();
   let catTarget = null, droneTarget = null;   // 細貓同無人機各自嘅目標，唔再同主角同步望同一隻
   if(hero){
-    if(target){
-      const dx = target.position.x - hero.position.x, dz = target.position.z - hero.position.z;
-      hero.rotation.y = Math.atan2(dx, dz) + Math.PI;
-    }
+    // 主角唔再每幀追住喪屍轉向：只喺答啱開槍嗰一刻先轉向敵人（playerShoot 入面做）— 2026-11-23 Nelson 要求
     hero.position.y = HERO_Y + Math.sin(t * 2.2) * .04;
   }
   if(catTail) catTail.rotation.y = Math.sin(t * 2.6) * .32;
@@ -2866,6 +2900,7 @@ $('startBtn').addEventListener("click", ()=>{
 });
 $('guestBtn').addEventListener("click", ()=> startGame("試玩", "0"));
 $('againBtn').addEventListener("click", ()=> startGame(DataLog.cls || "試玩", DataLog.sid || "0"));
+$('homeBtn').addEventListener("click", backToMenu);
 $('csvBtn').addEventListener("click", ()=>{
   const blob = new Blob(["\ufeff" + DataLog.csv()], { type:"text/csv;charset=utf-8" });
   const a = document.createElement("a");

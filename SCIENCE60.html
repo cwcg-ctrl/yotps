@@ -1470,11 +1470,22 @@
             if (!sharedAudioCtx) {
                 sharedAudioCtx = new AudioCtx();
             }
-            if (sharedAudioCtx.state === 'suspended') {
+            if (sharedAudioCtx.state !== 'running') {
                 sharedAudioCtx.resume().catch(() => {});
             }
             return sharedAudioCtx;
         }
+
+        /* 切去其他視窗/App 再返嚟嗰陣，手機會自動暫停 AudioContext（iOS 仲會有 interrupted 狀態，唔止 suspended）— 一返嚟即刻 resume，唔好俾音樂同音效死晒（2026-11-23 Nelson 報告，同喪屍城同一個修法） */
+        function resumeSharedAudio() {
+            if (sharedAudioCtx && sharedAudioCtx.state !== 'running') {
+                sharedAudioCtx.resume().catch(() => {});
+            }
+        }
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeSharedAudio(); });
+        window.addEventListener('focus', resumeSharedAudio);
+        window.addEventListener('pageshow', resumeSharedAudio);
+        document.addEventListener('pointerdown', resumeSharedAudio);
 
         function playSynthVoice(ctx, freq, startTime, durationSec, waveType, peakGain) {
             if (!ctx || !freq) return;
@@ -1497,6 +1508,7 @@
             if (!state.musicEnabled || !state.soundEnabled) return;
             const ctx = ensureAudioContext();
             if (!ctx) return;
+            if (ctx.state !== 'running') return;   // 背景暫停期間唔好排音符，返嚟 resume 之後由呢一步繼續
 
             const step = bgmStepIdx % BGM_MELODY.length;
             const now = ctx.currentTime;
