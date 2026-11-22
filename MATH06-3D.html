@@ -14,6 +14,7 @@
   #scene canvas:active{cursor:grabbing;}
   .pop{animation:pop .18s ease}@keyframes pop{0%{transform:scale(1.25)}100%{transform:scale(1)}}
   .popC{animation:popC .18s ease}@keyframes popC{0%{transform:translateX(-50%) scale(1.25)}100%{transform:translateX(-50%) scale(1)}}
+  .armyReady{animation:armyPulse 1s ease-in-out infinite}@keyframes armyPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
   .shake{animation:shake .3s ease}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
   .optBtn{transition:transform .08s ease, background .15s ease;}
   .optBtn:active{transform:scale(.94);}
@@ -44,9 +45,11 @@
     <div class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-amber-300 shadow text-sm sm:text-base">⭐ 擊倒 <span id="killLabel">0</span></div>
     <div class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-violet-300 shadow text-sm sm:text-base">🔫 武器 <span id="wpnLabel">Lv.1</span></div>
     <div id="protLabel" class="hidden bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-emerald-300 shadow text-sm sm:text-base whitespace-nowrap">🪖 軍隊保護中：<span id="protSec">30</span> 秒</div>
+    <div id="armyLabel" class="hidden bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-sky-300 shadow text-sm sm:text-base whitespace-nowrap">🪖 軍隊支援中：<span id="armySec">10</span> 秒</div>
     <div id="phaseLabel" class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-indigo-300 shadow text-sm sm:text-base">第 1 階段：加減熱身</div>
   </div>
   <div class="flex gap-2 pointer-events-auto shrink-0 ml-auto">
+    <button id="armyBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">🪖 軍隊支援 <span id="energyPips">・・・</span></button>
     <button id="modeBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">☀️ 轉日頭</button>
     <button id="rotBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">🔄 自動轉</button>
     <button id="camBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">🎥 重置視角</button>
@@ -85,6 +88,7 @@
       🎯 撳啱答案開槍打喪屍，撳錯會卡彈，唔好亂撞。<br>
       ❤️ 喪屍埋身扣心，5 格用晒完場；冇受傷一段時間會慢慢回血。<br>
       🐱 細貓、無人機同飛機會幫手；武器要自己答啱題、親手打死喪屍先會升級。<br>
+      ⚡ 連續兩題一㩒就啱儲 1 格能量，儲滿 3 格㩒「🪖 軍隊支援」叫軍隊幫手 10 秒。<br>
       🖐️ 拖動畫面轉角度，「自動轉」係電影鏡頭。
     </div>
     <div class="grid grid-cols-2 gap-3 mt-5 text-left">
@@ -229,7 +233,8 @@ const sfxOver  = ()=>{ [440,349,293,220].forEach((f,i)=>beep(f,.25,"triangle",.0
 
 /* ================= 題目 ================= */
 const PHASE_NAMES = ["第 1 階段：加減熱身","第 2 階段：乘數加入","第 3 階段：四則大混戰"];
-function killPhase(){ return S.playerKills >= 25 ? 2 : (S.playerKills >= 10 ? 1 : 0); }   // 擊殺階段：只計主角親手擊殺（10 隻入第 2、25 隻入第 3）；幫手力度、出怪密度、喪屍血量跟呢個
+function killPhase(){ return S.playerKills >= 15 ? 2 : (S.playerKills >= 6 ? 1 : 0); }   // 擊殺階段：只計主角親手擊殺（6 隻入第 2、15 隻入第 3，2026-11-23 加快咗升階段）；幫手力度、出怪密度、喪屍血量跟呢個
+const ARMY_COST = 3;   // 儲滿 3 格能量可以叫一次軍隊支援（10 秒）
 function phaseOf(t){ return Math.max(killPhase(), S.elapsed >= 90 ? 2 : 0); }   // 題目階段：90 秒強制入第 3 階段，防學生掛機淨答加減；淨係影響題目類型同階段牌
 function genQuestion(elapsed){
   const ph = phaseOf(elapsed);
@@ -367,6 +372,7 @@ function initCameraControls(){
     else if(e.key === 'ArrowDown'){ Cam.pol = Math.min(1.18, Cam.pol + .06); e.preventDefault(); }
   });
   $('rotBtn').addEventListener('click', ()=> setAutoRotate(!Cam.auto));
+  $('armyBtn').addEventListener('click', callArmy);
   $('modeBtn').addEventListener('click', ()=>{ nightMode = !nightMode; applyMode(); });
   $('camBtn').addEventListener('click', ()=>{ Cam.az = 0; Cam.pol = .5; Cam.rad = defaultRad(); });
 }
@@ -1386,6 +1392,38 @@ function spawnProtection(){
   S.protDone = false;
   $("protLabel").classList.remove("hidden");
 }
+/* ===== 軍隊支援（能量召喚）：連續兩題第一㩒就啱儲 1 格，儲滿 ARMY_COST 格㩒掣叫軍隊幫手 10 秒 ===== */
+let army = [];
+function updateEnergyUI(){
+  $("energyPips").textContent = "⚡".repeat(S.energy || 0) + "・".repeat(Math.max(0, ARMY_COST - (S.energy || 0)));
+  const ready = (S.energy || 0) >= ARMY_COST && !(S.armyT > 0);
+  $("armyBtn").classList.toggle("armyReady", ready);
+  $("armyBtn").style.background = ready ? "rgba(251,191,36,.92)" : "";
+  $("armyBtn").style.color = ready ? "#1e293b" : "";
+}
+function spawnArmy(){
+  for(const s of army) scene.remove(s.g);
+  army = [];
+  for(let i = 0; i < 6; i++){
+    const ang = i / 6 * Math.PI * 2 + (Math.random() * .9 - .45);
+    const rad = 5.2 + Math.random() * 2.2;
+    const s = buildSoldier();
+    s.ang = ang; s.rad = rad; s.timer = .3 + i * .15; s.retreat = false;
+    s.g.position.set(Math.cos(ang) * rad, 0, Math.sin(ang) * rad);
+    s.g.rotation.y = Math.atan2(Math.cos(ang), Math.sin(ang)) + (Math.random() * .7 - .35);
+    scene.add(s.g); army.push(s);
+  }
+  S.armyT = 10;
+  $("armyLabel").classList.remove("hidden");
+}
+function callArmy(){
+  if(!S.playing || S.over || S.armyT > 0) return;
+  if((S.energy || 0) < ARMY_COST){ showToast("⚡ 能量未滿（" + (S.energy || 0) + "/" + ARMY_COST + "）：連續兩題一㩒就啱儲 1 格"); return; }
+  S.energy = 0;
+  spawnArmy();
+  updateEnergyUI();
+  showToast("🪖 軍隊到場！支援 10 秒！");
+}
 function makeSmokeColumn(x, z, baseY){
   const sprites = [];
   for(let i = 0; i < 14; i++){
@@ -2075,7 +2113,18 @@ function pickOption(btn){
   DataLog.row({ kind:"answer", t:new Date().toISOString(), cls:DataLog.cls, sid:DataLog.sid,
                 session:S.sessionId, qn:S.qNo, q:S.q.text.replace(" =",""), chosen, ans:S.q.ans, ok:ok?1:0, ms });
   if(ok){
-    if(firstPick) S.guessStreak = Math.max(0, (S.guessStreak || 0) - 1);   // 第一㩒啱：唔一次過清零，逐題慢慢回復（減 1）；同題試到啱嗰啲唔計
+    if(firstPick){
+      S.guessStreak = Math.max(0, (S.guessStreak || 0) - 1);   // 第一㩒啱：唔一次過清零，逐題慢慢回復（減 1）；同題試到啱嗰啲唔計
+      S.firstStreak = (S.firstStreak || 0) + 1;                  // 儲能量：連續兩題第一㩒就啱 = +1 格
+      if(S.firstStreak >= 2){
+        S.firstStreak = 0;
+        if((S.energy || 0) < ARMY_COST){
+          S.energy = (S.energy || 0) + 1;
+          showToast(S.energy >= ARMY_COST ? "⚡ 能量儲滿！㩒『🪖 軍隊支援』掣叫軍隊幫手 10 秒！" : "⚡ 儲咗 1 格能量（" + S.energy + "/" + ARMY_COST + "）");
+        }
+        updateEnergyUI();
+      }
+    }
     S.right++;
     btn.classList.add("optRight");
     $('answerBox').textContent = chosen;
@@ -2089,7 +2138,7 @@ function pickOption(btn){
     btn.classList.add("optWrong"); btn.disabled = true;
     sfxJam();
     // 防亂撞：每題第一次㩒就錯、而且快過 800ms（同後台 ⚡ 標準一致）= 撞題 +1；唔係撞（慢慢諗過先錯）就 −1 慢慢回復；累積夠 3 次就加重卡彈 + 出警告
-    if(firstPick) S.guessStreak = (qMs < 800) ? (S.guessStreak || 0) + 1 : Math.max(0, (S.guessStreak || 0) - 1);
+    if(firstPick){ S.guessStreak = (qMs < 800) ? (S.guessStreak || 0) + 1 : Math.max(0, (S.guessStreak || 0) - 1); S.firstStreak = 0; }
     let jamMs = 1200;
     if(S.guessStreak >= 3) jamMs = Math.min(3000 + (S.guessStreak - 3) * 500, 5000);
     S.jamUntil = now + jamMs;
@@ -2111,7 +2160,8 @@ function startGame(cls, sid){
   Object.assign(S, { playing:true, over:false, hearts:5, kills:0, right:0, wrong:0,
                      elapsed:0, spawnTimer:1.0, nextWave:145 + Math.random()*15, phaseWarned:false, phaseJumped:false, jamUntil:0, qNo:0, lockUntil:0,
                      weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, playerKills:0,
-                     lastHurt:-99, regenT:0, mistakes:[], tipT:0, guessStreak:0, qPicked:false });
+                     lastHurt:-99, regenT:0, mistakes:[], tipT:0, guessStreak:0, qPicked:false,
+                     energy:0, firstStreak:0, armyT:0 });
   if(heroGun){ heroGun.scale.setScalar(1); heroGun.children[0].material.color.set(0xff922b); }
   for(const g of grenades) scene.remove(g.m);
   grenades.length = 0;
@@ -2125,6 +2175,10 @@ function startGame(cls, sid){
   $('panel').classList.remove('hidden');
   placeCamera();
   updateHUD(); showQuestion();
+  for(const s of army) scene.remove(s.g);
+  army = [];
+  $("armyLabel").classList.add("hidden");
+  updateEnergyUI();
   spawnProtection();
   showToast("🪖 新手保護期：軍隊會保護你 30 秒！");
 }
@@ -2390,6 +2444,32 @@ function animate(){
         s.rad += dt * 7;
         s.g.position.set(Math.cos(s.ang) * s.rad, Math.abs(Math.sin(t * 9 + i)) * .09, Math.sin(s.ang) * s.rad);
         if(s.rad > 27){ scene.remove(s.g); soldiers.splice(i, 1); }
+      }
+    }
+  }
+  // 軍隊支援（能量召喚）：10 秒自動射擊，夠鐘撤退
+  if(army.length){
+    if(S.playing && !S.over && S.armyT > 0){
+      S.armyT -= dt;
+      $("armySec").textContent = Math.max(0, Math.ceil(S.armyT));
+      for(const s of army){
+        if(s.retreat) continue;
+        s.timer -= dt;
+        if(s.timer <= 0){ s.timer = .7 + Math.random() * .5; soldierShoot(s); }
+      }
+      if(S.armyT <= 0){
+        for(const s of army) s.retreat = true;
+        $("armyLabel").classList.add("hidden");
+        updateEnergyUI();
+        showToast("🪖 軍隊支援完結，撤退！");
+      }
+    }
+    for(let i = army.length - 1; i >= 0; i--){
+      const s = army[i];
+      if(s.retreat){
+        s.rad += dt * 7;
+        s.g.position.set(Math.cos(s.ang) * s.rad, Math.abs(Math.sin(t * 9 + i)) * .09, Math.sin(s.ang) * s.rad);
+        if(s.rad > 27){ scene.remove(s.g); army.splice(i, 1); }
       }
     }
   }
