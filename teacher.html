@@ -44,6 +44,7 @@
     <span class="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow text-sm font-bold text-slate-500"><span class="livedot"></span>即時更新中</span>
     <span class="flex-1"></span>
     <span id="whoami" class="text-sm font-bold text-slate-500"></span>
+    <button id="clearBtn" class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold rounded-full px-4 py-2 shadow text-sm">🗑 剷除全部數據</button>
     <button id="csvBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-full px-4 py-2 shadow text-sm">⬇ 匯出 CSV</button>
     <button id="logoutBtn" class="bg-white hover:bg-slate-50 font-bold rounded-full px-4 py-2 shadow text-sm">登出</button>
   </div>
@@ -122,6 +123,11 @@ if(!FIREBASE_CONFIG){
   $("logoutBtn").addEventListener("click", ()=> firebase.auth().signOut());
   $("gameFilter").addEventListener("change", render);
   $("clsFilter").addEventListener("change", render);
+  $("clearBtn").addEventListener("click", clearAll);
+  $("studentList").addEventListener("click", e => {
+    const b = e.target.closest(".delBtn");
+    if(b) deleteSession(b.dataset.del);
+  });
   $("csvBtn").addEventListener("click", exportCSV);
 }
 
@@ -133,7 +139,7 @@ function rowTime(r){
 function listen(){
   if(unsub) return;
   unsub = db.collection("rows").orderBy("cts", "desc").limit(600).onSnapshot(snap => {
-    allRows = snap.docs.map(d => d.data());
+    allRows = snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
     buildFilters();
     render(true);
   }, err => {
@@ -154,8 +160,9 @@ function sessions(){
   const map = new Map();
   for(const r of allRows){
     const key = (r.game || "") + "|" + (r.session || "") + "|" + (r.cls || "") + "|" + (r.sid || "");
-    if(!map.has(key)) map.set(key, { key, game: r.game || "", cls: r.cls || "—", sid: r.sid || "—", answers: [], session: null, last: 0 });
+    if(!map.has(key)) map.set(key, { key, game: r.game || "", cls: r.cls || "—", sid: r.sid || "—", answers: [], session: null, last: 0, ids: [] });
     const s = map.get(key);
+    if(r._id) s.ids.push(r._id);
     if(r.kind === "answer") s.answers.push(r);
     if(r.kind === "session") s.session = r;
     s.last = Math.max(s.last, rowTime(r));
@@ -216,10 +223,38 @@ function render(flash){
           <tr class="text-left text-slate-400 text-xs"><th class="pr-2">#</th><th class="pr-2">題目</th><th class="pr-2">揀咗</th><th class="pr-2">答案</th><th class="pr-2">對錯</th><th>用時</th></tr>
           ${detail || '<tr><td colspan="6" class="py-2 text-slate-400 font-bold">未有答題記錄</td></tr>'}
         </table>
+        <div class="text-right mt-2">
+          <button data-del="${s.key.replace(/"/g, "&quot;")}" class="delBtn bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold rounded-full px-3.5 py-1.5 text-xs shadow-sm">🗑 剷除呢場記錄</button>
+        </div>
       </div>
     </div>`;
   }).join("");
   if(flash && list.length) $("studentList").firstElementChild?.classList.add("flash");
+}
+async function deleteDocs(ids){
+  for(let i = 0; i < ids.length; i += 400){
+    const batch = db.batch();
+    ids.slice(i, i + 400).forEach(id => batch.delete(db.collection("rows").doc(id)));
+    await batch.commit();
+  }
+  const gone = new Set(ids);
+  allRows = allRows.filter(r => !gone.has(r._id));
+  buildFilters();
+  render();
+}
+async function deleteSession(key){
+  const s = sessions().find(x => x.key === key);
+  if(!s || !s.ids.length) return;
+  if(!confirm(`確定要剷除 ${s.cls} 班 ${s.sid} 號（${gameLabel(s.game)}）呢一場嘅全部記錄？\n共 ${s.ids.length} 行，刪咗冇得復原。`)) return;
+  try{ await deleteDocs(s.ids); }
+  catch(e){ alert("剷除失敗：" + e.message + "\n（如果係權限問題，請跟《設定Firebase_步驟.md》更新 Firestore 規則，容許登入後刪除。）"); }
+}
+async function clearAll(){
+  if(!allRows.length){ alert("而家冇數據可以剷除。"); return; }
+  if(!confirm(`⚠️ 確定要剷除畫面上全部 ${allRows.length} 行數據？\n所有遊戲、所有學生嘅記錄都會冇晒，刪咗冇得復原。`)) return;
+  if(!confirm("再確認一次：真係全部剷除？")) return;
+  try{ await deleteDocs(allRows.map(r => r._id).filter(Boolean)); }
+  catch(e){ alert("剷除失敗：" + e.message + "\n（如果係權限問題，請跟《設定Firebase_步驟.md》更新 Firestore 規則，容許登入後刪除。）"); }
 }
 function exportCSV(){
   const head = "遊戲,時間,班別,學號,場次,題號,題目,揀咗,正確答案,結果,用時(ms)\n";
