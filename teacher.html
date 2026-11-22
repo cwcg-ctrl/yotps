@@ -65,7 +65,10 @@
       <option value="scoreAsc">成績：低 → 高</option>
     </select>
     <label class="font-bold text-slate-500 text-sm">日期</label>
-    <input type="date" id="dateFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+    <span class="relative inline-flex">
+      <input type="date" id="dateFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+      <span id="datePlaceholder" class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 pointer-events-none bg-white pr-1">全部日期</span>
+    </span>
     <button id="todayBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-3 py-2 shadow text-sm">今日</button>
     <button id="allDatesBtn" class="bg-white hover:bg-slate-50 font-bold rounded-xl px-3 py-2 shadow text-sm">全部日期</button>
     <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。「剷除已篩選數據」會照而家揀咗嘅遊戲 + 班別 + 日期嚟刪。</span>
@@ -160,6 +163,17 @@ function dateKey(ts){
   const d = new Date(ts);
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
+function syncDateBtns(){
+  // 邊個日期模式生效中，邊個掣就深色，一眼睇得出而家篩緊邊日
+  const df = $("dateFilter").value;
+  const on = "bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-3 py-2 shadow text-sm";
+  const off = "bg-white hover:bg-slate-50 font-bold rounded-xl px-3 py-2 shadow text-sm";
+  $("todayBtn").className = (df && df === dateKey(Date.now())) ? on : off;
+  $("allDatesBtn").className = !df ? on : off;
+  // 未揀日期嗰陣，日期格唔好空白 — 顯示「全部日期」
+  $("datePlaceholder").classList.toggle("hidden", !!df);
+  $("dateFilter").classList.toggle("text-transparent", !df);
+}
 function listen(){
   if(unsub) return;
   unsub = db.collection("rows").orderBy("cts", "desc").limit(600).onSnapshot(snap => {
@@ -201,6 +215,7 @@ function fmtClock(ts){
   return d.toLocaleTimeString("zh-HK", { hour:"2-digit", minute:"2-digit" });
 }
 function render(flash){
+  syncDateBtns();
   const f = $("clsFilter").value, gf = $("gameFilter").value, df = $("dateFilter").value;
   const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf) && (!df || dateKey(s.last) === df));
   const accOf = s => s.answers.length ? Math.round(s.answers.filter(a => a.ok).length / s.answers.length * 100) : 0;
