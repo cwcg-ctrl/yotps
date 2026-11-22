@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>教師介面 — 學習遊戲即時數據後台</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: "class" };</script>
+<script>try{ var _t = localStorage.getItem("teacherTheme"); if(_t === "dark" || (!_t && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark"); }catch(e){}</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -13,25 +15,27 @@
   .flash{ animation: fl .8s ease; }
   @keyframes fl{ 0%{ background:#fef9c3; } 100%{ background:transparent; } }
   .livedot{ width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.5);animation:pl 1.6s infinite; }
+  .dark .flash{ animation: fld .8s ease; }
+  @keyframes fld{ 0%{ background:rgba(250,204,21,.25); } 100%{ background:transparent; } }
   @keyframes pl{ 70%{ box-shadow:0 0 0 8px rgba(34,197,94,0);} 100%{ box-shadow:0 0 0 0 rgba(34,197,94,0);} }
 </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800">
+<body class="bg-slate-100 min-h-screen text-slate-800 dark:bg-slate-900 dark:text-slate-100">
 
 <!-- 未設定 -->
-<div id="notConfigured" class="hidden max-w-lg mx-auto mt-24 bg-white rounded-3xl shadow-xl p-8 text-center">
+<div id="notConfigured" class="hidden max-w-lg mx-auto mt-24 bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center">
   <div class="text-5xl mb-3">🛠️</div>
   <h1 class="text-2xl font-black mb-2">尚未設定 Firebase</h1>
-  <p class="text-slate-500">請跟住遊戲資料夾入面嘅《設定Firebase_步驟.md》做一次設定，再將 firebaseConfig 填入呢個檔案同遊戲檔案頂部嘅 <code class="bg-slate-100 px-1 rounded">FIREBASE_CONFIG</code>。</p>
+  <p class="text-slate-500 dark:text-slate-400">請跟住遊戲資料夾入面嘅《設定Firebase_步驟.md》做一次設定，再將 firebaseConfig 填入呢個檔案同遊戲檔案頂部嘅 <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">FIREBASE_CONFIG</code>。</p>
 </div>
 
 <!-- 登入 -->
-<div id="loginBox" class="hidden max-w-md mx-auto mt-24 bg-white rounded-3xl shadow-xl p-8 text-center">
+<div id="loginBox" class="hidden max-w-md mx-auto mt-24 bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 text-center">
   <div class="text-5xl mb-2">🎮📊</div>
   <h1 class="text-2xl font-black">學習遊戲數據後台</h1>
-  <p class="text-slate-500 font-bold mb-6">教師即時數據介面（全遊戲共用）</p>
+  <p class="text-slate-500 dark:text-slate-400 font-bold mb-6">教師即時數據介面（全遊戲共用）</p>
   <input id="pwInput" type="password" inputmode="numeric" placeholder="輸入教師密碼"
-    class="w-full border-2 border-indigo-200 rounded-2xl px-4 py-3.5 text-center text-xl font-black tracking-widest focus:outline-none focus:border-indigo-400">
+    class="w-full border-2 border-indigo-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl px-4 py-3.5 text-center text-xl font-black tracking-widest focus:outline-none focus:border-indigo-400">
   <button id="loginBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black text-lg rounded-2xl py-3.5 shadow">進入</button>
   <p id="loginErr" class="text-rose-500 font-bold mt-4 text-sm"></p>
   <p class="text-slate-400 text-sm mt-4">入啱密碼先睇到學生數據。</p>
@@ -41,33 +45,34 @@
 <div id="dash" class="hidden max-w-6xl mx-auto p-4 sm:p-6">
   <div class="flex flex-wrap items-center gap-3 mb-4">
     <h1 class="text-2xl font-black">🎮 全班即時數據</h1>
-    <span class="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow text-sm font-bold text-slate-500"><span class="livedot"></span>即時更新中</span>
+    <span class="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-full px-3 py-1.5 shadow text-sm font-bold text-slate-500 dark:text-slate-300"><span class="livedot"></span>即時更新中</span>
     <span class="flex-1"></span>
-    <span id="whoami" class="text-sm font-bold text-slate-500"></span>
-    <button id="clearBtn" class="bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold rounded-full px-4 py-2 shadow text-sm">🗑 剷除已篩選數據</button>
+    <span id="whoami" class="text-sm font-bold text-slate-500 dark:text-slate-400"></span>
+    <button id="clearBtn" class="bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/40 text-rose-500 border border-rose-200 dark:border-rose-800 font-bold rounded-full px-4 py-2 shadow text-sm">🗑 剷除已篩選數據</button>
     <button id="csvBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-full px-4 py-2 shadow text-sm">⬇ 匯出 CSV</button>
-    <button id="logoutBtn" class="bg-white hover:bg-slate-50 font-bold rounded-full px-4 py-2 shadow text-sm">登出</button>
+    <button id="themeBtn" class="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-full px-4 py-2 shadow text-sm">🌙 深色模式</button>
+    <button id="logoutBtn" class="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-full px-4 py-2 shadow text-sm">登出</button>
   </div>
 
   <div class="flex flex-wrap gap-3 mb-4 items-center">
-    <label class="font-bold text-slate-500 text-sm">遊戲</label>
-    <select id="gameFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+    <label class="font-bold text-slate-500 dark:text-slate-400 text-sm">遊戲</label>
+    <select id="gameFilter" class="bg-white dark:bg-slate-800 rounded-xl shadow px-3 py-2 font-bold">
       <option value="">全部遊戲</option>
     </select>
-    <label class="font-bold text-slate-500 text-sm">班別</label>
-    <select id="clsFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+    <label class="font-bold text-slate-500 dark:text-slate-400 text-sm">班別</label>
+    <select id="clsFilter" class="bg-white dark:bg-slate-800 rounded-xl shadow px-3 py-2 font-bold">
       <option value="">全部班別</option>
     </select>
-    <label class="font-bold text-slate-500 text-sm">排序</label>
-    <select id="sortSel" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+    <label class="font-bold text-slate-500 dark:text-slate-400 text-sm">排序</label>
+    <select id="sortSel" class="bg-white dark:bg-slate-800 rounded-xl shadow px-3 py-2 font-bold">
       <option value="recent">最新活動</option>
       <option value="scoreDesc">成績：高 → 低</option>
       <option value="scoreAsc">成績：低 → 高</option>
     </select>
-    <label class="font-bold text-slate-500 text-sm">日期</label>
+    <label class="font-bold text-slate-500 dark:text-slate-400 text-sm">日期</label>
     <span class="relative inline-flex">
-      <input type="date" id="dateFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
-      <span id="datePlaceholder" class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 pointer-events-none bg-white pr-1">全部日期</span>
+      <input type="date" id="dateFilter" class="bg-white dark:bg-slate-800 rounded-xl shadow px-3 py-2 font-bold">
+      <span id="datePlaceholder" class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 dark:text-slate-400 pointer-events-none bg-white dark:bg-slate-800 pr-1">全部日期</span>
     </span>
     <button id="todayBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-3 py-2 shadow text-sm">今日</button>
     <button id="allDatesBtn" class="bg-white hover:bg-slate-50 font-bold rounded-xl px-3 py-2 shadow text-sm">全部日期</button>
@@ -75,14 +80,14 @@
   </div>
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">學生場次</div><div id="stSessions" class="text-3xl font-black">0</div></div>
-    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">答題總數</div><div id="stAnswers" class="text-3xl font-black">0</div></div>
-    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">全班正確率</div><div id="stAcc" class="text-3xl font-black">—</div></div>
-    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">平均反應時間</div><div id="stMs" class="text-3xl font-black">—</div></div>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">學生場次</div><div id="stSessions" class="text-3xl font-black">0</div></div>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">答題總數</div><div id="stAnswers" class="text-3xl font-black">0</div></div>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">全班正確率</div><div id="stAcc" class="text-3xl font-black">—</div></div>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">平均反應時間</div><div id="stMs" class="text-3xl font-black">—</div></div>
   </div>
 
-  <div id="chartBox" class="hidden bg-white rounded-2xl shadow p-4 mb-5">
-    <div class="text-sm font-black text-slate-500 mb-3">📊 學生正確率一覽（跟而家嘅篩選同排序）</div>
+  <div id="chartBox" class="hidden bg-white dark:bg-slate-800 rounded-2xl shadow p-4 mb-5">
+    <div class="text-sm font-black text-slate-500 dark:text-slate-400 mb-3">📊 學生正確率一覽（跟而家嘅篩選同排序）</div>
     <div id="chartBars" class="space-y-2"></div>
   </div>
 
@@ -139,6 +144,8 @@ if(!FIREBASE_CONFIG){
   $("loginBtn").addEventListener("click", tryLogin);
   $("pwInput").addEventListener("keydown", e => { if(e.key === "Enter") tryLogin(); });
   $("logoutBtn").addEventListener("click", ()=> firebase.auth().signOut());
+  $("themeBtn").addEventListener("click", ()=> applyTheme(!document.documentElement.classList.contains("dark")));
+  applyTheme(document.documentElement.classList.contains("dark"), true);
   $("gameFilter").addEventListener("change", render);
   $("clsFilter").addEventListener("change", render);
   $("sortSel").addEventListener("change", render);
@@ -153,6 +160,12 @@ if(!FIREBASE_CONFIG){
   $("csvBtn").addEventListener("click", exportCSV);
 }
 
+function applyTheme(dark, skipSave){
+  document.documentElement.classList.toggle("dark", dark);
+  const b = $("themeBtn");
+  if(b) b.textContent = dark ? "☀️ 淺色模式" : "🌙 深色模式";
+  if(!skipSave){ try{ localStorage.setItem("teacherTheme", dark ? "dark" : "light"); }catch(e){} }
+}
 function rowTime(r){
   if(r.cts && r.cts.toDate) return r.cts.toDate().getTime();
   const t = Date.parse(r.t || "");
@@ -167,7 +180,7 @@ function syncDateBtns(){
   // 邊個日期模式生效中，邊個掣就深色，一眼睇得出而家篩緊邊日
   const df = $("dateFilter").value;
   const on = "bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-3 py-2 shadow text-sm";
-  const off = "bg-white hover:bg-slate-50 font-bold rounded-xl px-3 py-2 shadow text-sm";
+  const off = "bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl px-3 py-2 shadow text-sm";
   $("todayBtn").className = (df && df === dateKey(Date.now())) ? on : off;
   $("allDatesBtn").className = !df ? on : off;
   // 未揀日期嗰陣，日期格唔好空白 — 顯示「全部日期」
@@ -236,8 +249,8 @@ function render(flash){
     const acc = accOf(s);
     const color = acc >= 80 ? "bg-emerald-400" : (acc >= 50 ? "bg-amber-400" : "bg-rose-400");
     return `<div class="flex items-center gap-2 text-xs font-bold">
-      <span class="w-24 shrink-0 text-slate-500">${s.cls} 班 ${s.sid} 號</span>
-      <div class="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden"><div class="${color} h-full rounded-full" style="width:${acc}%"></div></div>
+      <span class="w-24 shrink-0 text-slate-500 dark:text-slate-400">${s.cls} 班 ${s.sid} 號</span>
+      <div class="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-4 overflow-hidden"><div class="${color} h-full rounded-full" style="width:${acc}%"></div></div>
       <span class="w-10 text-right">${acc}%</span>
     </div>`;
   }).join("") + (list.length > 30 ? `<div class="text-xs text-slate-400 font-bold pt-1">只顯示頭 30 位（共 ${list.length} 位）</div>` : "");
@@ -249,12 +262,12 @@ function render(flash){
     const playing = !s.session && (Date.now() - s.last < 90000);
     const metric = s.session ? (s.session.kills != null ? "擊倒 " + s.session.kills : (s.session.score != null ? "分數 " + s.session.score : "")) : "";
     const status = s.session
-      ? `<span class="bg-slate-200 text-slate-600 px-2.5 py-1 rounded-full text-xs font-black">✅ 已完成・${s.session.seconds || 0} 秒${metric ? "・" + metric : ""}</span>`
-      : (playing ? `<span class="bg-rose-100 text-rose-500 px-2.5 py-1 rounded-full text-xs font-black">🔴 玩緊</span>`
-                 : `<span class="bg-amber-100 text-amber-600 px-2.5 py-1 rounded-full text-xs font-black">⏸ 未完成</span>`);
+      ? `<span class="bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full text-xs font-black">✅ 已完成・${s.session.seconds || 0} 秒${metric ? "・" + metric : ""}</span>`
+      : (playing ? `<span class="bg-rose-100 text-rose-500 dark:bg-rose-900/50 dark:text-rose-300 px-2.5 py-1 rounded-full text-xs font-black">🔴 玩緊</span>`
+                 : `<span class="bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300 px-2.5 py-1 rounded-full text-xs font-black">⏸ 未完成</span>`);
     const avg = n ? Math.round(s.answers.reduce((x,a)=> x + (a.ms||0), 0) / n) : 0;
     const detail = s.answers.map(a =>
-      `<tr class="border-t border-slate-100 ${a.ok ? "" : "bg-rose-50"}">
+      `<tr class="border-t border-slate-100 dark:border-slate-700 ${a.ok ? "" : "bg-rose-50 dark:bg-rose-900/30"}">
          <td class="py-1.5 pr-2 text-slate-400 font-bold">${a.qn}</td>
          <td class="py-1.5 pr-2 font-bold">${a.q || ""}</td>
          <td class="py-1.5 pr-2">${a.chosen}</td>
@@ -262,13 +275,14 @@ function render(flash){
          <td class="py-1.5 pr-2">${a.ok ? "✅" : "❌"}</td>
          <td class="py-1.5">${a.ms} ms ${(a.ms||0) < 800 ? "⚡" : ""}</td>
        </tr>`).join("");
-    return `<div class="bg-white rounded-2xl shadow overflow-hidden">
-      <button class="w-full flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left hover:bg-slate-50" onclick="document.getElementById('d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}').classList.toggle('hidden')">
+    return `<div class="bg-white dark:bg-slate-800 rounded-2xl shadow overflow-hidden">
+      <button class="w-full flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50" onclick="document.getElementById('d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}').classList.toggle('hidden')">
         <span class="font-black text-lg">${s.cls} 班 ${s.sid} 號</span>
-        <span class="bg-indigo-100 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-black">${gameLabel(s.game)}</span>
+        <span class="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/60 dark:text-indigo-300 px-2.5 py-1 rounded-full text-xs font-black">${gameLabel(s.game)}</span>
         ${status}
-        <span class="text-sm font-bold text-slate-500">答咗 ${n} 題・啱 ${r}・正確率 ${acc}%</span>
-        <span class="text-sm font-bold text-slate-500">平均反應 ${avg} ms</span>
+        ${s.session && s.session.analysis ? `<span class="bg-violet-100 text-violet-600 dark:bg-violet-900/50 dark:text-violet-300 px-2.5 py-1 rounded-full text-xs font-black">📊 ${s.session.analysis}</span>` : ""}
+        <span class="text-sm font-bold text-slate-500 dark:text-slate-400">答咗 ${n} 題・啱 ${r}・正確率 ${acc}%</span>
+        <span class="text-sm font-bold text-slate-500 dark:text-slate-400">平均反應 ${avg} ms</span>
         ${fast ? `<span class="text-sm font-black text-amber-500">⚡ 快答 ${fast} 次</span>` : ""}
         <span class="flex-1"></span>
         <span class="text-xs font-bold text-slate-400">最後活動 ${fmtClock(s.last)}</span>
@@ -279,7 +293,7 @@ function render(flash){
           ${detail || '<tr><td colspan="6" class="py-2 text-slate-400 font-bold">未有答題記錄</td></tr>'}
         </table>
         <div class="text-right mt-2">
-          <button data-del="${s.key.replace(/"/g, "&quot;")}" class="delBtn bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 font-bold rounded-full px-3.5 py-1.5 text-xs shadow-sm">🗑 剷除呢場記錄</button>
+          <button data-del="${s.key.replace(/"/g, "&quot;")}" class="delBtn bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/40 text-rose-500 border border-rose-200 dark:border-rose-800 font-bold rounded-full px-3.5 py-1.5 text-xs shadow-sm">🗑 剷除呢場記錄</button>
         </div>
       </div>
     </div>`;
