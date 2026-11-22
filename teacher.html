@@ -64,7 +64,11 @@
       <option value="scoreDesc">成績：高 → 低</option>
       <option value="scoreAsc">成績：低 → 高</option>
     </select>
-    <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。「剷除已篩選數據」會照而家揀咗嘅遊戲 + 班別嚟刪。</span>
+    <label class="font-bold text-slate-500 text-sm">日期</label>
+    <input type="date" id="dateFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+    <button id="todayBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-3 py-2 shadow text-sm">今日</button>
+    <button id="allDatesBtn" class="bg-white hover:bg-slate-50 font-bold rounded-xl px-3 py-2 shadow text-sm">全部日期</button>
+    <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。「剷除已篩選數據」會照而家揀咗嘅遊戲 + 班別 + 日期嚟刪。</span>
   </div>
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
@@ -135,6 +139,9 @@ if(!FIREBASE_CONFIG){
   $("gameFilter").addEventListener("change", render);
   $("clsFilter").addEventListener("change", render);
   $("sortSel").addEventListener("change", render);
+  $("dateFilter").addEventListener("change", render);
+  $("todayBtn").addEventListener("click", ()=>{ $("dateFilter").value = dateKey(Date.now()); render(); });
+  $("allDatesBtn").addEventListener("click", ()=>{ $("dateFilter").value = ""; render(); });
   $("clearBtn").addEventListener("click", deleteFiltered);
   $("studentList").addEventListener("click", e => {
     const b = e.target.closest(".delBtn");
@@ -147,6 +154,11 @@ function rowTime(r){
   if(r.cts && r.cts.toDate) return r.cts.toDate().getTime();
   const t = Date.parse(r.t || "");
   return isNaN(t) ? 0 : t;
+}
+function dateKey(ts){
+  if(!ts) return "";
+  const d = new Date(ts);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 function listen(){
   if(unsub) return;
@@ -189,8 +201,8 @@ function fmtClock(ts){
   return d.toLocaleTimeString("zh-HK", { hour:"2-digit", minute:"2-digit" });
 }
 function render(flash){
-  const f = $("clsFilter").value, gf = $("gameFilter").value;
-  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf));
+  const f = $("clsFilter").value, gf = $("gameFilter").value, df = $("dateFilter").value;
+  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf) && (!df || dateKey(s.last) === df));
   const accOf = s => s.answers.length ? Math.round(s.answers.filter(a => a.ok).length / s.answers.length * 100) : 0;
   const scoreOf = s => s.session ? (s.session.score ?? s.session.kills ?? accOf(s)) : accOf(s);
   const sortMode = $("sortSel").value;
@@ -278,11 +290,11 @@ async function deleteSession(key){
   catch(e){ alert("剷除失敗：" + e.message + "\n（如果係權限問題，請跟《設定Firebase_步驟.md》更新 Firestore 規則，容許登入後刪除。）"); }
 }
 async function deleteFiltered(){
-  const f = $("clsFilter").value, gf = $("gameFilter").value;
-  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf));
+  const f = $("clsFilter").value, gf = $("gameFilter").value, df = $("dateFilter").value;
+  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf) && (!df || dateKey(s.last) === df));
   const ids = list.flatMap(s => s.ids);
   if(!ids.length){ alert("而家篩選條件之下冇數據可以剷除。"); return; }
-  const scope = (gf ? gameLabel(gf) : "全部遊戲") + "・" + (f ? f + " 班" : "全部班別");
+  const scope = (gf ? gameLabel(gf) : "全部遊戲") + "・" + (f ? f + " 班" : "全部班別") + "・" + (df ? df : "全部日期");
   if(!confirm(`⚠️ 確定要剷除【${scope}】嘅全部記錄？\n共 ${list.length} 場、${ids.length} 行，刪咗冇得復原。`)) return;
   if(!confirm("再確認一次：真係剷除呢批？")) return;
   try{ await deleteDocs(ids); }
