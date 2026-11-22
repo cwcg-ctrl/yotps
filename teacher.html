@@ -316,14 +316,21 @@ async function deleteFiltered(){
   catch(e){ alert("剷除失敗：" + e.message + "\n（如果係權限問題，請跟《設定Firebase_步驟.md》更新 Firestore 規則，容許登入後刪除。）"); }
 }
 function exportCSV(){
+  // 同「剷除已篩選」一樣：淨係匯出而家介面篩緊嗰啲（遊戲 + 班別 + 日期），檔名標明返揀咗啲乜
+  const f = $("clsFilter").value, gf = $("gameFilter").value, df = $("dateFilter").value;
+  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf) && (!df || dateKey(s.last) === df));
+  const keys = new Set(list.map(s => s.key));
+  const rows = allRows.filter(r => r.kind === "answer" &&
+    keys.has((r.game || "") + "|" + (r.session || "") + "|" + (r.cls || "") + "|" + (r.sid || "")));
+  if(!rows.length){ alert("而家篩選條件之下冇記錄可以匯出。"); return; }
   const head = "遊戲,時間,班別,學號,場次,題號,題目,揀咗,正確答案,結果,用時(ms)\n";
-  const lines = allRows.filter(r => r.kind === "answer")
-    .slice().sort((a,b)=> rowTime(a) - rowTime(b))
+  const lines = rows.slice().sort((a,b)=> rowTime(a) - rowTime(b))
     .map(r => [r.game || "", r.t, r.cls, r.sid, r.session, r.qn, '"' + (r.q||"") + '"', r.chosen, r.ans, r.ok ? "啱" : "錯", r.ms].join(","));
   const blob = new Blob(["\ufeff" + head + lines.join("\n")], { type:"text/csv;charset=utf-8" });
+  const gname = gf ? gameLabel(gf).replace(/^[^\p{L}\p{N}]+/u, "") : "全部遊戲";
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "喪屍城全班記錄.csv";
+  a.download = `學習遊戲記錄_${gname}_${f ? f + "班" : "全部班別"}_${df || "全部日期"}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
