@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>逃出喪屍城 3D・守城版</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"PingFang HK","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;background:#b6bfc0;}
+  #scene{position:fixed;inset:0;}
+  #scene canvas{display:block;touch-action:none;cursor:grab;}
+  #scene canvas:active{cursor:grabbing;}
+  .pop{animation:pop .18s ease}@keyframes pop{0%{transform:scale(1.25)}100%{transform:scale(1)}}
+  .shake{animation:shake .3s ease}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .optBtn{transition:transform .08s ease, background .15s ease;}
+  .optBtn:active{transform:scale(.94);}
+  .optWrong{background:#ffe4e6 !important;color:#fda4af !important;border-color:#fecdd3 !important;text-decoration:line-through;}
+  .optRight{background:#34d399 !important;color:#fff !important;border-color:#34d399 !important;}
+  #dmgFlash{position:fixed;inset:0;background:radial-gradient(ellipse at center, transparent 55%, rgba(244,63,94,.45) 100%);opacity:0;pointer-events:none;transition:opacity .12s;z-index:15;}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<div id="vignette" style="position:fixed;inset:0;background:radial-gradient(ellipse at center, transparent 56%, rgba(28,32,36,.30) 100%);pointer-events:none;z-index:12;"></div>
+<div id="dmgFlash"></div>
+
+<div id="freezeFx" class="fixed inset-0 z-10 pointer-events-none bg-sky-300/20 opacity-0 transition-opacity duration-500"></div>
+<div id="toast" class="fixed left-1/2 top-[16%] -translate-x-1/2 z-30 pointer-events-none bg-slate-900/80 text-white font-black text-xl sm:text-2xl px-5 py-2.5 rounded-full shadow-2xl opacity-0 transition-opacity duration-300 whitespace-nowrap"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden fixed top-0 inset-x-0 z-20 flex items-start justify-between px-3 pt-3 pointer-events-none">
+  <div class="flex gap-2 flex-wrap">
+    <div id="hearts" class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-rose-500 shadow text-sm sm:text-base">❤️❤️❤️❤️❤️</div>
+    <div class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-slate-600 shadow text-sm sm:text-base">⏱ <span id="timeLabel">00:00</span></div>
+    <div class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-amber-500 shadow text-sm sm:text-base">⭐ 擊倒 <span id="killLabel">0</span></div>
+    <div class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-violet-500 shadow text-sm sm:text-base">🔫 武器 <span id="wpnLabel">Lv.1</span></div>
+    <div id="phaseLabel" class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-indigo-500 shadow text-sm sm:text-base">第 1 階段：加減熱身</div>
+  </div>
+  <div class="flex gap-2 pointer-events-auto">
+    <button id="modeBtn" class="bg-white/85 backdrop-blur h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">☀️ 轉日頭</button>
+    <button id="rotBtn" class="bg-white/85 backdrop-blur h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">🔄 自動轉</button>
+    <button id="camBtn" class="bg-white/85 backdrop-blur h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">🎥 重置視角</button>
+    <button id="muteBtn" class="bg-white/85 backdrop-blur w-10 h-10 rounded-full shadow text-lg">🔊</button>
+  </div>
+</div>
+
+<!-- 卡彈提示 -->
+<div id="jamBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-rose-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl pop">🔫 卡彈！支槍要抖一抖…</div>
+
+<!-- 題目 + 四選一 -->
+<div id="panel" class="hidden fixed bottom-0 inset-x-0 z-20 px-3 pb-3">
+  <div id="panelCard" class="max-w-3xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl px-4 sm:px-6 pt-4 pb-3.5">
+    <div class="flex items-baseline justify-center gap-2 flex-wrap">
+      <span id="question" class="text-3xl sm:text-4xl font-black text-slate-800 tracking-wide">? + ? =</span>
+      <span id="answerBox" class="text-3xl sm:text-4xl font-black text-indigo-500 border-b-4 border-indigo-300 min-w-[64px] text-center px-1">?</span>
+    </div>
+    <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3.5">
+      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="0">?</button>
+      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="1">?</button>
+      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="2">?</button>
+      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="3">?</button>
+    </div>
+    <div class="text-center text-slate-400 text-xs sm:text-sm mt-2.5">撳啱答案嗰格先開到槍 🔫 答錯會卡彈，用心諗清楚先撳！（鍵盤 1–4 都揀得）</div>
+  </div>
+</div>
+
+<!-- 開始畫面 -->
+<div id="startScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/25 backdrop-blur-[2px] px-4">
+  <div class="bg-white/95 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center">
+    <div class="text-5xl mb-1">🧟 🔫 🏰</div>
+    <h1 class="text-3xl sm:text-4xl font-black text-slate-800">逃出喪屍城 <span class="text-indigo-500">3D</span></h1>
+    <p class="text-slate-500 font-bold mt-1">守城版・數學大作戰</p>
+    <div class="text-left bg-indigo-50 rounded-2xl p-4 mt-4 text-slate-600 text-sm sm:text-[15px] leading-relaxed">
+      🎯 撳啱答案開槍打喪屍，撳錯會卡彈，唔好亂撞。<br>
+      ❤️ 喪屍埋身扣心，5 格用晒完場；冇受傷一段時間會慢慢回血。<br>
+      🐱 細貓、無人機同飛機會幫手，武器會越打越勁。<br>
+      🖐️ 拖動畫面轉角度，「自動轉」係電影鏡頭。
+    </div>
+    <div class="grid grid-cols-2 gap-3 mt-5 text-left">
+      <div>
+        <label class="text-sm font-bold text-slate-500">班別</label>
+        <input id="clsInput" type="text" placeholder="例如：4A" class="mt-1 w-full border-2 border-indigo-200 rounded-xl px-3 py-2.5 text-lg font-bold text-slate-700 focus:outline-none focus:border-indigo-400">
+      </div>
+      <div>
+        <label class="text-sm font-bold text-slate-500">學號</label>
+        <input id="sidInput" type="text" inputmode="numeric" placeholder="例如：12" class="mt-1 w-full border-2 border-indigo-200 rounded-xl px-3 py-2.5 text-lg font-bold text-slate-700 focus:outline-none focus:border-indigo-400">
+      </div>
+    </div>
+    <button id="startBtn" class="mt-6 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-200 transition">開始守城 ▶</button>
+    <button id="guestBtn" class="mt-3 text-slate-400 underline text-sm font-bold">試玩模式（唔使輸入）</button>
+    <p class="text-xs text-slate-400 mt-3">答題記錄會傳送俾老師做分析（只記班別學號，唔記姓名）</p>
+  </div>
+</div>
+
+<!-- 完場畫面 -->
+<div id="overScreen" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 backdrop-blur-[2px] px-4">
+  <div class="bg-white/95 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center">
+    <div class="text-5xl mb-1">🏰💥</div>
+    <h2 class="text-3xl font-black text-slate-800">城堡失守啦！</h2>
+    <p class="text-slate-500 font-bold mt-1">不過你已經好努力守住咗 💪</p>
+    <div class="grid grid-cols-2 gap-3 mt-5 text-left">
+      <div class="bg-indigo-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⏱ 存活時間</div><div id="ovTime" class="text-2xl font-black text-slate-700">0:00</div></div>
+      <div class="bg-indigo-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⭐ 擊倒喪屍</div><div id="ovKills" class="text-2xl font-black text-slate-700">0</div></div>
+      <div class="bg-emerald-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">✅ 答啱</div><div id="ovRight" class="text-2xl font-black text-emerald-600">0</div></div>
+      <div class="bg-rose-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">❌ 答錯</div><div id="ovWrong" class="text-2xl font-black text-rose-500">0</div></div>
+    </div>
+    <div class="mt-4 bg-amber-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">🎯 準確率</div><div id="ovAcc" class="text-2xl font-black text-amber-600">—</div></div>
+    <p id="sendStatus" class="text-xs text-slate-400 mt-3"></p>
+    <button id="againBtn" class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-200 transition">再守一次 🔄</button>
+    <button id="csvBtn" class="mt-3 text-slate-400 underline text-sm font-bold">下載今次記錄（CSV）</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= 設定 ================= */
+// 老師做完 Google Apps Script 設定之後，將 Web App 網址貼嚟呢度（步驟見同資料夾的 設定數據收集_步驟.md）
+// 留空 = 試玩模式：記錄只留喺本機，完場可以下載 CSV
+const DATA_ENDPOINT = "";
+
+// Firebase（教師即時數據・全遊戲共用同一個項目）：跟《設定Firebase_步驟.md》填入 firebaseConfig；
+// 留 null = 未啟用，遊戲照舊用上面嘅 Apps Script / 試玩模式，唔受影響。
+// 每隻遊戲用自己嘅 GAME_ID 寫入同一個資料庫，教師介面會自動分遊戲顯示。
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCQJvRB7aqvyU2n9LmM9uqF2sPeSdkDdDk",
+  authDomain: "cwc-leaning-web.firebaseapp.com",
+  projectId: "cwc-leaning-web",
+  storageBucket: "cwc-leaning-web.firebasestorage.app",
+  messagingSenderId: "173279937029",
+  appId: "1:173279937029:web:1d9ca43409a878b78ed26c",
+  measurementId: "G-NCPHZY8NYK"
+};
+const GAME_ID = "zombie-math-3d";
+
+/* ================= 數據收集 ================= */
+/* Firebase 寫入器：學生唔使登入；保安規則只准傳入、只有老師帳戶讀到（見設定指南） */
+const FbLog = {
+  db: null, queue: [], starting: false,
+  row(r){ if(!FIREBASE_CONFIG) return; this.queue.push(r); if(this.queue.length >= 15) this.flush(); },
+  flush(){
+    if(!FIREBASE_CONFIG || !this.queue.length) return;
+    if(!this.db){ this.init(); if(!this.db && !this.starting) return; if(!this.db) return; }
+    const rows = this.queue.splice(0, this.queue.length);
+    try{
+      const batch = this.db.batch();
+      const col = this.db.collection("rows");
+      rows.forEach(r => batch.set(col.doc(), Object.assign({}, r, { cts: firebase.firestore.FieldValue.serverTimestamp() })));
+      batch.commit().catch(()=>{});
+    }catch(e){}
+  },
+  init(){
+    if(this.starting || this.db || !FIREBASE_CONFIG) return;
+    this.starting = true;
+    const load = src => new Promise(res => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = res; document.head.appendChild(s); });
+    (async () => {
+      if(!window.firebase){
+        await load("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
+        await load("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js");
+      }
+      try{
+        if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        if(window.firebase) this.db = firebase.firestore();
+      }catch(e){}
+      this.starting = false;
+      if(this.db && this.queue.length) this.flush();
+    })();
+  }
+};
+
+/* ================= 數據收集 ================= */
+const DataLog = {
+  queue: [], local: [], sid: "", cls: "", sessionId: Date.now().toString(36),
+  start(cls, sid){ this.cls = cls; this.sid = sid; },
+  row(r){ if(!r.game) r.game = GAME_ID; this.local.push(r); this.queue.push(r); FbLog.row(r); if(this.queue.length >= 15) this.flush(); },
+  payload(){ return JSON.stringify({ rows: this.queue }); },
+  flush(){
+    FbLog.flush();
+    if(!DATA_ENDPOINT || !this.queue.length) return;
+    const body = this.payload(); this.queue = [];
+    try{ fetch(DATA_ENDPOINT, { method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain" }, body }).catch(()=>{}); }catch(e){}
+  },
+  flushBeacon(){
+    FbLog.flush();
+    if(!DATA_ENDPOINT || !this.queue.length) return;
+    const body = this.payload(); this.queue = [];
+    try{ navigator.sendBeacon(DATA_ENDPOINT, new Blob([body], {type:"text/plain"})); }catch(e){}
+  },
+  csv(){
+    const head = "時間,班別,學號,場次,題號,題目,揀咗,正確答案,結果,用時(ms)\n";
+    const lines = this.local.filter(r=>r.kind==="answer").map(r =>
+      [r.t, r.cls, r.sid, r.session, r.qn, '"'+r.q+'"', r.chosen, r.ans, r.ok ? "啱" : "錯", r.ms].join(","));
+    return head + lines.join("\n");
+  }
+};
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) DataLog.flushBeacon(); });
+window.addEventListener("beforeunload", ()=> DataLog.flushBeacon());
+
+/* ================= 音效（WebAudio 合成，唔使檔案） ================= */
+let AC = null, muted = false;
+function beep(freq, dur, type, vol, when){
+  if(muted) return;
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime + (when || 0);
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || "square"; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol || .06, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur);
+  }catch(e){}
+}
+const sfxShoot = ()=>{ beep(880,.09,"square",.05); beep(1320,.07,"square",.04,.03); };
+const sfxJam   = ()=>{ beep(160,.22,"sawtooth",.07); beep(110,.25,"sawtooth",.06,.05); };
+const sfxHit   = ()=>{ beep(520,.08,"triangle",.06); beep(760,.1,"triangle",.05,.05); };
+const sfxHurt  = ()=>{ beep(220,.3,"sawtooth",.08); beep(150,.35,"sawtooth",.07,.08); };
+const sfxOver  = ()=>{ [440,349,293,220].forEach((f,i)=>beep(f,.25,"triangle",.07,i*.16)); };
+
+/* ================= 題目 ================= */
+const PHASE_NAMES = ["第 1 階段：加減熱身","第 2 階段：乘數加入","第 3 階段：四則大混戰"];
+function phaseOf(t){ return t < 30 ? 0 : (t < 75 ? 1 : 2); }
+function genQuestion(elapsed){
+  const ph = phaseOf(elapsed);
+  const ops = ph === 0 ? ["+","-"] : ph === 1 ? ["+","-","×"] : ["+","-","×","÷"];
+  const op = ops[Math.floor(Math.random()*ops.length)];
+  let a, b, ans;
+  if(op === "+"){ a = 6+Math.random()*44|0; b = 5+Math.random()*40|0; ans = a+b; }
+  else if(op === "-"){ a = 12+Math.random()*48|0; b = 3+Math.random()*(a-2)|0; ans = a-b; }
+  else if(op === "×"){ a = 2+Math.random()*8|0; b = 2+Math.random()*8|0; ans = a*b; }
+  else { b = 2+Math.random()*8|0; ans = 2+Math.random()*8|0; a = b*ans; }
+  return { text: a + " " + (op==="-" ? "−" : op) + " " + b + " =", a, b, op, ans };
+}
+function swapDigits(n){ if(n < 10 || n >= 100 || n % 11 === 0) return null; return (n % 10) * 10 + Math.floor(n / 10); }
+function makeOptions(ans){
+  const set = new Set([ans]);
+  const pool = [ans+1, ans-1, ans+2, ans-2, ans+10, ans-10, ans+5, ans-5,
+                ans+3+(Math.random()*5|0), ans-3-(Math.random()*5|0), swapDigits(ans), ans+11, ans-11];
+  for(let i = pool.length - 1; i > 0; i--){ const j = Math.random()*(i+1)|0; [pool[i],pool[j]] = [pool[j],pool[i]]; }
+  for(const c of pool){ if(set.size >= 4) break; if(c !== null && c !== undefined && c >= 0) set.add(c); }
+  let extra = ans + 4;
+  while(set.size < 4){ set.add(extra++); }
+  const arr = [...set];
+  for(let i = arr.length - 1; i > 0; i--){ const j = Math.random()*(i+1)|0; [arr[i],arr[j]] = [arr[j],arr[i]]; }
+  return arr;
+}
+
+/* ================= 遊戲狀態 ================= */
+const $ = id => document.getElementById(id);
+const S = {
+  playing:false, over:false, hearts:5, kills:0, right:0, wrong:0,
+  elapsed:0, spawnTimer:1, jamUntil:0, qNo:0,
+  q:null, qStart:0, lastTry:0, lockUntil:0,
+  weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30,
+  lastHurt:-99, regenT:0
+};
+const BREACH_R = 2.6, SPAWN_R = 25, HERO_Y = 1.56;
+</script>
+<script>
+"use strict";
+/* ================= 3D 場景 ================= */
+let scene, camera, renderer, hero, gunTip, clock;
+const zombies = [], bullets = [], particles = [], clouds = [];
+const fires = [];
+let police = null, sparkTipObj = null, sparkLight = null, toxicMat = null, smokeTex = null;
+let beaconMat = null, trafficMats = null, facadeTex = null, centerCar = null;
+const blinkers = [], neonMats = [], litter = [], steams = [];
+let pedMats = null, birds = null, bannerMesh = null, catTail = null, bubbleTex = null;
+let rainGeo = null, rainPos = null, rainObj = null; const RAIN_N = 240;
+const windowFlames = [], seaFlames = [], columns = [], embers = [], bigLights = [];
+let compCat = null, compGunTip = null, compTail = null, drone = null, droneTip = null, droneAng = 0;
+const droneRotors = [], aircraft = [], trails = [];
+const compTimers = { cat: 1, drone: 2 };
+const grenades = [], bombs = [];
+let heroGun = null, toastTimer = 0;
+const COMP_INTERVALS = [[1.2, 2.4], [2.5, 5], [4.5, Infinity]];   // 三階段：貓 / 無人機開槍間隔（秒）
+let facadeDay = null, hemiLight = null, sunLight = null, skylineMat = null;
+let nightMode = true, neonBase = 1.05;
+const buildingMats = [], glowMats = [], trimMats = [], cloudMats = [], glowLights = [];
+const groundRefs = {};
+const fogBanks = [], nobori = [], survivors = [];
+const ZSKIN = [0x9db87e, 0x93ad72, 0xa4ba84, 0x8fa878];
+const ZCLOTH = [0xc7a2ab, 0x9db4c6, 0xd3bd8a, 0xb3a6cc, 0xc7a586, 0xa9c4a4];
+
+function mat(c, opts){ return new THREE.MeshStandardMaterial(Object.assign({ color:c, roughness:.85, metalness:0 }, opts || {})); }
+function box(w,h,d,c,x,y,z,parent,opts){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), opts && opts.mat ? opts.mat : mat(c, opts));
+  m.position.set(x,y,z); m.castShadow = true; m.receiveShadow = true; (parent||scene).add(m); return m;
+}
+function ball(r,c,x,y,z,parent,opts){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r,20,16), opts && opts.mat ? opts.mat : mat(c, opts));
+  m.position.set(x,y,z); m.castShadow = true; (parent||scene).add(m); return m;
+}
+function cyl(rt,rb,h,c,x,y,z,parent,seg,opts){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20), opts && opts.mat ? opts.mat : mat(c, opts));
+  m.position.set(x,y,z); m.castShadow = true; m.receiveShadow = true; (parent||scene).add(m); return m;
+}
+/* ================= 鏡頭（可自由轉角度 + 自動旋轉） ================= */
+function defaultRad(){ return innerWidth / innerHeight < .9 ? 68 : 52.5; }   // 直向（iPad 直放）自動拉遠啲，睇晒成個路口
+const Cam = { az: 0, pol: .5, rad: 52.5, auto: false };
+Cam.rad = defaultRad();
+function placeCamera(){
+  const k = camera.aspect < .9 ? 1.45 : 1;   // 直屏（平板/電話）拉遠啲
+  const r = Cam.rad * k, sp = Math.sin(Cam.pol);
+  camera.position.set(r * sp * Math.sin(Cam.az), r * Math.cos(Cam.pol) + 1, r * sp * Math.cos(Cam.az));
+  camera.lookAt(0, 1, 0);
+  // 題目面板遮住畫面底部：將成個畫面向上移，確保路口唔會俾面板遮住
+  const panel = $('panel');
+  const panelH = (panel && !panel.classList.contains('hidden')) ? panel.offsetHeight : 0;
+  if(panelH > 40) camera.setViewOffset(innerWidth, innerHeight, 0, Math.round(panelH*.45), innerWidth, innerHeight);
+  else camera.clearViewOffset();
+}
+function setAutoRotate(on){
+  Cam.auto = on;
+  $('rotBtn').classList.toggle('bg-indigo-500', on);
+  $('rotBtn').classList.toggle('text-white', on);
+  $('rotBtn').classList.toggle('bg-white/85', !on);
+  $('rotBtn').classList.toggle('text-slate-600', !on);
+}
+function initCameraControls(){
+  const el = renderer.domElement;
+  const ptrs = new Map();
+  let lastPinch = 0;
+  el.addEventListener('pointerdown', e=>{
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    el.setPointerCapture(e.pointerId);
+    if(Cam.auto) setAutoRotate(false);
+  });
+  el.addEventListener('pointermove', e=>{
+    if(!ptrs.has(e.pointerId)) return;
+    const prev = ptrs.get(e.pointerId);
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(ptrs.size === 1){
+      Cam.az -= dx * .0052;
+      Cam.pol = Math.min(1.18, Math.max(.16, Cam.pol - dy * .004));
+    } else if(ptrs.size === 2){
+      const [p1, p2] = [...ptrs.values()];
+      const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      if(lastPinch > 0) Cam.rad = Math.min(80, Math.max(30, Cam.rad * (lastPinch / d)));
+      lastPinch = d;
+    }
+  });
+  const endPtr = e=>{ ptrs.delete(e.pointerId); if(ptrs.size < 2) lastPinch = 0; };
+  el.addEventListener('pointerup', endPtr);
+  el.addEventListener('pointercancel', endPtr);
+  el.addEventListener('wheel', e=>{
+    e.preventDefault();
+    Cam.rad = Math.min(80, Math.max(30, Cam.rad * (1 + e.deltaY * .001)));
+    if(Cam.auto) setAutoRotate(false);
+  }, { passive: false });
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'ArrowLeft'){ Cam.az += .12; }
+    else if(e.key === 'ArrowRight'){ Cam.az -= .12; }
+    else if(e.key === 'ArrowUp'){ Cam.pol = Math.max(.16, Cam.pol - .06); e.preventDefault(); }
+    else if(e.key === 'ArrowDown'){ Cam.pol = Math.min(1.18, Cam.pol + .06); e.preventDefault(); }
+  });
+  $('rotBtn').addEventListener('click', ()=> setAutoRotate(!Cam.auto));
+  $('modeBtn').addEventListener('click', ()=>{ nightMode = !nightMode; applyMode(); });
+  $('camBtn').addEventListener('click', ()=>{ Cam.az = 0; Cam.pol = .5; Cam.rad = defaultRad(); });
+}
+
+function buildCenterCar(){
+  const g = new THREE.Group(); g.rotation.y = .5; scene.add(g);
+  box(2.5,.68,1.25, 0xc9a83a, 0, .58, 0, g);                            // 車身（啞黃的士色）
+  box(1.4,.6,1.15, 0xbfae9e, 0, 1.18, 0, g);                            // 車廂
+  box(1.44,.26,1.18, 0x46525e, 0, 1.24, 0, g, {roughness:.3});          // 玻璃帶
+  box(2.54,.14,1.29, 0x8f8578, 0, .3, 0, g);                             // 殘舊泵把
+  const wheelG = new THREE.CylinderGeometry(.34,.34,.22,14);
+  [[-.85,.6],[.85,.6],[-.85,-.6],[.85,-.6]].forEach(p=>{
+    const w = new THREE.Mesh(wheelG, mat(0x2c3038)); w.rotation.x = Math.PI/2;
+    w.position.set(p[0], .34, p[1]); w.castShadow = true; g.add(w);
+  });
+  box(.06,.14,.3, 0xffe9a8, 1.26, .66, -.35, g, {emissive:0x554411});   // 車頭燈
+  box(.06,.14,.3, 0xffe9a8, 1.26, .66, .35, g, {emissive:0x554411});
+  box(.06,.14,.3, 0xb8544a, -1.26, .66, -.35, g);                        // 尾燈
+  box(.06,.14,.3, 0xb8544a, -1.26, .66, .35, g);
+  box(1.5,.07,1.2, 0x6e6a5e, 0, 1.52, 0, g);                             // 車頂平台（主角企位）
+  beaconMat = new THREE.MeshStandardMaterial({ color:0x8a4a12, emissive:0xff8c1a, emissiveIntensity:.4, roughness:.4 });
+  const bc = new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.16,10), beaconMat);
+  bc.position.set(-.62, 1.63, -.45); bc.castShadow = true; g.add(bc);    // 車頂警示燈（會脈衝）
+  scene.add(g);
+  // 防守雜物（散喺車邊四角，唔圍圈）
+  const crate1 = box(.85,.85,.85, 0x9a7d55, 2.9, .43, 2.2, scene); crate1.rotation.y = .4;
+  const crate2 = box(.62,.62,.62, 0x8a6f4d, 2.8, 1.28, 2.35, scene); crate2.rotation.y = .9;
+  [[-2.9,2.3],[-2.3,2.7],[-2.65,1.8]].forEach(p=>{ const sb = ball(.42, 0xa89a78, p[0], .16, p[1], scene); sb.scale.y = .55; });
+  cyl(.42,.42, 1.0, 0x7e8894, -2.7, .5, -2.3, scene, 14);
+  const cone = new THREE.Group(); cone.position.set(2.5, .16, -2.7); cone.rotation.z = 1.45; scene.add(cone);
+  const cm = new THREE.Mesh(new THREE.ConeGeometry(.26,.62,12), mat(0xc96a2e)); cm.position.y = .31; cm.castShadow = true; cone.add(cm);
+  return g;
+}
+function buildHero(){
+  // 主角：貓貓（虎斑 + 白胸 + 綠眼睛 + 粉紅頸圈金鈴鐺，面部向 -z 同槍口同方向）
+  const g = new THREE.Group();
+  const tabby = 0x8d7d68, dark = 0x5d5044, white = 0xf5f1ea, pink = 0xf28bb4;
+  // 尾巴（會搖）
+  catTail = new THREE.Group(); catTail.position.set(0, .6, .34); g.add(catTail);
+  const t1 = cyl(.07,.09, .55, tabby, 0, .16, .14, catTail, 8); t1.rotation.x = .75;
+  ball(.085, dark, 0, .44, .32, catTail);
+  // 身 + 白色胸口
+  ball(.5, tabby, 0, .92, 0, g).scale.set(1, 1.05, .92);
+  ball(.33, white, 0, .95, -.3, g).scale.set(.85, 1.05, .55);
+  // 背部虎斑紋
+  [0, 1, 2].forEach(i=> box(.44 - i * .05, .045, .05, dark, 0, 1.3 - i * .15, .4 - i * .06, g).rotation.x = .35);
+  // 探險背包
+  box(.5,.62,.24, 0x87986a, 0, .95, .44, g);
+  box(.4,.22,.26, 0x74945e, 0, 1.18, .44, g);
+  box(.3,.24,.05, 0xffd43b, 0, .82, .58, g);
+  // 腳 + 白襪仔（後腳全白）
+  box(.2,.34,.24, tabby, -.19, .2, 0, g);
+  box(.2,.34,.24, tabby, .19, .2, 0, g);
+  box(.22,.12,.34, white, -.19, .06, -.05, g);
+  box(.22,.12,.34, white, .19, .06, -.05, g);
+  // 頭
+  ball(.52, tabby, 0, 1.78, 0, g);
+  [-.14, 0, .14].forEach(sx=> box(.05,.04,.3, dark, sx, 2.25, -.05, g));   // 頭頂斑紋
+  // 耳仔（尖耳 + 粉紅耳內）
+  [-1, 1].forEach(side=>{
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(.17, .38, 4), mat(tabby));
+    ear.position.set(side * .32, 2.3, 0); ear.rotation.y = Math.PI/4; ear.castShadow = true; g.add(ear);
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(.09, .22, 4), mat(0xf2a7bb, {roughness:.7}));
+    inner.position.set(side * .32, 2.27, -.07); inner.rotation.y = Math.PI/4; g.add(inner);
+  });
+  // 白嘴套 + 粉紅鼻 + 小嘴
+  ball(.24, white, 0, 1.62, -.4, g).scale.set(1.15, .75, .7);
+  ball(.055, 0xe56b8c, 0, 1.72, -.57, g, {roughness:.4});
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(.06, .018, 8, 12, Math.PI), mat(0x8a4a3a, {roughness:.6}));
+  mouth.position.set(0, 1.6, -.56); mouth.rotation.set(0, Math.PI, Math.PI); g.add(mouth);
+  // 綠眼睛（眼珠 + 光點）
+  [-.19, .19].forEach(ex=>{
+    ball(.1, 0x49b356, ex, 1.88, -.45, g, {roughness:.25});
+    ball(.05, 0x1e2422, ex, 1.88, -.52, g, {roughness:.25});
+    ball(.02, 0xffffff, ex + .02, 1.93, -.56, g, {roughness:.2});
+  });
+  ball(.08, 0xffa8b8, -.37, 1.7, -.4, g, {roughness:.6});
+  ball(.08, 0xffa8b8, .37, 1.7, -.4, g, {roughness:.6});
+  // 貓鬚（每邊三條）
+  [-1, 1].forEach(side=>{ for(let i = 0; i < 3; i++){
+    const w = cyl(.006,.006, .42, 0xd8d3c8, side * .5, 1.68 + (i - 1) * .05, -.44, g, 4);
+    w.rotation.z = Math.PI/2 + side * (i - 1) * .15; w.rotation.y = side * .3;
+  }});
+  // 粉紅頸圈 + 金鈴鐺
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(.3, .07, 10, 18), mat(pink, {roughness:.55}));
+  collar.position.y = 1.38; collar.rotation.x = Math.PI/2; collar.castShadow = true; g.add(collar);
+  ball(.09, 0xffc93e, 0, 1.22, -.3, g, {roughness:.3, metalness:.5});
+  // 前手（鴛鴦手：左手全白、右手白襪筒）一齊揸槍
+  box(.17,.5,.2, white, -.48, 1.02, -.3, g).rotation.x = -1.15;
+  ball(.1, white, -.5, 1.0, -.58, g);
+  box(.17,.3,.2, tabby, .48, 1.14, -.28, g).rotation.x = -.7;
+  box(.16,.26,.18, white, .52, .98, -.44, g).rotation.x = -1.2;
+  ball(.1, white, .55, .95, -.6, g);
+  // 槍（槍身+槍管+瞄準器+彈匣）
+  const gun = new THREE.Group(); gun.position.set(.55,.98,-.5); g.add(gun);
+  box(.18,.24,1.05, 0xff922b, 0, 0, -.35, gun);
+  box(.12,.12,.5, 0xffd43b, 0, .03, -.95, gun);
+  box(.06,.13,.06, 0x5b4a68, 0, .21, -.62, gun);
+  box(.14,.3,.18, 0x845ef7, 0, -.25, -.3, gun);
+  box(.16,.42,.2, 0x5b4a68, 0, -.26, .08, gun);
+  gunTip = new THREE.Object3D(); gunTip.position.set(0,.03,-1.25); gun.add(gunTip);
+  heroGun = gun;
+  g.position.set(0, HERO_Y, 0);
+  scene.add(g);
+  return g;
+}
+function buildCompanionCat(){
+  // AI 同伴：細隻貓（主角同款細一碼，藍色圍巾分開），企車頂平台隔籬
+  const g = new THREE.Group();
+  const fur = 0xd9905f, white = 0xf5f1ea;
+  compTail = new THREE.Group(); compTail.position.set(0, .6, .34); g.add(compTail);
+  const t1 = cyl(.07,.09, .55, fur, 0, .16, .14, compTail, 8); t1.rotation.x = .75;
+  ball(.5, fur, 0, .92, 0, g).scale.set(1, 1.05, .92);
+  ball(.33, white, 0, .95, -.3, g).scale.set(.85, 1.05, .55);
+  box(.2,.34,.24, fur, -.19, .2, 0, g);
+  box(.2,.34,.24, fur, .19, .2, 0, g);
+  box(.22,.12,.34, white, -.19, .06, -.05, g);
+  box(.22,.12,.34, white, .19, .06, -.05, g);
+  ball(.52, fur, 0, 1.78, 0, g);
+  [-1, 1].forEach(side=>{
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(.17, .38, 4), mat(fur));
+    ear.position.set(side * .32, 2.3, 0); ear.rotation.y = Math.PI/4; ear.castShadow = true; g.add(ear);
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(.09, .22, 4), mat(0xf2a7bb, {roughness:.7}));
+    inner.position.set(side * .32, 2.27, -.07); inner.rotation.y = Math.PI/4; g.add(inner);
+  });
+  ball(.24, white, 0, 1.62, -.4, g).scale.set(1.15, .75, .7);
+  ball(.055, 0xe56b8c, 0, 1.72, -.57, g, {roughness:.4});
+  [-.19, .19].forEach(ex=>{
+    ball(.1, 0x3f9e4d, ex, 1.88, -.45, g, {roughness:.25});
+    ball(.05, 0x1e2422, ex, 1.88, -.52, g, {roughness:.25});
+  });
+  const scarf = new THREE.Mesh(new THREE.TorusGeometry(.3, .075, 10, 18), mat(0x3b82f6, {roughness:.6}));
+  scarf.position.y = 1.38; scarf.rotation.x = Math.PI/2; scarf.castShadow = true; g.add(scarf);
+  box(.16,.4,.05, 0x3b82f6, .3, 1.08, -.32, g).rotation.x = .15;
+  box(.17,.5,.2, white, -.48, 1.02, -.3, g).rotation.x = -1.15;
+  box(.17,.5,.2, white, .48, 1.02, -.3, g).rotation.x = -1.15;
+  const gun = new THREE.Group(); gun.position.set(.3, .98, -.5); g.add(gun);
+  box(.16,.22,.9, 0x4dabf7, 0, 0, -.3, gun);
+  box(.1,.1,.4, 0xffd43b, 0, .03, -.8, gun);
+  compGunTip = new THREE.Object3D(); compGunTip.position.set(0, .03, -1.05); gun.add(compGunTip);
+  g.scale.setScalar(.62);
+  g.position.set(.65, HERO_Y, .04);   // 車頂平台前角斜對主角，唔再同主角重疊
+  scene.add(g);
+  return g;
+}
+function buildDrone(){
+  // AI 同伴：無人機（喺主角上空盤旋）
+  const g = new THREE.Group();
+  box(.62,.22,.62, 0x495057, 0, 0, 0, g);
+  ball(.16, 0x66d9ff, 0, -.02, -.3, g, {roughness:.25, emissive:0x1c4d66});
+  [[-.42,-.42],[.42,-.42],[-.42,.42],[.42,.42]].forEach(p=>{
+    box(.3,.05,.3, 0x343a40, p[0], .1, p[1], g);
+    droneRotors.push(box(.52,.03,.09, 0xadb5bd, p[0], .18, p[1], g));
+  });
+  const gun = new THREE.Group(); gun.position.set(0, -.16, -.2); g.add(gun);
+  box(.12,.12,.5, 0xff922b, 0, 0, -.15, gun);
+  droneTip = new THREE.Object3D(); droneTip.position.set(0, 0, -.45); gun.add(droneTip);
+  g.position.set(2.3, 4.25, 0);
+  scene.add(g);
+  return g;
+}
+function buildHelicopter(){
+  // 場景飛機：直升機（得閒飛過）
+  const g = new THREE.Group();
+  ball(.62, 0xe8734a, 0, 0, 0, g).scale.set(1.05, .92, 1.25);
+  ball(.4, 0x39424c, 0, .08, -.48, g, {roughness:.25}).scale.set(.95, .8, .8);
+  box(.9,.2,.9, 0xf2f3f0, 0, -.3, .1, g);
+  box(.16,.16,1.7, 0xd9622b, 0, .12, 1.35, g);
+  box(.08,.52,.3, 0xd9622b, 0, .32, 2.15, g);
+  const tail = box(.05,.46,.08, 0x495057, .13, .32, 2.15, g);
+  cyl(.07,.07,.28, 0x495057, 0, .52, 0, g, 8);
+  const rotor = new THREE.Group(); rotor.position.y = .68; g.add(rotor);
+  box(2.7,.04,.18, 0x343a40, 0, 0, 0, rotor);
+  box(.18,.04,2.7, 0x343a40, 0, 0, 0, rotor);
+  box(.07,.22,.8, 0x495057, -.45, -.52, 0, g);
+  box(.07,.22,.8, 0x495057, .45, -.52, 0, g);
+  const skid = cyl(.035,.035, .95, 0x495057, 0, -.66, 0, g, 6); skid.rotation.z = Math.PI/2;
+  const bcM = new THREE.MeshStandardMaterial({ color: 0x330000, emissive: 0xff2222, emissiveIntensity: .3, roughness:.4 });
+  const bc = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 8), bcM);
+  bc.position.set(0, .3, 2.2); g.add(bc); blinkers.push({ mat: bcM, ph: 2 });
+  g.userData = { rotor, tail };
+  return g;
+}
+function buildJet(){
+  // 場景飛機：戰機（高速飛過 + 尾煙）
+  const g = new THREE.Group();
+  const body = cyl(.17,.3, 2.2, 0x9aa5b1, 0, 0, 0, g, 10); body.rotation.x = -Math.PI/2;
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(.17, .85, 10), mat(0x868e96));
+  nose.rotation.x = -Math.PI/2; nose.position.set(0, 0, -1.5); nose.castShadow = true; g.add(nose);
+  ball(.13, 0x39424c, 0, .15, -.55, g, {roughness:.2}).scale.set(.8, .6, 1.6);
+  const w1 = box(1.7,.05,.5, 0x868e96, -.78, -.05, .35, g); w1.rotation.y = .5;
+  const w2 = box(1.7,.05,.5, 0x868e96, .78, -.05, .35, g); w2.rotation.y = -.5;
+  box(.05,.52,.4, 0x868e96, 0, .24, 1.05, g);
+  box(.85,.05,.35, 0x868e96, 0, .02, 1.05, g);
+  const burner = ball(.11, 0xffa62b, 0, 0, 1.18, g, { emissive: 0xcc6600, roughness:.3 });
+  g.userData = { burner };
+  return g;
+}
+function addAircraft(g, kind, alt, speed, minT, maxT, first){
+  const a = { g, kind, alt, speed, active: false, timer: first, minT, maxT,
+              dirV: new THREE.Vector3(1, 0, 0), ph: Math.random() * 7, trailT: 0,
+              strike: false, bombT: 0, bombed: 0 };
+  g.visible = false; scene.add(g); aircraft.push(a);
+  return a;
+}
+function launchAircraft(a){
+  // 低飛：沿十字路口兩條大街飛（走廊冇大廈擋，飛得低又唔會撞樓）
+  const alongX = Math.random() < .5;
+  const dir = Math.random() < .5 ? 1 : -1;
+  const off = (Math.random() - .5) * 5;
+  a.dirV.set(alongX ? dir : 0, 0, alongX ? 0 : dir);
+  a.g.position.set(alongX ? -52 * dir : off, a.alt, alongX ? off : -52 * dir);
+  a.g.rotation.y = Math.atan2(a.dirV.x, a.dirV.z) + Math.PI;
+  a.active = true; a.g.visible = true;
+  a.strike = Math.random() < .55;   // 今次飛過有冇空襲支援（隨機）
+  a.bombT = 0; a.bombed = 0;
+}
+function dropBomb(fromPos, toPos){
+  const m = ball(.2, 0x37474f, fromPos.x, fromPos.y - .3, fromPos.z, scene, { roughness:.4 });
+  bombs.push({ m, t: 0, dur: .42, from: fromPos.clone(), to: toPos.clone().setY(.3) });
+}
+function spawnTrail(pos){
+  const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0xe8ecf2, transparent: true, opacity: .32, depthWrite: false }));
+  sm.position.copy(pos); sm.scale.set(1.1, 1.1, 1); scene.add(sm);
+  trails.push({ m: sm, life: 1.4 });
+}
+function makeFacadeTexture(mode){
+  const night = mode === "night";
+  const cv = document.createElement("canvas"); cv.width = 128; cv.height = 192;
+  const x = cv.getContext("2d");
+  x.fillStyle = night ? "#252a44" : "#dcd8d1"; x.fillRect(0,0,128,192);
+  for(let i = 0; i < 260; i++){ x.fillStyle = (night ? "rgba(140,150,200," : "rgba(120,115,105,") + (Math.random()*.08) + ")"; x.fillRect(Math.random()*128, Math.random()*192, 3, 3); }
+  const winCols = ["#8fe9ff", "#ffd76a", "#ff9ad5", "#b7c6ff", "#7dffce"];
+  for(let r = 0; r < 8; r++) for(let c = 0; c < 5; c++){
+    const lit = Math.random() < (night ? .65 : .22);
+    x.fillStyle = lit ? (night ? winCols[(Math.random() * winCols.length) | 0] : "#ffc978")
+                      : (night ? "#161a2e" : (Math.random() < .5 ? "#4d5866" : "#5d6874"));
+    x.fillRect(10 + c*23, 12 + r*22, 14, 13);
+    x.fillStyle = "rgba(255,255,255,.2)"; x.fillRect(10 + c*23, 12 + r*22, 14, 3);
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function makeSignTexture(text, bg, fg, sub){
+  const cv = document.createElement("canvas"); cv.width = 256; cv.height = 112;
+  const x = cv.getContext("2d");
+  x.fillStyle = bg; x.fillRect(0,0,256,112);
+  x.fillStyle = fg; x.textAlign = "center";
+  x.font = "900 " + (text.length > 4 ? 38 : 52) + "px 'PingFang HK','Microsoft JhengHei',sans-serif";
+  x.fillText(text, 128, sub ? 58 : 74);
+  if(sub){ x.font = "700 25px sans-serif"; x.fillText(sub, 128, 94); }
+  return new THREE.CanvasTexture(cv);
+}
+function buildBuilding(x, z, w, d, h, tint, opts){
+  opts = opts || {};
+  const g = new THREE.Group(); g.position.set(x, opts.y || 0, z); g.rotation.y = opts.rot || 0; scene.add(g);
+  const rx = Math.max(1, Math.round(w/3.4)), ry = Math.max(1, Math.round(h/3.4));
+  const nightTex = facadeTex.clone(); nightTex.needsUpdate = true; nightTex.repeat.set(rx, ry);
+  const dayTex = facadeDay.clone(); dayTex.needsUpdate = true; dayTex.repeat.set(rx, ry);
+  const main = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ map: nightTex, color: tint, roughness:.9, emissive: 0xaFC4ff, emissiveMap: nightTex, emissiveIntensity: .5 }));
+  buildingMats.push({ mat: main.material, dayTex, nightTex });
+  main.position.y = h/2; main.castShadow = true; main.receiveShadow = true; g.add(main);
+  box(w + .3, .32, d + .3, 0x2c3049, 0, h + .14, 0, g);                  // 天台邊
+  const trimCols = [0xff4dd2, 0x33e0ff, 0xb26bff, 0xffd43b, 0x4dff88];
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0x11131f, emissive: trimCols[Math.abs(Math.round(x * 3 + z)) % trimCols.length], emissiveIntensity: 1.7, roughness:.5 });
+  trimMats.push(trimMat);
+  const trimF = (tw, td, tx, tz) => { const s = new THREE.Mesh(new THREE.BoxGeometry(tw, .13, td), trimMat); s.position.set(tx, h + .34, tz); g.add(s); };
+  trimF(w + .46, .18, 0, d/2 + .14); trimF(w + .46, .18, 0, -d/2 - .14);
+  trimF(.18, d + .46, w/2 + .14, 0); trimF(.18, d + .46, -w/2 - .14, 0);   // 天台霓虹邊框（四邊框線）
+  if(opts.tank){
+    cyl(.55,.55, 1.1, 0x8a8d90, w*.28, h + .85, -d*.22, g, 12);
+    const tc = new THREE.Mesh(new THREE.ConeGeometry(.62,.5,12), mat(0x767a7e));
+    tc.position.set(w*.28, h + 1.65, -d*.22); tc.castShadow = true; g.add(tc);
+  }
+  if(opts.ac){ box(1.1,.6,.8, 0x9aa0a4, -w*.25, h + .6, d*.2, g); box(.8,.45,.6, 0x8b9094, -w*.05, h + .52, -d*.28, g); }
+  if(opts.antenna){
+    cyl(.035,.035, 2.4, 0x4c5054, w*.32, h + 1.4, d*.3, g, 6);
+    box(.9,.05,.05, 0x4c5054, w*.32, h + 2.1, d*.3, g);
+    box(.6,.05,.05, 0x4c5054, w*.32, h + 1.7, d*.3, g);
+  }
+  if(opts.shop){
+    const awn = box(w*.72, .1, 1.15, opts.shop, 0, 2.45, d/2 + .5, g); awn.rotation.x = -.32;
+    const shopTex = makeSignTexture(opts.shopText || "便利店", opts.shopBg || "#31517a", "#f2f5f9");
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(w*.72, .78, .12),
+      new THREE.MeshStandardMaterial({ map: shopTex, roughness:.7, emissive: 0xffffff, emissiveMap: shopTex, emissiveIntensity: .8 }));
+    glowMats.push(sign.material);
+    sign.position.set(0, 3.15, d/2 + .07); sign.castShadow = true; g.add(sign);
+  }
+  if(opts.damaged){
+    const chunk = box(w*.45, 1.5, d*.45, 0x5d5850, w*.3, h - .4, d*.28, g);
+    chunk.rotation.z = .18; chunk.rotation.x = .1;
+  }
+  if(opts.beacon){
+    const bm = new THREE.MeshStandardMaterial({ color:0x5d1414, emissive:0xff2a2a, emissiveIntensity:.2, roughness:.4 });
+    const bc = new THREE.Mesh(new THREE.SphereGeometry(.17, 10, 8), bm);
+    bc.position.set(-w*.3, h + .55, -d*.3); g.add(bc);
+    blinkers.push({ mat: bm, ph: Math.random() * 7 });
+  }
+  return g;
+}
+function buildBillboard(x, y, z, rotY, text, bg, fg, sub){
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY; scene.add(g);
+  box(5.6, 2.3, .16, 0x3a3f45, 0, 0, -.1, g);
+  const bbTex = makeSignTexture(text, bg, fg, sub);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(5.3, 2.05, .1),
+    new THREE.MeshStandardMaterial({ map: bbTex, roughness:.65, emissive: 0xffffff, emissiveMap: bbTex, emissiveIntensity: .85 }));
+  glowMats.push(board.material);
+  board.castShadow = true; g.add(board);
+  return g;
+}
+function buildZebra(){
+  const m = mat(0xe6e3da, {roughness:.95});
+  const stripe = (w, d, x, z, rot) => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(w, .014, d), m);
+    s.position.set(x, .05, z); s.rotation.y = rot || 0; s.receiveShadow = true; scene.add(s);
+  };
+  for(let i = 0; i < 5; i++){
+    const p = -4.4 + i * 2.2;
+    stripe(.95, 3.8, p, -8.4, 0); stripe(.95, 3.8, p, 8.4, 0);
+    stripe(3.8, .95, -8.4, p, 0); stripe(3.8, .95, 8.4, p, 0);
+  }
+  [-4.6, -1.6, 1.6, 4.6].forEach(dd=>{
+    stripe(.9, 3.6, dd, dd, Math.PI/4);
+    stripe(.9, 3.6, dd, -dd, -Math.PI/4);
+  });
+}
+function buildTrafficLight(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -z); scene.add(g);
+  cyl(.07,.09, 3.6, 0x3f464d, 0, 1.8, 0, g, 8);
+  box(.38, 1.05, .34, 0x2c3138, 0, 3.35, .05, g);
+  const dot = (m, y) => { const c = cyl(.11,.11, .06, 0, 0, y, .24, g, 12, { mat: m }); c.rotation.x = Math.PI/2; };
+  dot(trafficMats.r, 3.68); dot(trafficMats.y, 3.35); dot(trafficMats.g, 3.02);
+  return g;
+}
+function buildCone(x, z, tipped){
+  const g = new THREE.Group(); g.position.set(x, tipped ? .17 : 0, z); scene.add(g);
+  if(tipped) g.rotation.z = 1.45;
+  const c = new THREE.Mesh(new THREE.ConeGeometry(.26,.62,12), mat(0xc96a2e));
+  c.position.y = .31; c.castShadow = true; g.add(c);
+  cyl(.17,.2, .14, 0xe8e2d4, 0, .3, 0, g, 12);
+  box(.44,.05,.44, 0xb85f28, 0, .03, 0, g);
+  return g;
+}
+function buildVending(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(.95, 1.7, .65, 0x9e3d34, 0, .85, 0, g);
+  box(.72, .42, .03, 0x39424c, -.05, 1.22, .34, g, {roughness:.25});
+  box(.72, .55, .03, 0xd8d4c8, -.05, .62, .34, g);
+  box(.14, .3, .03, 0x2c3138, .36, .95, .34, g);
+  return g;
+}
+function buildBin(x, z, c){
+  cyl(.3,.26, .72, c || 0x5d6e5a, x, .36, z, scene, 12);
+  cyl(.32,.32, .08, 0x4c565f, x, .74, z, scene, 12);
+}
+function buildHydrant(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  cyl(.14,.17, .52, 0xa03d31, 0, .26, 0, g, 10);
+  ball(.13, 0xa03d31, 0, .58, 0, g);
+  cyl(.05,.05, .34, 0xc9a227, 0, .38, 0, g, 8).rotation.z = Math.PI/2;
+  return g;
+}
+function buildBarrier(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(.18, .8, .18, 0x4c5054, -1.3, .4, 0, g);
+  box(.18, .8, .18, 0x4c5054, 1.3, .4, 0, g);
+  for(let i = 0; i < 5; i++) box(.54, .3, .1, i % 2 ? 0xe6e3da : 0xc23b31, -1.08 + i * .54, .72, 0, g);
+  return g;
+}
+function buildBusStop(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  cyl(.05,.05, 2.3, 0x4c5054, -.8, 1.15, 0, g, 8);
+  const sign = cyl(.34,.34, .05, 0x31517a, -.8, 2.15, 0, g, 20); sign.rotation.x = Math.PI/2;
+  box(1.9, .09, .48, 0x8a6f4d, .3, .48, 0, g);
+  box(.08, .45, .4, 0x4c5054, -.5, .22, 0, g);
+  box(.08, .45, .4, 0x4c5054, 1.1, .22, 0, g);
+  return g;
+}
+function buildShopSign(x, z, rotY, text, bg){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  cyl(.05,.05, 2.1, 0x4c5054, 0, 1.05, 0, g, 8);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(1.8, .9, .09),
+    new THREE.MeshStandardMaterial({ map: makeSignTexture(text, bg, "#f5f2ea"), roughness:.7 }));
+  board.position.y = 1.95; board.castShadow = true; g.add(board);
+  return g;
+}
+function buildSkyline(){
+  const m = mat(0x232a44, {roughness:1});
+  skylineMat = m;
+  for(let i = 0; i < 15; i++){
+    const a = i / 15 * Math.PI * 2 + .2;
+    const r = 58 + (i % 4) * 5;
+    const h = 13 + ((i * 7) % 16);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(8 + (i % 3) * 3, h, 8 + (i % 4) * 2), m);
+    b.position.set(Math.cos(a) * r, h/2 - .5, Math.sin(a) * r);
+    b.rotation.y = a + .3; scene.add(b);
+  }
+}
+function buildWreckCar(color, x, z, rotY, flipped){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  const bodyG = new THREE.Group(); g.add(bodyG);
+  box(2.3,.62,1.15, color, 0, .55, 0, bodyG);                          // 車身（啞色）
+  box(1.25,.55,1.05, color, -.1, 1.08, 0, bodyG);                      // 車廂
+  box(1.1,.1,.95, 0x93a5ad, -.1, 1.38, 0, bodyG, {roughness:.3});      // 爛玻璃頂
+  const wheelG = new THREE.CylinderGeometry(.3,.3,.2,14);
+  [[-.8,.58],[.8,.58],[-.8,-.58],[.8,-.58]].forEach(p=>{
+    const w = new THREE.Mesh(wheelG, mat(0x3a3f4a)); w.rotation.x = Math.PI/2;
+    w.position.set(p[0], .3, p[1]); w.castShadow = true; bodyG.add(w);
+  });
+  box(.5,.3,.9, 0x84898f, 1.25, .62, 0, bodyG).rotation.z = -.5;       // 撞凹嘅車頭
+  if(flipped){ bodyG.rotation.z = Math.PI; bodyG.position.y = 1.45; bodyG.rotation.x = .12; }
+  else { bodyG.rotation.z = .05; bodyG.rotation.x = -.03; }
+  return g;
+}
+function buildLamp(x, z, tilt){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.z = tilt || 0; scene.add(g);
+  cyl(.06,.09, 2.6, 0x4c565f, 0, 1.3, 0, g, 8);
+  ball(.2, 0xffeec2, 0, 2.75, 0, g, {emissive:0x776622, roughness:.4});
+  return g;
+}
+function buildTree(x, z, s){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s || 1); scene.add(g);
+  cyl(.16,.22, 1.0, 0x8a6f4d, 0, .5, 0, g, 8);
+  ball(1.05, 0x74945e, 0, 1.9, 0, g, {roughness:.95});
+  ball(.75, 0x87986a, .55, 1.45, .2, g, {roughness:.95});
+  return g;
+}
+function buildDeadTree(x, z, s){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s || 1); g.rotation.y = x * 1.7; scene.add(g);
+  const trunk = cyl(.13,.22, 1.9, 0x6e5a48, 0, .95, 0, g, 8); trunk.rotation.z = .07;
+  const b1 = cyl(.04,.07, 1.2, 0x6e5a48, .45, 2.1, 0, g, 6); b1.rotation.z = -.8;
+  const b2 = cyl(.035,.06, 1.0, 0x6e5a48, -.4, 2.3, .15, g, 6); b2.rotation.z = .9; b2.rotation.x = .3;
+  const b3 = cyl(.03,.05, .8, 0x6e5a48, .05, 2.5, -.3, g, 6); b3.rotation.x = -.7;
+  return g;
+}
+function buildRubble(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  const geo = new THREE.DodecahedronGeometry(.5);
+  [[0,0,0,.9],[.6,.1,.3,.6],[-.5,.05,.4,.7],[.2,.35,-.3,.5]].forEach(p=>{
+    const m = new THREE.Mesh(geo, mat(0xa8a294)); m.position.set(p[0], p[1]+.2, p[2]);
+    m.scale.setScalar(p[3]); m.rotation.set(p[0]*3, p[2]*5, 1); m.castShadow = true; g.add(m);
+  });
+  return g;
+}
+function buildZombieMesh(){
+  const g = new THREE.Group();
+  const skin = ZSKIN[Math.random()*ZSKIN.length|0];
+  const cloth = ZCLOTH[Math.random()*ZCLOTH.length|0];
+  const body = cyl(.36,.48,.85, cloth, 0, .95, 0, g, 16);
+  ball(.55, skin, 0, 1.78, 0, g);                                      // 大頭
+  ball(.13, 0xffffff, -.19, 1.88, .44, g, {roughness:.35});            // 眼白
+  ball(.13, 0xffffff, .19, 1.88, .44, g, {roughness:.35});
+  ball(.065, 0x333344, -.19, 1.88, .55, g, {roughness:.3});            // 眼珠
+  ball(.065, 0x333344, .19, 1.88, .55, g, {roughness:.3});
+  ball(.11, 0xffa8b8, -.34, 1.66, .44, g, {roughness:.6});             // 腮紅
+  ball(.11, 0xffa8b8, .34, 1.66, .44, g, {roughness:.6});
+  ball(.07, 0x7a4a3a, 0, 1.6, .53, g, {roughness:.6});                 // 嘴仔
+  box(.2,.68,.24, skin, -.52, 1.05, .34, g).rotation.x = -1.35;         // 手（伸前）
+  box(.2,.68,.24, skin, .52, 1.05, .34, g).rotation.x = -1.35;
+  box(.26,.42,.3, 0x6b5b73, -.2, .21, 0, g);
+  box(.26,.42,.3, 0x6b5b73, .2, .21, 0, g);
+  const r = Math.random();
+  if(r < .3){ const hat = new THREE.Mesh(new THREE.ConeGeometry(.3,.62,14), mat(0xff922b));
+    hat.position.set(.1, 2.42, 0); hat.rotation.z = -.15; hat.castShadow = true; g.add(hat); }
+  else if(r < .5){ ball(.17, 0xff5d8f, .42, 2.2, 0, g); ball(.17, 0xff5d8f, .62, 2.05, 0, g); }  // 蝴蝶結
+  g.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+  g.userData.body = body;
+  return g;
+}
+function makeBadge(hp){
+  const cv = document.createElement("canvas"); cv.width = cv.height = 96;
+  const x = cv.getContext("2d");
+  x.fillStyle = "#ff5d5d"; x.beginPath(); x.arc(48,48,40,0,7); x.fill();
+  x.fillStyle = "#fff"; x.font = "900 52px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle";
+  x.fillText(hp, 48, 52);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent:true }));
+  sp.scale.setScalar(1.05); sp.position.y = 3.0;
+  return sp;
+}
+function burst(pos, color){
+  for(let i = 0; i < 14; i++){
+    const m = ball(.09 + Math.random()*.08, color, pos.x, pos.y, pos.z, scene, {roughness:.5});
+    m.castShadow = false;
+    particles.push({ m, vx:(Math.random()-.5)*7, vy:3+Math.random()*5, vz:(Math.random()-.5)*7, life:.55 });
+  }
+}
+
+function makeGlowTexture(){
+  const cv = document.createElement("canvas"); cv.width = cv.height = 128;
+  const x = cv.getContext("2d");
+  const gr = x.createRadialGradient(64,64,6,64,64,62);
+  gr.addColorStop(0,"rgba(255,255,255,.85)"); gr.addColorStop(.55,"rgba(255,255,255,.38)"); gr.addColorStop(1,"rgba(255,255,255,0)");
+  x.fillStyle = gr; x.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(cv);
+}
+function buildFire(x, z, s, baseY){
+  baseY = baseY || 0;
+  const g = new THREE.Group(); g.position.set(x, baseY, z); scene.add(g);
+  ball(.5*s, 0x3a3630, 0, .15, 0, g, {roughness:1}).castShadow = false;   // 燒焦底
+  const flames = [];
+  [[0,0,1.25,.42],[.4*s,.15,.95,.3],[-.38*s,-.1,1.05,.32],[.1*s,-.35*s,.8,.26],[-.15*s,.35*s,.85,.27]].forEach((f, i)=>{
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(f[3]*s, f[2]*s, 8),
+      new THREE.MeshBasicMaterial({ color: i % 2 ? 0xffd23e : 0xff7b24 }));
+    cone.position.set(f[0], f[2]*s/2 + .1, f[1]); g.add(cone);
+    flames.push({ m: cone, ph: i * 1.7, baseY: f[2]*s });
+  });
+  const light = new THREE.PointLight(0xff8c3a, 1.15, 17, 2);
+  light.position.set(x, baseY + 1.3, z); scene.add(light);
+  const smokes = [];
+  for(let i = 0; i < 9; i++){
+    const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0x454b50, transparent: true, opacity: 0, depthWrite: false }));
+    sm.material.rotation = Math.random() * 3;
+    sm.userData = { age: Math.random() * 3.4, life: 2.6 + Math.random() * 1.6, seed: Math.random() * 7, ox: (Math.random()-.5)*.7, oz: (Math.random()-.5)*.7 };
+    scene.add(sm); smokes.push(sm);
+  }
+  fires.push({ x, z, s, baseY, flames, light, smokes, ph: Math.random() * 7 });
+}
+function makeBubbleTexture(){
+  const cv = document.createElement("canvas"); cv.width = 256; cv.height = 144;
+  const x = cv.getContext("2d");
+  const rr = (a,b,w,h,r)=>{ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); };
+  rr(8, 8, 240, 100, 26); x.fillStyle = "rgba(255,255,255,.96)"; x.fill();
+  x.beginPath(); x.moveTo(104, 106); x.lineTo(136, 106); x.lineTo(118, 136); x.closePath(); x.fill();
+  x.fillStyle = "#c23b31"; x.font = "900 56px 'PingFang HK','Microsoft JhengHei',sans-serif"; x.textAlign = "center";
+  x.fillText("救命！", 128, 76);
+  return new THREE.CanvasTexture(cv);
+}
+function buildSurvivor(x, y, z, shirt){
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = Math.atan2(-x, -z); scene.add(g);
+  cyl(.16,.2, .55, shirt, 0, .28, 0, g, 10);
+  ball(.19, 0xffd9b3, 0, .72, 0, g);
+  ball(.2, 0x4a3a2c, 0, .82, 0, g).scale.y = .55;
+  const armGeo = new THREE.BoxGeometry(.09, .5, .09);
+  const pivotL = new THREE.Group(); pivotL.position.set(-.2, .52, 0); g.add(pivotL);
+  const aL = new THREE.Mesh(armGeo, mat(shirt)); aL.position.y = .25; aL.castShadow = true; pivotL.add(aL);
+  const pivotR = new THREE.Group(); pivotR.position.set(.2, .52, 0); g.add(pivotR);
+  const aR = new THREE.Mesh(armGeo, mat(shirt)); aR.position.y = .25; aR.castShadow = true; pivotR.add(aR);
+  const bubble = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .9),
+    new THREE.MeshBasicMaterial({ map: bubbleTex, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+  bubble.position.set(0, 1.6, 0); g.add(bubble);
+  survivors.push({ pivotL, pivotR, bubble, ph: Math.random() * 7 });
+  return g;
+}
+function buildPoliceCar(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(2.3,.62,1.15, 0xe3e0d8, 0, .55, 0, g);
+  box(1.25,.55,1.05, 0xd8d4ca, -.1, 1.08, 0, g);
+  box(1.3,.3,1.08, 0x3c4652, -.1, 1.14, 0, g, {roughness:.3});          // 玻璃帶
+  box(2.32,.16,1.17, 0x3a6bd8, 0, .6, 0, g);                            // 藍色腰線
+  box(.02,.4,.8, 0x2e3440, 1.16, .62, 0, g);
+  const wheelG = new THREE.CylinderGeometry(.3,.3,.2,14);
+  [[-.8,.58],[.8,.58],[-.8,-.58],[.8,-.58]].forEach(p=>{
+    const w = new THREE.Mesh(wheelG, mat(0x2c3038)); w.rotation.x = Math.PI/2;
+    w.position.set(p[0], .3, p[1]); w.castShadow = true; g.add(w);
+  });
+  box(.95,.13,.36, 0x2e3440, -.1, 1.44, 0, g);                          // 燈架
+  const redMat = new THREE.MeshStandardMaterial({ color:0x7a1616, emissive:0xff2a2a, emissiveIntensity:.1, roughness:.4 });
+  const blueMat = new THREE.MeshStandardMaterial({ color:0x16286e, emissive:0x2a5aff, emissiveIntensity:.1, roughness:.4 });
+  const rl = new THREE.Mesh(new THREE.BoxGeometry(.4,.17,.3), redMat); rl.position.set(-.36, 1.56, 0); g.add(rl);
+  const bl = new THREE.Mesh(new THREE.BoxGeometry(.4,.17,.3), blueMat); bl.position.set(.16, 1.56, 0); g.add(bl);
+  const mkGlow = c => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: c, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    sp.scale.setScalar(2.2); sp.position.y = 1.6; g.add(sp); return sp; };
+  police = { redMat, blueMat, redGlow: mkGlow(0xff3b30), blueGlow: mkGlow(0x3b82f6) };
+  police.redGlow.position.x = -.36; police.blueGlow.position.x = .16;
+  g.rotation.z = .03;
+  return g;
+}
+function buildPowerPole(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.z = .15; g.rotation.y = .5; scene.add(g);
+  cyl(.09,.13, 5.4, 0x5d4c3a, 0, 2.7, 0, g, 8);
+  box(1.8,.13,.13, 0x5d4c3a, 0, 4.75, 0, g);
+  const cableM = { mat: mat(0x2e2a26, {roughness:.6}) };
+  const seg1 = cyl(.03,.03, 2.0, 0, .95, 3.85, .1, g, 6, cableM); seg1.rotation.z = .28;
+  const seg2 = cyl(.03,.03, 1.8, 0, 1.32, 2.2, .18, g, 6, cableM); seg2.rotation.z = .05;
+  sparkTipObj = new THREE.Object3D(); sparkTipObj.position.set(1.36, 1.28, .2); g.add(sparkTipObj);
+  sparkLight = new THREE.PointLight(0xbfe3ff, 0, 13, 2); scene.add(sparkLight);
+  const fallen = cyl(.08,.1, 2.4, 0x5d4c3a, 2.6, .12, .8, g, 8); fallen.rotation.z = Math.PI/2; fallen.rotation.y = .4;
+  return g;
+}
+function buildToxicCorner(x, z){
+  const g = new THREE.Group(); g.position.set(x, .12, z); scene.add(g);
+  const barrel = (bx, bz, c, tipped) => {
+    const b = cyl(.42,.42, 1.05, c, bx, tipped ? .43 : .53, bz, g, 14);
+    if(tipped) b.rotation.z = Math.PI/2 - .12;
+    cyl(.43,.43, .12, 0x6e6a5e, bx, tipped ? .43 : .95, bz, g, 14).rotation.z = b.rotation.z;
+  };
+  barrel(0, 0, 0xc9ae3a, false);
+  barrel(.95, .3, 0xa89a78, false);
+  barrel(.4, 1.15, 0xc9ae3a, true);
+  toxicMat = new THREE.MeshBasicMaterial({ color: 0x86e07a, transparent: true, opacity: .5 });
+  const puddle = new THREE.Mesh(new THREE.CircleGeometry(1.7, 20), toxicMat);
+  puddle.rotation.x = -Math.PI/2; puddle.position.set(2.1, .015, 1.9); g.add(puddle);
+  const puddle2 = new THREE.Mesh(new THREE.CircleGeometry(.9, 16), toxicMat);
+  puddle2.rotation.x = -Math.PI/2; puddle2.position.set(1.5, .017, 1.2); g.add(puddle2);
+  // 警告牌
+  const sign = new THREE.Group(); sign.position.set(3.4, 0, 3.1); sign.rotation.y = Math.atan2(-(x+3.4), -(z+3.1)); g.add(sign);
+  box(.08, 1.15, .08, 0x6e6a5e, -.4, .57, 0, sign);
+  box(.08, 1.15, .08, 0x6e6a5e, .4, .57, 0, sign);
+  const cv = document.createElement("canvas"); cv.width = 128; cv.height = 104;
+  const cx = cv.getContext("2d");
+  cx.fillStyle = "#e8c832"; cx.fillRect(0,0,128,104);
+  cx.strokeStyle = "#222"; cx.lineWidth = 6; cx.strokeRect(4,4,120,96);
+  cx.fillStyle = "#222"; cx.beginPath(); cx.moveTo(64,16); cx.lineTo(96,74); cx.lineTo(32,74); cx.closePath(); cx.fill();
+  cx.fillStyle = "#e8c832"; cx.font = "900 40px sans-serif"; cx.textAlign = "center"; cx.fillText("!", 64, 68);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(1.05,.85,.06),
+    new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(cv), roughness:.7 }));
+  board.position.y = 1.05; board.castShadow = true; sign.add(board);
+  return g;
+}
+function buildSubway(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, .12, z); g.rotation.y = rotY; scene.add(g);
+  box(3.4, .18, 2.2, 0x4c5054, 0, .02, 0, g);                            // 凹落去嘅樓梯口（深色）
+  for(let i = 0; i < 3; i++) box(3.2 - i*.5, .09, .34, 0x8d9296, 0, .1 + i*.02, -.8 + i*.42, g);
+  [[-1.65,0],[1.65,0]].forEach(sx=>{
+    cyl(.04,.04, .95, 0x2e7d5b, sx, .5, 1.05, g, 8);
+    cyl(.04,.04, .95, 0x2e7d5b, sx, .5, -1.05, g, 8);
+  });
+  const rail = cyl(.035,.035, 3.3, 0x2e7d5b, 0, .95, 1.05, g, 8); rail.rotation.z = Math.PI/2;
+  const rail2 = cyl(.035,.035, 3.3, 0x2e7d5b, 0, .95, -1.05, g, 8); rail2.rotation.z = Math.PI/2;
+  const subTex = makeSignTexture("地鐵站", "#1f4d3a", "#eaf5ee", "SUBWAY");
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(1.7, .62, .1),
+    new THREE.MeshStandardMaterial({ map: subTex, roughness:.6, emissive: 0xffffff, emissiveMap: subTex, emissiveIntensity: .85 }));
+  glowMats.push(sign.material);
+  sign.position.set(0, 1.75, 1.05); sign.castShadow = true; g.add(sign);
+  cyl(.05,.05, 1.5, 0x4c5054, -.8, .75, 1.05, g, 8);
+  cyl(.05,.05, 1.5, 0x4c5054, .8, .75, 1.05, g, 8);
+  return g;
+}
+function buildFootbridge(z){
+  const g = new THREE.Group(); g.position.set(0, 0, z); scene.add(g);
+  box(17.5, .35, 2.2, 0x7d8894, 0, 3.6, 0, g);                            // 橋身
+  box(17.5, .5, .08, 0x9aa4ae, 0, 4.05, 1.06, g);                         // 欄杆
+  box(17.5, .5, .08, 0x9aa4ae, 0, 4.05, -1.06, g);
+  [-7.6, 7.6].forEach(sx=>{
+    for(let i = 0; i < 5; i++)
+      box(1.1, .3, 2.0, 0x8d9296, sx + (sx < 0 ? -1 : 1) * (i * .62 - .4), 3.3 - i * .68, 0, g);
+    cyl(.09,.11, 3.5, 0x6e767e, sx, 1.75, .8, g, 8);
+    cyl(.09,.11, 3.5, 0x6e767e, sx, 1.75, -.8, g, 8);
+  });
+  return g;
+}
+function buildPedSignal(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -z); scene.add(g);
+  cyl(.05,.06, 2.5, 0x3f464d, 0, 1.25, 0, g, 8);
+  box(.44, .62, .2, 0x2c3138, 0, 2.6, 0, g);
+  const dot = (m, y) => { const c = cyl(.09,.09, .05, 0, 0, y, .11, g, 10, { mat: m }); c.rotation.x = Math.PI/2; };
+  dot(pedMats.r, 2.76); dot(pedMats.g, 2.44);
+  return g;
+}
+function buildBus(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(5.6, 1.5, 1.5, 0x7d8a99, 0, 1.15, 0, g);
+  box(5.64, .55, 1.54, 0x39424c, 0, 1.5, 0, g, {roughness:.3});          // 玻璃帶
+  box(5.64, .3, 1.54, 0xc7b299, 0, .62, 0, g);
+  const wheelG = new THREE.CylinderGeometry(.42,.42,.26,14);
+  [[-1.9,.78],[1.9,.78],[-1.9,-.78],[1.9,-.78]].forEach(p=>{
+    const w = new THREE.Mesh(wheelG, mat(0x2c3038)); w.rotation.x = Math.PI/2;
+    w.position.set(p[0], .42, p[1]); w.castShadow = true; g.add(w);
+  });
+  g.rotation.z = .02;
+  return g;
+}
+function buildPostBox(x, z){
+  const p = cyl(.3,.3, .95, 0xa8322a, x, .6, z, scene, 14);
+  ball(.3, 0xa8322a, x, 1.07, z, scene);
+  box(.36, .07, .05, 0x5d1f1a, x, .88, z + .29, scene);
+  return p;
+}
+function buildPhoneBooth(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, .12, z); g.rotation.y = rotY; scene.add(g);
+  box(1.0, .12, 1.0, 0x8a3324, 0, 2.06, 0, g);
+  box(1.0, .1, 1.0, 0x8a3324, 0, .05, 0, g);
+  [[-.46,-.46],[.46,-.46],[-.46,.46],[.46,.46]].forEach(p=> box(.09, 2.0, .09, 0x8a3324, p[0], 1.03, p[1], g));
+  const glassM = { mat: mat(0xaec6cf, {roughness:.15, transparent:true, opacity:.5}) };
+  box(.86, 1.7, .03, 0, 0, 1.05, .47, g, glassM);
+  box(.86, 1.7, .03, 0, 0, 1.05, -.47, g, glassM);
+  box(.03, 1.7, .86, 0, .47, 1.05, 0, g, glassM);
+  box(.3, .5, .12, 0x2c3138, -.3, 1.25, -.38, g);
+  return g;
+}
+function buildBike(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, .3, z); g.rotation.set(0, rotY, Math.PI/2 - .12); scene.add(g);
+  const wheelG = new THREE.TorusGeometry(.3, .035, 8, 18);
+  [-.5, .5].forEach(wx=>{
+    const w = new THREE.Mesh(wheelG, mat(0x3a3f45)); w.position.set(wx, 0, 0); w.castShadow = true; g.add(w);
+  });
+  const bar = (x1, x2, r) => { const b = cyl(.03,.03, Math.abs(x2-x1), 0x7a4a52, (x1+x2)/2, .1, 0, g, 6); b.rotation.z = Math.PI/2 - r; };
+  bar(-.5, .45, .35); bar(-.1, .5, -.2);
+  box(.22, .06, .16, 0x4c3a2a, -.42, .34, 0, g);
+  return g;
+}
+function buildRailing(x1, z1, x2, z2){
+  const g = new THREE.Group(); scene.add(g);
+  const len = Math.hypot(x2 - x1, z2 - z1), n = Math.max(2, Math.round(len / 1.3));
+  const ang = Math.atan2(z2 - z1, x2 - x1);
+  for(let i = 0; i <= n; i++){
+    const t = i / n;
+    cyl(.04,.04, .75, 0x9aa0a4, x1 + (x2-x1)*t, .5, z1 + (z2-z1)*t, g, 6);
+  }
+  [.82, .45].forEach(h=>{
+    const barM = cyl(.03,.03, len, 0xb9bfc4, (x1+x2)/2, h, (z1+z2)/2, g, 6);
+    barM.rotation.z = Math.PI/2; barM.rotation.y = -ang;
+  });
+  return g;
+}
+function makeVerticalSignTexture(text, bg){
+  const cv = document.createElement("canvas"); cv.width = 96; cv.height = 288;
+  const x = cv.getContext("2d");
+  x.fillStyle = bg || "#26262e"; x.fillRect(0,0,96,288);
+  x.fillStyle = "#ffffff"; x.font = "900 62px 'PingFang HK','Microsoft JhengHei',sans-serif"; x.textAlign = "center";
+  [...text].forEach((ch, i)=> x.fillText(ch, 48, 80 + i * 84));
+  return new THREE.CanvasTexture(cv);
+}
+function buildNeonSign(x, y, z, rotY, text, color, emissive){
+  const tex = makeVerticalSignTexture(text);
+  const m = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.1, roughness:.5 });
+  m.emissive.setHex(emissive);
+  neonMats.push(m);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(.16, 2.7, .95), m);
+  sign.position.set(x, y, z); sign.rotation.y = rotY; sign.castShadow = true; scene.add(sign);
+  return sign;
+}
+function buildRoadPaint(x, z){
+  const cv = document.createElement("canvas"); cv.width = 512; cv.height = 128;
+  const cx = cv.getContext("2d");
+  cx.clearRect(0,0,512,128);
+  cx.fillStyle = "rgba(240,238,230,.92)"; cx.font = "900 84px 'PingFang HK','Microsoft JhengHei',sans-serif";
+  cx.textAlign = "center"; cx.fillText("小心喪屍！", 256, 92);
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.3),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, opacity:.9 }));
+  p.rotation.x = -Math.PI/2; p.rotation.z = Math.PI;
+  p.position.set(x, .055, z); scene.add(p);
+  return p;
+}
+function buildBanner(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  cyl(.06,.08, 4.4, 0x4c5054, 0, 2.2, -4.6, g, 8);
+  cyl(.06,.08, 4.4, 0x4c5054, 0, 2.2, 4.6, g, 8);
+  const tex = makeSignTexture("守住路口", "#7a2e22", "#f5e8d0");
+  bannerMesh = new THREE.Mesh(new THREE.BoxGeometry(.06, .85, 8.8),
+    new THREE.MeshStandardMaterial({ map: tex, roughness:.8, side: THREE.DoubleSide }));
+  bannerMesh.position.set(0, 3.85, 0); bannerMesh.castShadow = true; g.add(bannerMesh);
+  return g;
+}
+function buildBirds(){
+  const g = new THREE.Group(); scene.add(g);
+  const m = mat(0x3c4148, {roughness:.9});
+  for(let i = 0; i < 4; i++){
+    const b = new THREE.Group();
+    const w1 = new THREE.Mesh(new THREE.BoxGeometry(.95, .04, .3), m); w1.position.x = -.48; b.add(w1);
+    const w2 = new THREE.Mesh(new THREE.BoxGeometry(.95, .04, .3), m); w2.position.x = .48; b.add(w2);
+    const pivotL = new THREE.Group(), pivotR = new THREE.Group();
+    pivotL.add(w1); pivotR.add(w2); b.add(pivotL); b.add(pivotR);
+    b.userData = { pivotL, pivotR, off: i * 1.7, rad: 13 + i * 2.2, h: 19 + i * 1.3, spd: .14 + i * .02 };
+    g.add(b);
+  }
+  return g;
+}
+function makeSteam(x, z){
+  const sprites = [];
+  for(let i = 0; i < 6; i++){
+    const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0xd3d9db, transparent: true, opacity: 0, depthWrite: false }));
+    sm.userData = { age: Math.random() * 2.2, life: 1.8 + Math.random(), seed: Math.random() * 7 };
+    sm.position.set(x, .4, z);
+    scene.add(sm); sprites.push(sm);
+  }
+  steams.push({ x, z, sprites });
+}
+function buildFogBanks(){
+  for(let i = 0; i < 9; i++){
+    const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0x8fa3c8, transparent: true, opacity: .09, depthWrite: false }));
+    const sc = 11 + Math.random() * 10;
+    sm.scale.set(sc, sc * .42, 1);
+    sm.position.set(-38 + Math.random() * 76, .9 + Math.random() * .9, -34 + Math.random() * 68);
+    sm.userData = { spd: .35 + Math.random() * .5, ph: Math.random() * 7, baseO: .07 + Math.random() * .07 };
+    scene.add(sm); fogBanks.push(sm);
+  }
+}
+function buildParkingMeter(x, z){
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  cyl(.035,.035, 1.05, 0x6e767e, 0, .52, 0, g, 8);
+  box(.22, .34, .12, 0x9aa0a4, 0, 1.2, 0, g);
+  ball(.09, 0xc23b31, 0, 1.42, 0, g);
+  return g;
+}
+function buildNewsBox(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, .12, z); g.rotation.y = rotY; scene.add(g);
+  box(.85, .95, .5, 0x31517a, 0, .48, 0, g);
+  box(.7, .3, .03, 0xe8e6df, 0, .68, .26, g);
+  box(.87, .08, .52, 0x243d5e, 0, .99, 0, g);
+  return g;
+}
+function buildWallAC(x, y, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY; scene.add(g);
+  box(.85, .6, .3, 0xa8adb2, 0, 0, 0, g);
+  const fan = cyl(.2,.2, .04, 0x5d646a, 0, 0, .17, g, 16); fan.rotation.x = Math.PI/2;
+  return g;
+}
+function buildRoadArrow(x, z, rotY){
+  const cv = document.createElement("canvas"); cv.width = 96; cv.height = 160;
+  const cx = cv.getContext("2d");
+  cx.fillStyle = "rgba(240,238,230,.9)";
+  cx.beginPath(); cx.moveTo(48,6); cx.lineTo(88,62); cx.lineTo(60,62); cx.lineTo(60,150); cx.lineTo(36,150); cx.lineTo(36,62); cx.lineTo(8,62); cx.closePath(); cx.fill();
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.5),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, opacity:.85 }));
+  p.rotation.x = -Math.PI/2; p.rotation.z = rotY;
+  p.position.set(x, .052, z); scene.add(p);
+  return p;
+}
+function buildLightBox(x, z, rotY, text, bg){
+  const g = new THREE.Group(); g.position.set(x, .12, z); g.rotation.y = rotY; scene.add(g);
+  box(.95, 1.5, .16, 0x3a3f45, 0, .85, 0, g);
+  const lbTex = makeSignTexture(text, bg, "#f5f2ea");
+  const board = new THREE.Mesh(new THREE.BoxGeometry(.85, 1.35, .18),
+    new THREE.MeshStandardMaterial({ map: lbTex, roughness:.6, emissive: 0xffffff, emissiveMap: lbTex, emissiveIntensity: .85 }));
+  glowMats.push(board.material);
+  board.position.y = .85; g.add(board);
+  return g;
+}
+function buildTippedBin(x, z){
+  const b = cyl(.3,.26, .72, 0x6e5a4a, x, .3, z, scene, 12);
+  b.rotation.z = 1.85;
+  [[.6,.2],[-.5,.5],[.2,-.6],[-.3,-.3]].forEach(p=> box(.16,.06,.13, 0xcfd2cd, x + p[0], .05, z + p[1], scene));
+}
+function buildPuddle(x, z, r){
+  const p = new THREE.Mesh(new THREE.CircleGeometry(r, 20),
+    new THREE.MeshStandardMaterial({ color: 0x8ea6b0, roughness:.08, metalness:.35, transparent:true, opacity:.88 }));
+  p.rotation.x = -Math.PI/2; p.position.set(x, .045, z); p.receiveShadow = true; scene.add(p);
+  return p;
+}
+function buildPerchedBirds(){
+  const m = mat(0x3c4148, {roughness:.9});
+  [[7.4,-13.5],[7.4,-5.5],[7.4,-1]].forEach(p=>{
+    const g = new THREE.Group(); g.position.set(p[0], 5.02, p[1]); scene.add(g);
+    ball(.11, 0x3c4148, 0, .08, 0, g, {roughness:.9});
+    ball(.07, 0x3c4148, 0, .2, .06, g, {roughness:.9});
+    box(.05,.02,.16, 0x3c4148, 0, .06, -.14, g).rotation.x = .5;
+  });
+}
+function buildNobori(x, z, text, bg){
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  cyl(.035,.035, 2.7, 0x4c5054, 0, 1.35, 0, g, 8);
+  const flag = new THREE.Mesh(new THREE.PlaneGeometry(.58, 1.95),
+    new THREE.MeshStandardMaterial({ map: makeVerticalSignTexture(text, bg), side: THREE.DoubleSide, roughness:.8 }));
+  flag.position.set(.31, 1.62, 0); flag.castShadow = true; g.add(flag);
+  nobori.push({ m: flag, ph: Math.random() * 7 });
+  return g;
+}
+function buildRain(){
+  rainPos = new Float32Array(RAIN_N * 6);
+  for(let i = 0; i < RAIN_N; i++){
+    const x = (Math.random()-.5) * 76, y = Math.random() * 26, z = (Math.random()-.5) * 76;
+    rainPos.set([x, y, z, x + .12, y - .75, z], i * 6);
+  }
+  rainGeo = new THREE.BufferGeometry();
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0x9fd8ff, transparent: true, opacity: .3 }));
+  scene.add(rain);
+  rainObj = rain;
+}
+function vehicleWheels(g, xs, z, r){
+  const wg = new THREE.CylinderGeometry(r, r, .26, 14);
+  xs.forEach(x => [-z, z].forEach(zz => {
+    const w = new THREE.Mesh(wg, mat(0x2c3038)); w.rotation.x = Math.PI/2;
+    w.position.set(x, r, zz); w.castShadow = true; g.add(w);
+  }));
+}
+function buildTruck(x, z, rotY, cabColor, boxColor){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(3.6, 2.2, 2.1, boxColor, -1.1, 1.55, 0, g);                          // 貨櫃
+  box(3.66, .18, 2.16, 0x3a3f45, -1.1, 2.72, 0, g);
+  box(1.5, 1.35, 1.95, cabColor, 1.95, 1.0, 0, g);                         // 車頭
+  box(1.52, .5, 1.97, 0x39424c, 1.95, 1.42, 0, g, {roughness:.3});         // 擋風玻璃
+  vehicleWheels(g, [-2.2, -.2, 2.2], 1.0, .48);
+  return g;
+}
+function buildAmbulance(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(4.4, 1.7, 1.9, 0xf2f3f0, -.2, 1.2, 0, g);
+  box(1.1, 1.1, 1.85, 0xf2f3f0, 2.35, .95, 0, g);
+  box(1.12, .45, 1.87, 0x39424c, 2.35, 1.28, 0, g, {roughness:.3});
+  box(4.44, .34, 1.94, 0xd23b2e, -.2, .95, 0, g);                          // 紅帶
+  [-1.2, .6].forEach(cx => {                                               // 紅十字
+    box(.5, .16, .02, 0xd23b2e, cx, 1.62, .97, g);
+    box(.16, .5, .02, 0xd23b2e, cx, 1.62, .97, g);
+    box(.5, .16, .02, 0xd23b2e, cx, 1.62, -.97, g);
+    box(.16, .5, .02, 0xd23b2e, cx, 1.62, -.97, g);
+  });
+  const lb = (c, lx) => {
+    const m = new THREE.MeshStandardMaterial({ color: 0x331111, emissive: c, emissiveIntensity: .2, roughness:.4 });
+    const b = new THREE.Mesh(new THREE.BoxGeometry(.34, .12, .3), m);
+    b.position.set(lx, 2.14, 0); g.add(b); blinkers.push({ mat: m, ph: lx * 3 });
+  };
+  lb(0xff2a2a, -.7); lb(0x2a6bff, .1);
+  vehicleWheels(g, [-1.6, 1.9], .92, .42);
+  return g;
+}
+function buildFireTruck(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(5.6, 1.8, 2.0, 0xc22e22, -.3, 1.25, 0, g);
+  box(1.2, 1.25, 1.95, 0xa82318, 3.05, 1.05, 0, g);
+  box(1.22, .5, 1.97, 0x39424c, 3.05, 1.5, 0, g, {roughness:.3});
+  box(5.64, .3, 2.04, 0xf2f3f0, -.3, 1.62, 0, g);                          // 白帶
+  box(4.6, .09, .5, 0xd8d3c8, -.5, 2.32, 0, g);                            // 雲梯
+  for(let i = 0; i < 7; i++) box(.09, .05, .5, 0x9aa0a4, -2.6 + i * .72, 2.38, 0, g);
+  const lb = (c, lx) => {
+    const m = new THREE.MeshStandardMaterial({ color: 0x331111, emissive: c, emissiveIntensity: .2, roughness:.4 });
+    const b = new THREE.Mesh(new THREE.BoxGeometry(.34, .12, .3), m);
+    b.position.set(lx, 1.78, 0); g.add(b); blinkers.push({ mat: m, ph: lx * 4 });
+  };
+  lb(0xff2a2a, 2.8); lb(0x2a6bff, 3.3);
+  vehicleWheels(g, [-2.2, .4, 2.9], .98, .5);
+  return g;
+}
+function makeSmokeColumn(x, z, baseY){
+  const sprites = [];
+  for(let i = 0; i < 14; i++){
+    const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0x3a3f45, transparent: true, opacity: 0, depthWrite: false }));
+    sm.material.rotation = Math.random() * 3;
+    sm.userData = { age: Math.random() * 5, life: 4.2 + Math.random() * 1.6, seed: Math.random() * 7 };
+    scene.add(sm); sprites.push(sm);
+  }
+  columns.push({ x, z, baseY, sprites });
+}
+function makeEmbers(cx, cz, baseY, spreadX, spreadZ, n){
+  const pos = new Float32Array(n * 3); const seeds = [];
+  for(let i = 0; i < n; i++){
+    pos[i*3] = cx + (Math.random()-.5) * spreadX;
+    pos[i*3+1] = baseY + Math.random() * 4;
+    pos[i*3+2] = cz + (Math.random()-.5) * spreadZ;
+    seeds.push({ s: .8 + Math.random() * 1.6, ph: Math.random() * 7 });
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffb03a, size: .16, transparent: true, opacity: .95, depthWrite: false }));
+  scene.add(pts);
+  embers.push({ geo, pos, seeds, cx, cz, baseY, spreadX, spreadZ });
+}
+function buildBurningBuilding(){
+  // 焦黑外牆（南面 + 西面，向住路口嗰兩面）
+  const scorchM = new THREE.MeshStandardMaterial({ color: 0x171310, roughness: 1, transparent: true, opacity: .5 });
+  const s1 = new THREE.Mesh(new THREE.PlaneGeometry(7.7, 8.8), scorchM);
+  s1.position.set(13.5, 4.6, -10.7); scene.add(s1);
+  const s2 = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 8.8), scorchM);
+  s2.position.set(9.44, 4.6, -14.5); s2.rotation.y = -Math.PI/2; scene.add(s2);
+  // 窗戶噴火舌（南面 3 層 × 2 窗 + 西面 2 層 × 2 窗）
+  const flameAt = (x, y, z, dirX, dirZ) => {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(.34, 1.05, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff7b24, transparent: true, opacity: .95 }));
+    cone.position.set(x, y, z);
+    cone.rotation.set(dirZ * 1.35, 0, -dirX * 1.35);
+    scene.add(cone);
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(.2, .7, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffd23e, transparent: true, opacity: .95 }));
+    inner.position.copy(cone.position); inner.rotation.copy(cone.rotation); scene.add(inner);
+    windowFlames.push({ m: cone, ph: Math.random() * 7 }, { m: inner, ph: Math.random() * 7 });
+  };
+  [2.6, 5.2, 7.8].forEach(fy => [12.3, 14.6].forEach(fx => flameAt(fx, fy, -10.45, 0, 1)));
+  [3.4, 6.6].forEach(fy => [-16.8, -12.2].forEach(fz => flameAt(9.2, fy, fz, -1, 0)));
+  // 大火光（照亮成條街）
+  const bl = new THREE.PointLight(0xff7b24, 1.5, 32, 2); bl.position.set(13.5, 5, -8.6); scene.add(bl);
+  bigLights.push({ l: bl, ph: 1.3, base: 1.5 });
+  makeSmokeColumn(13.5, -14.5, 9.12);
+  makeEmbers(13.5, -11.8, 1.2, 6, 1.2, 34);
+}
+function buildFireSea(){
+  const char = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 5.6),
+    new THREE.MeshStandardMaterial({ color: 0x191512, roughness: 1, transparent: true, opacity: .92 }));
+  char.rotation.x = -Math.PI/2; char.position.set(17.5, .045, 0); char.receiveShadow = true; scene.add(char);
+  const spots = [[13.2,-1.2,1.5],[14.6,.8,1.9],[15.8,-.6,1.3],[16.9,1.4,1.7],[18.1,-1.5,1.9],[19.3,.4,1.4],[20.4,-.9,1.8],[21.6,1.1,1.5],[14,-2,1.1],[17.2,2,1.2],[20.9,2,1.1],[13.6,1.9,1.2],[19.8,-2,1.2],[16.2,.2,1.6]];
+  for(const [fx, fz, fs] of spots){
+    for(let j = 0; j < 2; j++){
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(.42 * fs * (1 - j * .3), 1.15 * fs * (1 - j * .25), 8),
+        new THREE.MeshBasicMaterial({ color: j ? 0xffd23e : 0xff7b24, transparent: true, opacity: .95 }));
+      cone.position.set(fx + (j ? .18 : 0), .55 * fs * (1 - j * .25), fz + (j ? .12 : 0));
+      scene.add(cone);
+      seaFlames.push({ m: cone, ph: Math.random() * 7 });
+    }
+  }
+  buildFire(15, -1, 1.1);
+  buildFire(20, 1.2, 1.2);
+  const bl = new THREE.PointLight(0xff8c3a, 1.2, 26, 2); bl.position.set(17.5, 2.5, 0); scene.add(bl);
+  bigLights.push({ l: bl, ph: 4.1, base: 1.2 });
+  makeEmbers(17.5, 0, .8, 9, 4, 46);
+}
+function spawnSpark(pos){
+  const m = ball(.04 + Math.random()*.045, 0xfff2a8, pos.x, pos.y, pos.z, scene, { emissive: 0xccaa33, roughness:.3 });
+  m.castShadow = false;
+  particles.push({ m, vx:(Math.random()-.5)*3.6, vy: -0.5 - Math.random()*2, vz:(Math.random()-.5)*3.6, life: .16 + Math.random()*.16 });
+}
+
+function applyMode(){
+  const N = nightMode;
+  scene.background.setHex(N ? 0x0d1128 : 0xb6bfc0);
+  scene.fog.color.setHex(N ? 0x131a36 : 0xb6bfc0);
+  hemiLight.color.setHex(N ? 0x8f9fff : 0xdfe9ea);
+  hemiLight.groundColor.setHex(N ? 0x2a2138 : 0x66654f);
+  hemiLight.intensity = N ? .82 : .62;
+  sunLight.color.setHex(N ? 0x9fb6ff : 0xffe9c4);
+  sunLight.intensity = N ? .68 : .78;
+  glowLights.forEach(l => l.intensity = N ? l.userData.night : 0);
+  groundRefs.base.color.setHex(N ? 0x333a52 : 0x7a756b);
+  groundRefs.road.color.setHex(N ? 0x222633 : 0x5b5e63);
+  groundRefs.pad.color.setHex(N ? 0x3d4359 : 0x8d867b);
+  buildingMats.forEach(b => {
+    b.mat.map = N ? b.nightTex : b.dayTex;
+    b.mat.emissiveMap = N ? b.nightTex : b.dayTex;
+    b.mat.emissiveIntensity = N ? .5 : 0;
+    b.mat.needsUpdate = true;
+  });
+  trimMats.forEach(m => m.emissiveIntensity = N ? 1.7 : .1);
+  glowMats.forEach(m => m.emissiveIntensity = N ? .85 : .05);
+  neonBase = N ? 1.05 : .3;
+  cloudMats.forEach(m => m.color.setHex(N ? 0x39406b : 0xdfe5e5));
+  if(skylineMat) skylineMat.color.setHex(N ? 0x232a44 : 0x646b71);
+  fogBanks.forEach(f => f.material.color.setHex(N ? 0x8fa3c8 : 0xe9eded));
+  if(rainObj) rainObj.visible = N;
+  $('modeBtn').textContent = N ? "☀️ 轉日頭" : "🌙 轉夜晚";
+}
+function initScene(){
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0d1128);
+  scene.fog = new THREE.Fog(0x131a36, 58, 128);
+  camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, .1, 300);
+  renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  $('scene').appendChild(renderer.domElement);
+
+  hemiLight = new THREE.HemisphereLight(0x8f9fff, 0x2a2138, .82);
+  scene.add(hemiLight);
+  const sun = new THREE.DirectionalLight(0x9fb6ff, .68);
+  sunLight = sun;
+  sun.position.set(28, 46, 18); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -46; sun.shadow.camera.right = 46;
+  sun.shadow.camera.top = 46; sun.shadow.camera.bottom = -46;
+  sun.shadow.camera.far = 130;
+  scene.add(sun);
+  // 路口霓虹氣氛燈（青 + 品紅，Cyberpunk 味）
+  const glowC = new THREE.PointLight(0x66d9ff, .85, 36, 2); glowC.position.set(0, 9, 0); glowC.userData.night = .85; scene.add(glowC);
+  const glowM = new THREE.PointLight(0xff4dd2, .5, 30, 2); glowM.position.set(14, 7, -12); glowM.userData.night = .5; scene.add(glowM);
+  glowLights.push(glowC, glowM);
+
+  // ===== 城市地面：十字路口（渋谷式）=====
+  const base = new THREE.Mesh(new THREE.PlaneGeometry(180, 180), mat(0x333a52, {roughness:1}));
+  base.rotation.x = -Math.PI/2; base.receiveShadow = true; scene.add(base);
+  groundRefs.base = base.material;
+  const roadM = mat(0x222633, {roughness:1});
+  groundRefs.road = roadM;
+  const roadV = new THREE.Mesh(new THREE.BoxGeometry(11, .04, 84), roadM);
+  roadV.position.y = .02; roadV.receiveShadow = true; scene.add(roadV);
+  const roadH = new THREE.Mesh(new THREE.BoxGeometry(84, .04, 11), roadM);
+  roadH.position.y = .02; roadH.receiveShadow = true; scene.add(roadH);
+  // 四個街角行人路（升起少少）
+  const padM = mat(0x3d4359, {roughness:1});
+  groundRefs.pad = padM;
+  [[15.5,15.5],[15.5,-15.5],[-15.5,15.5],[-15.5,-15.5]].forEach(p=>{
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(19.5, .12, 19.5), padM);
+    pad.position.set(p[0], .06, p[1]); pad.receiveShadow = true; scene.add(pad);
+  });
+  // 路中心虛線
+  for(let i = -38; i <= 38; i += 4){
+    if(Math.abs(i) < 8) continue;
+    const d1 = box(.26, .012, 1.7, 0xd8c95a, 0, .05, i, scene); d1.castShadow = false;
+    const d2 = box(1.7, .012, .26, 0xd8c95a, i, .05, 0, scene); d2.castShadow = false;
+  }
+  // 渠蓋
+  [[3,-14],[-3.5,10],[12.5,2.5],[-14,-3],[2,20],[-11,4]].forEach(p=>{
+    const mh = new THREE.Mesh(new THREE.CircleGeometry(.55, 16), mat(0x484b50, {roughness:1}));
+    mh.rotation.x = -Math.PI/2; mh.position.set(p[0], .05, p[1]); scene.add(mh);
+  });
+  buildZebra();
+  buildSkyline();
+
+  centerCar = buildCenterCar();
+  hero = buildHero();
+
+  // ===== 大廈（四個街角 + 沿街）=====
+  facadeTex = makeFacadeTexture("night");
+  facadeDay = makeFacadeTexture("day");
+  buildBuilding(-14, -15.5, 9, 8, 11, 0xbfb3a4, { y:.12, tank:true, antenna:true, beacon:true });
+  buildBuilding(-22.5, -11.5, 6, 6.5, 5.5, 0xaeb6ba, { y:.12, ac:true });
+  buildBuilding(-11.5, -22.5, 6.5, 6, 7, 0xc2b49e, { y:.12, shop:0x8a6d3b, shopText:"茶餐廳", shopBg:"#6e5136" });
+  buildBuilding(13.5, -14.5, 8, 7.5, 9, 0xb6b0a2, { y:.12, ac:true, antenna:true });
+  buildBuilding(21.5, -20, 7, 7, 6.5, 0xa8b0ae, { y:.12, tank:true });
+  buildBuilding(20.5, -11, 6, 6, 5, 0xcabfa8, { y:.12, shop:0xc23b31, shopText:"拉麵一番", shopBg:"#7a2e22" });
+  buildBuilding(14, 15, 8, 8, 8, 0xb2a89c, { y:.12, tank:true });
+  buildBuilding(22, 21.5, 7, 6.5, 6, 0xadb5b9, { y:.12, ac:true, rot: Math.PI, shop:0x5d4a7a, shopText:"遊戲機中心", shopBg:"#3a2e55" });
+  buildBuilding(11, 22, 6, 5.5, 4.5, 0xc4bba6, { y:.12, shop:0x2e7d5b, shopText:"便利店", shopBg:"#1f4d3a" });
+  buildBuilding(-15, 14, 8, 7, 10, 0xbab0a0, { y:.12, damaged:true, antenna:true });
+  buildBuilding(-22.5, 20.5, 6, 6, 5, 0xaeb2a6, { y:.12 });
+  buildBuilding(-11, 21.5, 6.5, 6, 6.5, 0xc0b4a8, { y:.12, ac:true });
+  buildBuilding(30.5, -14, 7, 8, 12, 0xb0aa9c, {});
+  buildBuilding(-31, -15, 8, 7, 13, 0xa6aeb4, {});
+  buildBuilding(15, 31, 7, 7, 10, 0xbcb2a0, {});
+  buildBuilding(-16, -31.5, 8, 8, 14, 0xb4ac9e, { tank:true });
+  buildBuilding(-15, 30.5, 7, 7, 7, 0xaeb6ba, {});
+  buildBuilding(31, 16, 7, 8, 11, 0xb8b0a2, { antenna:true, beacon:true });
+  // 廣告牌（渋谷味）
+  buildBillboard(-9.35, 7.6, -15.5, Math.PI/2, "喪屍拉麵", "#8a3324", "#f5e8d0", "ZOMBIE RAMEN");
+  buildBillboard(14, 5.6, 10.85, Math.PI, "藥妝 24H", "#31517a", "#eaf2ff", "DRUG STORE");
+  // 路口四角交通燈
+  trafficMats = {
+    r: new THREE.MeshStandardMaterial({ color:0x4a1414, emissive:0xff2a2a, emissiveIntensity:.15, roughness:.4 }),
+    y: new THREE.MeshStandardMaterial({ color:0x4a3a10, emissive:0xffb020, emissiveIntensity:.15, roughness:.4 }),
+    g: new THREE.MeshStandardMaterial({ color:0x14401c, emissive:0x2aff5a, emissiveIntensity:.15, roughness:.4 })
+  };
+  buildTrafficLight(6.9, -6.9); buildTrafficLight(-6.9, -6.9);
+  buildTrafficLight(6.9, 6.9); buildTrafficLight(-6.9, 6.9);
+  // 街道傢俬
+  buildVending(6.6, -12.5, -.4);
+  buildVending(-12.8, 6.6, Math.PI/2 + .2);
+  buildBin(6.5, 12.2); buildBin(-12.4, -6.4, 0x6e5a4a); buildBin(12.6, 6.4);
+  buildHydrant(-6.5, -12.6);
+  buildBarrier(0, -13.5, 0);
+  buildBarrier(-13.5, 2, Math.PI/2);
+  buildBusStop(12.3, -7.6, -Math.PI/2);
+  buildShopSign(7.2, 13.8, Math.PI, "書店", "#5d4a7a");
+  buildShopSign(-13.9, -7.2, Math.PI/2, "藥房", "#7a2e3a");
+  buildCone(4.2, -7.5, false); buildCone(-5.5, 9.8, false); buildCone(9.6, 4.8, true);
+  buildCone(-8.8, -4.4, false); buildCone(3.1, 12.8, true); buildCone(-3.4, -12.2, false);
+  buildCone(13.8, -3.2, false); buildCone(-12.6, 10.4, true);
+  // 沿街街燈（有兩盞歪咗）
+  [[6.4,-24],[-6.4,-13],[6.4,13.5],[-6.4,24],[13,-6.4],[-13,6.4],[24,6.4],[-24,-6.4]].forEach((p, i)=>{
+    buildLamp(p[0], p[1], i === 1 ? .13 : (i === 5 ? -.1 : 0));
+  });
+  // 行人路樹（生 + 枯）
+  buildTree(7.6, 7.6, 1); buildTree(-7.6, -7.6, 1.1); buildTree(7.6, -7.6, .95);
+  buildDeadTree(-7.6, 7.6, 1); buildDeadTree(20.5, 7.4, .9); buildTree(-20.5, -7.4, 1.05);
+  // 廢車（沿街泊/撞爛）
+  buildWreckCar(0xa8765e, -3.9, -17, .08, false);
+  buildWreckCar(0x7e8894, 17, 3.4, Math.PI/2 + .15, false);
+  buildWreckCar(0x9a8f6a, -16.5, -2.8, -Math.PI/2, true);   // 反轉咗
+  buildWreckCar(0x8f8578, 3.6, 21, -.06, false);
+  buildWreckCar(0x776f66, -21, -3.4, Math.PI/2 - .2, false);
+  // 碎石
+  buildRubble(12.2, -9.2); buildRubble(-19.5, 10.2); buildRubble(24, -20);
+  buildRubble(-25, -13.5); buildRubble(9.5, 20.5); buildRubble(-9.8, -20.8);
+  // 電線杆 + 電線（東街）
+  const wireM = { mat: mat(0x2e2a26, {roughness:.6}) };
+  [[7.4,-21],[7.4,3]].forEach(p=>{ cyl(.09,.13, 5.4, 0x5d4c3a, p[0], 2.7, p[1], scene, 8); box(1.8,.13,.13, 0x5d4c3a, p[0], 4.75, p[1], scene); });
+  const w1 = cyl(.025,.025, 12.2, 0, 7.4, 4.85, -15, scene, 5, wireM); w1.rotation.x = Math.PI/2;
+  const w2 = cyl(.025,.025, 12.2, 0, 7.4, 4.85, -3, scene, 5, wireM); w2.rotation.x = Math.PI/2;
+  // 動態效果：火、警車、漏電電纜、毒液角落
+  smokeTex = makeGlowTexture();
+  buildFire(-3.9, -17, 1.0);          // 北街廢車着火
+  buildFire(-19.5, 10.2, .85);        // 西南大廈基座碎石着火
+  buildFire(24, -20, .7);             // 東北角細火
+  buildFire(28, 24, 1.5);             // 遠處大火（主要睇煙柱）
+  buildFire(-14.5, -6.8, .75);        // 西北街角火頭
+  buildFire(18.5, 6.8, .85);          // 東南行人路火頭
+  buildFire(-7.5, 19, .7);            // 南街火頭
+  buildFire(26.5, 2.5, .9);           // 東街遠處火頭
+  buildPoliceCar(9.8, 3.0, -2.4);     // 警車（東街近路口打斜停）
+  buildPowerPole(7.4, -9);            // 漏電嗰支（東街）
+  buildToxicCorner(21.5, 8.5);        // 化學桶 + 毒液氹（東南街角）
+  // ===== 再加細節：地鐵站/天橋/巴士/攤位傢俬 =====
+  pedMats = {
+    r: new THREE.MeshStandardMaterial({ color:0x4a1414, emissive:0xff2a2a, emissiveIntensity:.15, roughness:.4 }),
+    g: new THREE.MeshStandardMaterial({ color:0x14401c, emissive:0x2aff5a, emissiveIntensity:.15, roughness:.4 })
+  };
+  buildSubway(10.8, 10.8, -Math.PI * .75);
+  buildSubway(-10.2, -10.2, Math.PI / 4);
+  buildFootbridge(-17);
+  buildPedSignal(6.3, -6.3); buildPedSignal(-6.3, 6.3);
+  buildBus(-19, 3.4, Math.PI/2 + .12);
+  buildPostBox(12.9, -6.9);
+  buildPhoneBooth(-7.4, -12.9, .3);
+  buildBike(6.1, 9.9, .7);
+  buildRailing(7, 5.92, 13.5, 5.92);
+  buildRailing(-13.5, -5.92, -7, -5.92);
+  buildRailing(5.92, -13.5, 5.92, -7);
+  buildRailing(-5.92, 7, -5.92, 13.5);
+  buildNeonSign(11.2, 5.4, -10.3, 0, "旅館", 0, 0xff5d8f);
+  buildNeonSign(-10.55, 5.0, 15.8, Math.PI/2, "當舖", 0, 0x4dd8e6);
+  buildNeonSign(15.8, 6.2, -10.3, 0, "酒吧", 0, 0x33e0ff);
+  buildNeonSign(17.3, 4.6, -12.5, Math.PI/2, "夜市", 0, 0xff4dd2);
+  buildNeonSign(-16.5, 6.5, -11.2, 0, "電玩", 0, 0xb26bff);
+  buildNeonSign(9, 3.1, 18.8, 0, "網吧", 0, 0x4dff88);
+  buildNeonSign(-10.55, 4.2, 11.5, Math.PI/2, "夜宵", 0, 0xff7847);
+  buildRoadPaint(0, -12.8);
+  buildBanner(-12.8, 0);
+  birds = buildBirds();
+  makeSteam(3, -14);
+  // 隨風紙屑
+  for(let i = 0; i < 6; i++){
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(.36, .26),
+      new THREE.MeshBasicMaterial({ color: i % 2 ? 0xe8e6df : 0xcfd2cd, side: THREE.DoubleSide }));
+    p.position.set(-30 + Math.random() * 55, .16, [-14, -3, 2, 9, 15, -9][i]);
+    p.rotation.x = -Math.PI/2;
+    p.userData = { spd: .9 + Math.random() * .9, ph: Math.random() * 7 };
+    scene.add(p); litter.push(p);
+  }
+  // ===== 第三輪細節 + 氣氛 =====
+  buildFogBanks();
+  buildRain();
+  buildParkingMeter(6.6, -19); buildParkingMeter(6.6, 16.5); buildParkingMeter(-16.5, -6.6);
+  buildNewsBox(12.2, 12.6, -.6);
+  buildWallAC(11.8, 3.4, -10.55, 0); buildWallAC(15.2, 4.6, -10.55, 0); buildWallAC(-9.35, 3.8, -14, Math.PI/2);
+  buildRoadArrow(0, -20.5, Math.PI); buildRoadArrow(14, 0, -Math.PI/2); buildRoadArrow(-1.8, 20.5, 0);
+  buildLightBox(13.7, -7.7, -Math.PI/2, "小心喪屍", "#7a2e22");
+  buildTippedBin(-12.2, 12.8);
+  buildPuddle(4, -9.5, 1.3); buildPuddle(-8.5, 3, 1.1); buildPuddle(12, -3.5, .9);
+  buildPerchedBirds();
+  // ===== 大型車輛（遠處佈置）+ 緊急車輛 =====
+  buildBus(4.2, 30, Math.PI/2 - .08);
+  buildTruck(30, 3.8, Math.PI + .1, 0x5273c9, 0xb9bfc4);
+  buildTruck(-30, -3.8, .12, 0xc7b299, 0x8a9e7a);
+  buildAmbulance(4.3, -25, Math.PI/2 + .1);
+  buildFireTruck(22, -4.2, Math.PI + .18);
+  buildNobori(8.7, 25.1, "便利店", "#1f4d3a");
+  buildNobori(13.3, 25.1, "特價", "#c23b31");
+  // ===== 天台火災 + 居民呼救 =====
+  buildFire(15.5, -16, .8, 9.12);     // 東北大廈天台着火
+  buildFire(-16, -17, .7, 11.12);     // 西北高樓天台着火
+  buildFire(-23, -12, .75, 5.62);     // 西北矮廈天台着火
+  buildFire(12.5, 13.5, .8, 8.12);    // 東南大廈天台着火
+  buildFire(12.8, -13.8, 1.35, 9.12); // 東北大廈天台大火（成棟起火嗰棟）
+  buildBurningBuilding();             // 東北大廈成棟起火（窗火舌+焦牆+煙柱+餘燼）
+  buildFireSea();                     // 東街火海 10×5
+  compCat = buildCompanionCat();      // AI 同伴：細貓（車頂）
+  drone = buildDrone();               // AI 同伴：無人機（上空盤旋）
+  addAircraft(buildHelicopter(), 'heli', 9.5, 9, 22, 42, 6);   // 直升機低飛過大街
+  addAircraft(buildJet(), 'jet', 11.5, 34, 30, 58, 15);        // 戰機低飛高速過大街
+  bubbleTex = makeBubbleTexture();
+  buildSurvivor(19.5, 5.12, -12.5, 0xff5d5d);
+  buildSurvivor(11.5, 9.12, -16.5, 0x5273c9);
+  buildSurvivor(-22.5, 5.12, 20, 0xffb020);
+  // 雲
+  for(let i = 0; i < 6; i++){
+    const cl = new THREE.Group();
+    const n = 3 + (Math.random()*3|0);
+    for(let j = 0; j < n; j++){ const cb = ball(1 + Math.random()*.9, 0x39406b, j*1.3 - n*.6, Math.random()*.4, Math.random()*.6, cl, {roughness:1}); cb.castShadow = false; cloudMats.push(cb.material); }
+    cl.position.set(-45 + Math.random()*90, 20 + Math.random()*6, -52 + Math.random()*20);
+    scene.add(cl); clouds.push(cl);
+  }
+  placeCamera();
+  applyMode();
+  window.addEventListener("resize", ()=>{
+    camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight); placeCamera();
+  });
+}
+/* ================= 玩法邏輯 ================= */
+function spawnZombie(){
+  const g = buildZombieMesh();
+  // 由四條大街湧入（隨機揀一條街，橫向喺路闊範圍內）
+  const av = [[1,0],[-1,0],[0,1],[0,-1]][Math.random()*4|0];
+  const jit = Math.random()*8.4 - 4.2;
+  const px = av[0] !== 0 ? av[0]*SPAWN_R : jit;
+  const pz = av[1] !== 0 ? av[1]*SPAWN_R : jit;
+  const ang = Math.atan2(pz, px), rad = Math.hypot(px, pz);
+  const hp = (phaseOf(S.elapsed) >= 1 && Math.random() < .35) ? 2 : 1;
+  g.userData = { ang, rad, hp,
+                 spd: 1.65 + Math.random()*.5 + S.elapsed*.006,
+                 ph: Math.random()*7, dead:false, body: g.userData.body };
+  if(hp > 1){ g.userData.badge = makeBadge(hp); g.add(g.userData.badge); }
+  g.position.set(Math.cos(ang)*g.userData.rad, 0, Math.sin(ang)*g.userData.rad);
+  scene.add(g); zombies.push(g);
+}
+function nearestZombie(){
+  let best = null, br = 1e9;
+  for(const z of zombies){ if(!z.userData.dead && z.userData.rad < br){ br = z.userData.rad; best = z; } }
+  return best;
+}
+function shoot(target, dmg){
+  sfxShoot();
+  const from = new THREE.Vector3(); gunTip.getWorldPosition(from);
+  const tp = target.position.clone(); tp.y = 1.5;
+  const m = ball(.17, 0xffe14d, from.x, from.y, from.z, scene, { emissive:0xaa7700, roughness:.3 });
+  m.castShadow = false;
+  bullets.push({ m, target, speed: 62, dmg: dmg || 1 });
+}
+function nearestZombies(n){
+  return zombies.filter(z=>!z.userData.dead).sort((a,b)=>a.userData.rad - b.userData.rad).slice(0, n);
+}
+function playerShoot(){
+  const n = S.weapon >= 2 ? 2 : 1;          // Lv.2 起雙發
+  const dmg = S.weapon >= 3 ? 2 : 1;        // Lv.3 重炮雙倍傷害
+  for(const t of nearestZombies(n)) shoot(t, dmg);
+}
+function checkWeaponUpgrade(){
+  const w = S.kills >= 30 ? 3 : (S.kills >= 12 ? 2 : 1);
+  if(w > S.weapon){
+    S.weapon = w; updateHUD();
+    if(heroGun){
+      heroGun.scale.setScalar(1 + (w - 1) * .2);
+      heroGun.children[0].material.color.set(w >= 3 ? 0xffd43b : 0x845ef7);
+    }
+    showToast(w >= 3 ? "🔫 武器升級 Lv.3：雙發重炮！" : "🔫 武器升級 Lv.2：雙發射擊！");
+  }
+}
+function showToast(txt){
+  const el = $('toast');
+  el.textContent = txt;
+  el.style.opacity = 1;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.style.opacity = 0, 1700);
+}
+function throwGrenade(toPos){
+  const from = new THREE.Vector3(0, HERO_Y + 2.4, 0);
+  const m = ball(.17, 0x5b8c5a, from.x, from.y, from.z, scene, { roughness:.5 });
+  grenades.push({ m, t: 0, dur: .75, from, to: toPos.clone().setY(.3) });
+  showToast("💣 手榴彈！");
+}
+function explodeGrenade(pos){
+  burst(pos.clone().setY(1), 0xff922b);
+  burst(pos.clone().setY(1), 0xffd43b);
+  for(const z of [...zombies]){
+    if(z.userData.dead) continue;
+    if(z.position.distanceTo(pos) < 3.2) damageZombie(z, 2);
+  }
+}
+function autoActions(dt){
+  // 自動手榴彈：每 16 秒掉去最密嘅喪屍群
+  S.grenadeT -= dt;
+  if(S.grenadeT <= 0){
+    let best = null, bestN = 1;
+    for(const z of zombies){
+      if(z.userData.dead) continue;
+      let n = 0;
+      for(const o of zombies) if(!o.userData.dead && o.position.distanceTo(z.position) < 4) n++;
+      if(n > bestN){ bestN = n; best = z; }
+    }
+    if(best){ throwGrenade(best.position); S.grenadeT = 16; }
+    else S.grenadeT = 3;
+  }
+  // 自動冰封：多隻喪屍埋身就凍結減速 5 秒（冷卻 45 秒）
+  if(S.freezeT > 0) S.freezeT -= dt;
+  if(S.freezeCd > 0) S.freezeCd -= dt;
+  if(S.freezeCd <= 0 && S.freezeT <= 0){
+    let near = 0;
+    for(const z of zombies) if(!z.userData.dead && z.userData.rad < 13) near++;
+    if(near >= 5){
+      S.freezeT = 5; S.freezeCd = 45;
+      showToast("❄️ 冰封！喪屍慢晒 5 秒");
+    }
+  }
+  $('freezeFx').style.opacity = S.freezeT > 0 ? 1 : 0;
+  // 血量緩慢回復：冇俾喪屍打中（冇扣心）12 秒後，每 10 秒回一格
+  if(S.hearts < 5 && S.elapsed - S.lastHurt >= 12){
+    S.regenT += dt;
+    if(S.regenT >= 10){
+      S.regenT = 0;
+      S.hearts++;
+      updateHUD();
+      burst(new THREE.Vector3(0, HERO_Y + 2, 0), 0x69db7c);
+    }
+  } else S.regenT = 0;
+  // 自動補血：得返 2 格心或以下就補一格（冷卻 75 秒）
+  if(S.healCd > 0) S.healCd -= dt;
+  if(S.healCd <= 0 && S.hearts > 0 && S.hearts <= 2){
+    S.hearts = Math.min(5, S.hearts + 1); S.healCd = 75;
+    updateHUD();
+    burst(new THREE.Vector3(0, HERO_Y + 2, 0), 0x69db7c);
+    showToast("❤️ 自動補血 +1");
+  }
+}
+function companionShoot(tip, target, color){
+  sfxShoot();
+  const from = new THREE.Vector3(); tip.getWorldPosition(from);
+  const m = ball(.14, color, from.x, from.y, from.z, scene, { emissive: 0x555555, roughness:.3 });
+  m.castShadow = false;
+  bullets.push({ m, target, speed: 62 });
+}
+function damageZombie(z, dmg){
+  z.userData.hp -= (dmg || 1); sfxHit();
+  burst(z.position.clone().setY(1.6), 0xc0f299);
+  if(z.userData.hp <= 0){
+    z.userData.dead = true; S.kills++; updateHUD(); checkWeaponUpgrade();
+    z.userData.dying = .28;
+  } else {
+    if(z.userData.badge){ z.remove(z.userData.badge); z.userData.badge = makeBadge(z.userData.hp); z.add(z.userData.badge); }
+    z.userData.flash = .12;
+  }
+}
+function breach(z){
+  z.userData.dead = true;
+  const i = zombies.indexOf(z); if(i >= 0) zombies.splice(i, 1);
+  scene.remove(z);
+  S.hearts--; S.lastHurt = S.elapsed; S.regenT = 0; sfxHurt(); updateHUD();
+  burst(z.position.clone().setY(1.2), 0xff8fa3);
+  $('dmgFlash').style.opacity = 1;
+  setTimeout(()=> $('dmgFlash').style.opacity = 0, 180);
+  if(S.hearts <= 0) gameOver();
+}
+
+/* ================= 題目 + 四選一 ================= */
+function fmt(t){ const s = Math.floor(t); return String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0"); }
+function updateHUD(){
+  $('hearts').textContent = S.hearts > 0 ? "❤️".repeat(S.hearts) + "🖤".repeat(5 - S.hearts) : "🖤🖤🖤🖤🖤";
+  $('killLabel').textContent = S.kills;
+  $('wpnLabel').textContent = "Lv." + S.weapon;
+  $('timeLabel').textContent = fmt(S.elapsed);
+}
+function showQuestion(){
+  S.q = genQuestion(S.elapsed); S.qNo++;
+  S.qStart = performance.now(); S.lastTry = S.qStart;
+  $('question').textContent = S.q.text;
+  $('answerBox').textContent = "?";
+  $('answerBox').classList.remove("pop"); void $('answerBox').offsetWidth; $('answerBox').classList.add("pop");
+  const opts = makeOptions(S.q.ans);
+  document.querySelectorAll(".optBtn").forEach((b, i)=>{
+    b.textContent = opts[i]; b.dataset.val = opts[i];
+    b.classList.remove("optWrong","optRight"); b.disabled = false;
+  });
+}
+function setOptionsEnabled(on){
+  document.querySelectorAll(".optBtn").forEach(b=>{ if(!b.classList.contains("optWrong")) b.disabled = !on; });
+}
+function pickOption(btn){
+  if(!S.playing || S.over) return;
+  const now = performance.now();
+  if(now < S.jamUntil || now < S.lockUntil || btn.disabled) return;
+  const chosen = parseInt(btn.dataset.val, 10);
+  const ok = chosen === S.q.ans;
+  const ms = Math.round(now - S.lastTry); S.lastTry = now;
+  DataLog.row({ kind:"answer", t:new Date().toISOString(), cls:DataLog.cls, sid:DataLog.sid,
+                session:S.sessionId, qn:S.qNo, q:S.q.text.replace(" =",""), chosen, ans:S.q.ans, ok:ok?1:0, ms });
+  if(ok){
+    S.right++;
+    btn.classList.add("optRight");
+    $('answerBox').textContent = chosen;
+    playerShoot();
+    S.lockUntil = now + 300;
+    setOptionsEnabled(false);
+    setTimeout(()=>{ if(S.playing && !S.over) showQuestion(); }, 300);
+  } else {
+    S.wrong++;
+    btn.classList.add("optWrong"); btn.disabled = true;
+    sfxJam();
+    S.jamUntil = now + 1200;
+    setOptionsEnabled(false);
+    $('jamBanner').classList.remove('hidden');
+    $('panelCard').classList.remove('shake'); void $('panelCard').offsetWidth; $('panelCard').classList.add('shake');
+    setTimeout(()=>{ $('jamBanner').classList.add('hidden'); if(S.playing && !S.over) setOptionsEnabled(true); }, 1200);
+  }
+}
+
+/* ================= 流程 ================= */
+function startGame(cls, sid){
+  DataLog.start(cls, sid);
+  Object.assign(S, { playing:true, over:false, hearts:5, kills:0, right:0, wrong:0,
+                     elapsed:0, spawnTimer:1.0, jamUntil:0, qNo:0, lockUntil:0,
+                     weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30,
+                     lastHurt:-99, regenT:0 });
+  if(heroGun){ heroGun.scale.setScalar(1); heroGun.children[0].material.color.set(0xff922b); }
+  for(const g of grenades) scene.remove(g.m);
+  grenades.length = 0;
+  for(const b of bombs) scene.remove(b.m);
+  bombs.length = 0;
+  for(const z of zombies) scene.remove(z);
+  zombies.length = 0; bullets.length = 0;
+  $('startScreen').classList.add('hidden');
+  $('overScreen').classList.add('hidden');
+  $('hud').classList.remove('hidden');
+  $('panel').classList.remove('hidden');
+  placeCamera();
+  updateHUD(); showQuestion();
+}
+function gameOver(){
+  S.over = true; S.playing = false; sfxOver();
+  $('ovTime').textContent = fmt(S.elapsed);
+  $('ovKills').textContent = S.kills;
+  $('ovRight').textContent = S.right;
+  $('ovWrong').textContent = S.wrong;
+  const tot = S.right + S.wrong;
+  $('ovAcc').textContent = tot ? Math.round(S.right / tot * 100) + "%" : "—";
+  DataLog.row({ kind:"session", t:new Date().toISOString(), cls:DataLog.cls, sid:DataLog.sid,
+                session:S.sessionId, seconds:Math.round(S.elapsed), kills:S.kills,
+                right:S.right, wrong:S.wrong, acc: tot ? Math.round(S.right / tot * 100) : 0 });
+  DataLog.flush();
+  $('sendStatus').textContent = (DATA_ENDPOINT || FIREBASE_CONFIG) ? "📤 記錄已傳送俾老師" : "（試玩模式：記錄未傳送，可以下載 CSV）";
+  $('panel').classList.add('hidden');
+  $('hud').classList.add('hidden');
+  setTimeout(()=> $('overScreen').classList.remove('hidden'), 700);
+}
+
+/* ================= 主迴圈 ================= */
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), .05);
+  const t = clock.elapsedTime;
+  if(Cam.auto){
+    // 電影感運鏡：環繞 + 緩慢上下搖 + 拉近拉遠（平滑追蹤目標值，開關都唔會跳）
+    Cam.az += dt * .22;
+    const blend = Math.min(1, dt * 1.4);
+    Cam.pol += ((.68 + Math.sin(t * .16) * .26) - Cam.pol) * blend;
+    Cam.rad += ((46 + Math.sin(t * .11 + 1.3) * 9) - Cam.rad) * blend;
+  }
+  placeCamera();
+  for(const c of clouds){ c.position.x += dt * .35; if(c.position.x > 55) c.position.x = -55; }
+  // 車頂警示燈脈衝 + 交通燈循環（綠→黃→紅）
+  if(beaconMat) beaconMat.emissiveIntensity = 1.6 + Math.sin(t * 5) * 1.4;
+  if(trafficMats){
+    const cyc = t % 6;
+    trafficMats.g.emissiveIntensity = cyc < 3.4 ? 2.4 : .12;
+    trafficMats.y.emissiveIntensity = (cyc >= 3.4 && cyc < 4.3) ? 2.4 : .12;
+    trafficMats.r.emissiveIntensity = cyc >= 4.3 ? 2.4 : .12;
+  }
+  // 火焰 + 濃煙
+  for(const f of fires){
+    f.light.intensity = 1 + Math.sin(t * 11 + f.ph) * .28 + Math.sin(t * 23 + f.ph * 2) * .16;
+    for(const fl of f.flames){
+      fl.m.scale.y = 1 + Math.sin(t * 12 + fl.ph) * .24;
+      fl.m.scale.x = fl.m.scale.z = 1 + Math.sin(t * 9 + fl.ph * 1.3) * .1;
+      fl.m.rotation.y += dt * 2;
+    }
+    for(const sm of f.smokes){
+      const u = sm.userData;
+      u.age += dt;
+      if(u.age > u.life){ u.age = 0; u.ox = (Math.random()-.5)*.7; u.oz = (Math.random()-.5)*.7; }
+      const k = u.age / u.life;
+      sm.position.set(f.x + u.ox + u.age * .5 + Math.sin(u.age * .8 + u.seed) * .3,
+                      f.baseY + 1 + u.age * 1.55,
+                      f.z + u.oz + Math.cos(u.age * .6 + u.seed) * .25);
+      const sc = (1.1 + k * 3.4) * f.s;
+      sm.scale.set(sc, sc, 1);
+      sm.material.opacity = .34 * (k < .15 ? k / .15 : 1 - (k - .15) / .85);
+    }
+  }
+  // 大火系統：窗火舌 + 火海 + 煙柱 + 餘燼 + 大火光
+  for(const wf of windowFlames){
+    wf.m.scale.y = 1 + Math.sin(t * 13 + wf.ph) * .32;
+    wf.m.scale.x = wf.m.scale.z = 1 + Math.sin(t * 9 + wf.ph * 1.3) * .13;
+  }
+  for(const sf of seaFlames){
+    sf.m.scale.y = 1 + Math.sin(t * 12 + sf.ph) * .26;
+    sf.m.scale.x = sf.m.scale.z = 1 + Math.sin(t * 10 + sf.ph * 1.7) * .1;
+  }
+  for(const bl of bigLights)
+    bl.l.intensity = bl.base * (1 + Math.sin(t * 11 + bl.ph) * .25 + Math.sin(t * 23 + bl.ph * 2) * .12);
+  for(const c of columns) for(const sm of c.sprites){
+    const u = sm.userData;
+    u.age += dt; if(u.age > u.life) u.age = 0;
+    const k = u.age / u.life;
+    sm.position.set(c.x + Math.sin(u.age * .7 + u.seed) * .8 + u.age * .8, c.baseY + .8 + u.age * 2.4, c.z + Math.cos(u.age * .5 + u.seed) * .6);
+    const sc = 2.4 + k * 6.4;
+    sm.scale.set(sc, sc, 1);
+    sm.material.opacity = .4 * (k < .12 ? k / .12 : 1 - (k - .12) / .88);
+  }
+  for(const e of embers){
+    for(let i = 0; i < e.seeds.length; i++){
+      let y = e.pos[i*3+1] + dt * e.seeds[i].s;
+      if(y > e.baseY + 5.5){
+        y = e.baseY + .2;
+        e.pos[i*3] = e.cx + (Math.random()-.5) * e.spreadX;
+        e.pos[i*3+2] = e.cz + (Math.random()-.5) * e.spreadZ;
+      }
+      e.pos[i*3+1] = y;
+      e.pos[i*3] += Math.sin(t * 2 + e.seeds[i].ph) * dt * .45;
+    }
+    e.geo.attributes.position.needsUpdate = true;
+  }
+  // 喪屍穿過東街火海：身上冒火花（純視覺，唔影響玩法）
+  if(S.playing) for(const zb of zombies){
+    const p = zb.position;
+    if(p.x > 12 && p.x < 23 && Math.abs(p.z) < 3 && Math.random() < .25)
+      spawnSpark(new THREE.Vector3(p.x, 1.2, p.z));
+  }
+  // 警車燈閃爍（紅藍交替）
+  if(police){
+    const s = Math.sin(t * 8) > 0;
+    police.redMat.emissiveIntensity = s ? 2.8 : .08;
+    police.blueMat.emissiveIntensity = s ? .08 : 2.8;
+    police.redGlow.material.opacity = s ? .8 : .04;
+    police.blueGlow.material.opacity = s ? .04 : .8;
+  }
+  // 電纜漏電火花
+  if(sparkTipObj && sparkLight){
+    const v = new THREE.Vector3();
+    sparkTipObj.getWorldPosition(v);
+    sparkLight.position.copy(v);
+    sparkLight.intensity = Math.random() < .16 ? .55 + Math.random() * .75 : Math.random() * .1;
+    if(Math.random() < .18){ spawnSpark(v); }
+  }
+  // 毒液氹呼吸光
+  if(toxicMat) toxicMat.opacity = .44 + Math.sin(t * 2.1) * .13;
+  // 行人過路燈（同交通燈相反：車停嗰陣行人先過）
+  if(pedMats){
+    const walk = (t % 6) >= 4.3;
+    pedMats.g.emissiveIntensity = walk ? 2.4 : .12;
+    pedMats.r.emissiveIntensity = walk ? .12 : 2.2;
+  }
+  // 雀鳥盤旋拍翼
+  if(birds) birds.children.forEach((b, i)=>{
+    const u = b.userData, a = t * u.spd + u.off;
+    b.position.set(Math.cos(a) * u.rad, u.h + Math.sin(t * .9 + i) * .8, Math.sin(a) * u.rad - 4);
+    b.rotation.y = -a;
+    const f = Math.sin(t * 7 + i * 2) * .55;
+    u.pivotL.rotation.z = f; u.pivotR.rotation.z = -f;
+  });
+  // 紙屑隨風
+  for(const l of litter){
+    l.position.x += dt * l.userData.spd;
+    l.position.y = .16 + Math.sin(t * 2 + l.userData.ph) * .05;
+    l.rotation.z += dt * .8;
+    l.rotation.x = -Math.PI/2 + Math.sin(t * 1.3 + l.userData.ph) * .3;
+    if(l.position.x > 36) l.position.x = -36;
+  }
+  // 霓虹招牌（偶爾接觸不良閃一閃）
+  neonMats.forEach((m, i)=>{ m.emissiveIntensity = Math.random() < .05 ? neonBase * .25 : neonBase + Math.sin(t * 3 + i * 2) * .12; });
+  // 天台航空警示燈
+  blinkers.forEach(b=>{ b.mat.emissiveIntensity = Math.sin(t * 2.2 + b.ph) > .55 ? 3 : .1; });
+  // 渠蓋蒸氣
+  for(const st of steams) for(const sm of st.sprites){
+    const u = sm.userData;
+    u.age += dt; if(u.age > u.life) u.age = 0;
+    const k = u.age / u.life;
+    sm.position.set(st.x + Math.sin(u.age * 1.2 + u.seed) * .3, .35 + u.age * 1.15, st.z + Math.cos(u.age + u.seed) * .2);
+    const sc = .55 + k * 1.7;
+    sm.scale.set(sc, sc, 1);
+    sm.material.opacity = .16 * (k < .2 ? k / .2 : 1 - (k - .2) / .8);
+  }
+  // 橫額飄動
+  if(bannerMesh){
+    bannerMesh.rotation.x = Math.sin(t * 2.3) * .055;
+    bannerMesh.position.y = 3.85 + Math.sin(t * 1.7) * .05;
+  }
+  // 地面霧氣飄移
+  for(const f of fogBanks){
+    f.position.x += dt * f.userData.spd;
+    f.position.y = 1.1 + Math.sin(t * .4 + f.userData.ph) * .25;
+    f.material.opacity = f.userData.baseO * (.72 + .28 * Math.sin(t * .3 + f.userData.ph));
+    if(f.position.x > 48) f.position.x = -48;
+  }
+  // 幟旗飄揚
+  for(const n of nobori) n.m.rotation.y = Math.sin(t * 2.6 + n.ph) * .2;
+  // 微雨
+  if(rainPos){
+    for(let i = 0; i < RAIN_N; i++){
+      let y = rainPos[i*6+1] - dt * 21;
+      if(y < 0){
+        y = 24 + Math.random() * 3;
+        const nx = (Math.random()-.5) * 76, nz = (Math.random()-.5) * 76;
+        rainPos[i*6] = nx; rainPos[i*6+2] = nz; rainPos[i*6+3] = nx + .12; rainPos[i*6+5] = nz;
+      }
+      rainPos[i*6+1] = y; rainPos[i*6+4] = y - .75;
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+  }
+  // 天台居民揮手呼救（救命泡泡一陣出現一陣收埋）
+  for(const sv of survivors){
+    sv.pivotL.rotation.z = 2.6 + Math.sin(t * 7 + sv.ph) * .35;
+    sv.pivotR.rotation.z = -2.6 - Math.sin(t * 7 + sv.ph + 1) * .35;
+    const cyc = (t + sv.ph) % 6;
+    sv.bubble.material.opacity = cyc < 3 ? Math.min(1, Math.min(cyc, 3 - cyc) * 3) * .95 : 0;
+    const bs = 1 + Math.sin(t * 5 + sv.ph) * .06;
+    sv.bubble.scale.set(bs, bs, 1);
+  }
+
+  if(S.playing && !S.over){
+    S.elapsed += dt;
+    S.spawnTimer -= dt;
+    const interval = Math.max(.8, 2.4 - S.elapsed * .014);
+    if(S.spawnTimer <= 0){ spawnZombie(); S.spawnTimer = interval; }
+    $('phaseLabel').textContent = PHASE_NAMES[phaseOf(S.elapsed)];
+    updateHUD();
+    autoActions(dt);
+  }
+  // 手榴彈飛行（拋物線）+ 爆炸
+  for(let i = grenades.length - 1; i >= 0; i--){
+    const g = grenades[i];
+    g.t += dt;
+    const k = Math.min(1, g.t / g.dur);
+    g.m.position.lerpVectors(g.from, g.to, k);
+    g.m.position.y += Math.sin(k * Math.PI) * 3.2;
+    if(k >= 1){ explodeGrenade(g.to); scene.remove(g.m); grenades.splice(i, 1); }
+  }
+  // 主角瞄準最接近城堡嗰隻
+  const target = nearestZombie();
+  if(hero){
+    if(target){
+      const dx = target.position.x - hero.position.x, dz = target.position.z - hero.position.z;
+      hero.rotation.y = Math.atan2(dx, dz) + Math.PI;
+    }
+    hero.position.y = HERO_Y + Math.sin(t * 2.2) * .04;
+  }
+  if(catTail) catTail.rotation.y = Math.sin(t * 2.6) * .32;
+  // AI 同伴：細貓企車頂一齊瞄準、無人機盤旋；自動射最近喪屍，介入跟三階段遞減
+  if(compCat){
+    compCat.position.y = HERO_Y + Math.sin(t * 2.2 + 1.2) * .04;
+    if(target) compCat.rotation.y = Math.atan2(target.position.x - compCat.position.x, target.position.z - compCat.position.z) + Math.PI;
+    if(compTail) compTail.rotation.y = Math.sin(t * 3.1) * .3;
+  }
+  if(drone){
+    droneAng += dt * .55;
+    drone.position.set(Math.cos(droneAng) * 2.3, 4.25 + Math.sin(t * 1.8) * .25, Math.sin(droneAng) * 2.3);
+    for(const r of droneRotors) r.rotation.y += dt * 42;
+    if(target) drone.rotation.y = Math.atan2(target.position.x - drone.position.x, target.position.z - drone.position.z) + Math.PI;
+  }
+  if(S.playing && !S.over && target && compGunTip && droneTip){
+    const iv = COMP_INTERVALS[phaseOf(S.elapsed)];
+    compTimers.cat -= dt;
+    if(compTimers.cat <= 0){ compTimers.cat = iv[0]; companionShoot(compGunTip, target, 0x7be0ff); }
+    if(iv[1] !== Infinity){
+      compTimers.drone -= dt;
+      if(compTimers.drone <= 0){ compTimers.drone = iv[1]; companionShoot(droneTip, target, 0xb2f2bb); }
+    }
+  }
+  // 場景飛機：直升機同戰機得閒飛過（戰機留尾煙）
+  for(const a of aircraft){
+    if(!a.active){
+      a.timer -= dt;
+      if(a.timer <= 0) launchAircraft(a);
+      continue;
+    }
+    a.g.position.addScaledVector(a.dirV, a.speed * dt);
+    if(a.kind === 'heli'){
+      a.g.position.y = a.alt + Math.sin(t * 2 + a.ph) * .4;
+      if(a.g.userData.rotor) a.g.userData.rotor.rotation.y += dt * 18;
+      if(a.g.userData.tail) a.g.userData.tail.rotation.x += dt * 25;
+    } else {
+      a.g.position.y = a.alt + Math.sin(t * 1.3 + a.ph) * .3;
+      if(a.g.userData.burner) a.g.userData.burner.scale.setScalar(1 + Math.sin(t * 31) * .25);
+      a.trailT -= dt;
+      if(a.trailT <= 0){
+        a.trailT = .05;
+        spawnTrail(new THREE.Vector3(0, 0, 1.3).applyEuler(a.g.rotation).add(a.g.position));
+      }
+    }
+    // 空襲支援：飛過中心嗰陣，隨機掉炸彈炸最密嘅喪屍群（戰機 3 粒、直升機 2 粒）
+    if(a.strike && S.playing && !S.over){
+      a.bombT -= dt;
+      const inZone = Math.abs(a.g.position.x) < 21 && Math.abs(a.g.position.z) < 21;
+      const maxBombs = a.kind === 'jet' ? 3 : 2;
+      if(inZone && a.bombT <= 0 && a.bombed < maxBombs){
+        let best = null, bestN = 0;
+        for(const z of zombies){
+          if(z.userData.dead) continue;
+          if(z.position.distanceTo(a.g.position) > 17) continue;
+          let n = 0;
+          for(const o of zombies) if(!o.userData.dead && o.position.distanceTo(z.position) < 4) n++;
+          if(n > bestN){ bestN = n; best = z; }
+        }
+        if(best){
+          dropBomb(a.g.position, best.position);
+          a.bombed++;
+          a.bombT = a.kind === 'jet' ? .38 : .8;
+          if(a.bombed === 1) showToast(a.kind === 'jet' ? "✈️ 戰機空襲支援！" : "🚁 直升機空襲支援！");
+        } else a.bombT = .25;
+      }
+    }
+    if(Math.abs(a.g.position.x) > 56 || Math.abs(a.g.position.z) > 56){
+      a.active = false; a.g.visible = false;
+      a.timer = a.minT + Math.random() * (a.maxT - a.minT);
+    }
+  }
+  // 空襲炸彈下落 + 爆炸
+  for(let i = bombs.length - 1; i >= 0; i--){
+    const b = bombs[i];
+    b.t += dt;
+    const k = Math.min(1, b.t / b.dur);
+    b.m.position.lerpVectors(b.from, b.to, k);
+    if(k >= 1){ explodeGrenade(b.to); scene.remove(b.m); bombs.splice(i, 1); }
+  }
+  for(let i = trails.length - 1; i >= 0; i--){
+    const tr = trails[i];
+    tr.life -= dt;
+    tr.m.material.opacity = Math.max(0, .32 * (tr.life / 1.4));
+    const sc = tr.m.scale.x + dt * 2.2;
+    tr.m.scale.set(sc, sc, 1);
+    if(tr.life <= 0){ scene.remove(tr.m); tr.m.material.dispose(); trails.splice(i, 1); }
+  }
+  // 喪屍向中心進攻
+  for(let i = zombies.length - 1; i >= 0; i--){
+    const z = zombies[i], u = z.userData;
+    if(u.dying !== undefined){
+      u.dying -= dt;
+      z.scale.y = Math.max(.05, u.dying / .28);
+      z.position.y = 0;
+      if(u.dying <= 0){ scene.remove(z); zombies.splice(i, 1); }
+      continue;
+    }
+    if(u.dead) continue;
+    if(S.playing && !S.over){
+      u.rad -= u.spd * dt * (S.freezeT > 0 ? .35 : 1);
+      z.position.set(Math.cos(u.ang) * u.rad, Math.abs(Math.sin(t * 9 + u.ph)) * .07, Math.sin(u.ang) * u.rad);
+      z.rotation.y = Math.atan2(-z.position.x, -z.position.z);
+      z.rotation.z = Math.sin(t * 9 + u.ph) * .06;
+      if(u.flash > 0){ u.flash -= dt; z.scale.setScalar(1.18); } else z.scale.setScalar(1);
+      if(u.rad < BREACH_R){ breach(z); }
+    }
+  }
+  // 子彈
+  for(let i = bullets.length - 1; i >= 0; i--){
+    const b = bullets[i];
+    const tp = (b.target && !b.target.userData.dead)
+      ? b.target.position.clone().setY(1.5)
+      : b.m.position.clone().add(new THREE.Vector3(0,0,-1));
+    const dir = tp.sub(b.m.position);
+    const dist = dir.length();
+    const step = b.speed * dt;
+    if(dist <= Math.max(1.0, step)){
+      if(b.target && !b.target.userData.dead) damageZombie(b.target, b.dmg || 1);
+      scene.remove(b.m); bullets.splice(i, 1); continue;
+    }
+    b.m.position.add(dir.normalize().multiplyScalar(step));
+    if(b.m.position.length() > 60){ scene.remove(b.m); bullets.splice(i, 1); }
+  }
+  // 粒子
+  for(let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.life -= dt;
+    p.vy -= 12 * dt;
+    p.m.position.x += p.vx * dt; p.m.position.y += p.vy * dt; p.m.position.z += p.vz * dt;
+    if(p.m.position.y < .08) p.m.position.y = .08;
+    if(p.life <= 0){ scene.remove(p.m); particles.splice(i, 1); }
+  }
+  renderer.render(scene, camera);
+}
+
+/* ================= 事件 ================= */
+document.querySelectorAll(".optBtn").forEach(b=> b.addEventListener("click", ()=> pickOption(b)));
+document.addEventListener("keydown", e=>{
+  if(!S.playing || S.over) return;
+  const n = parseInt(e.key, 10);
+  if(n >= 1 && n <= 4){ const b = document.querySelectorAll(".optBtn")[n - 1]; if(b) pickOption(b); }
+});
+$('startBtn').addEventListener("click", ()=>{
+  const cls = $('clsInput').value.trim(), sid = $('sidInput').value.trim();
+  if(!cls || !sid){ alert("請輸入班別同埋學號先開始 🙏"); return; }
+  startGame(cls, sid);
+});
+$('guestBtn').addEventListener("click", ()=> startGame("試玩", "0"));
+$('againBtn').addEventListener("click", ()=> startGame(DataLog.cls || "試玩", DataLog.sid || "0"));
+$('csvBtn').addEventListener("click", ()=>{
+  const blob = new Blob(["\ufeff" + DataLog.csv()], { type:"text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "喪屍城記錄_" + (DataLog.cls || "試玩") + "_" + (DataLog.sid || "0") + ".csv";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$('muteBtn').addEventListener("click", ()=>{ muted = !muted; $('muteBtn').textContent = muted ? "🔇" : "🔊"; });
+
+initScene();
+initCameraControls();
+clock = new THREE.Clock();
+animate();
+</script>
+</body>
+</html>

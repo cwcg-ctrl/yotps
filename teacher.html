@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教師介面 — 學習遊戲即時數據後台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  body{ font-family:"Optimistic AI VF", system-ui, sans-serif; }
+  .flash{ animation: fl .8s ease; }
+  @keyframes fl{ 0%{ background:#fef9c3; } 100%{ background:transparent; } }
+  .livedot{ width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.5);animation:pl 1.6s infinite; }
+  @keyframes pl{ 70%{ box-shadow:0 0 0 8px rgba(34,197,94,0);} 100%{ box-shadow:0 0 0 0 rgba(34,197,94,0);} }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+<!-- 未設定 -->
+<div id="notConfigured" class="hidden max-w-lg mx-auto mt-24 bg-white rounded-3xl shadow-xl p-8 text-center">
+  <div class="text-5xl mb-3">🛠️</div>
+  <h1 class="text-2xl font-black mb-2">尚未設定 Firebase</h1>
+  <p class="text-slate-500">請跟住遊戲資料夾入面嘅《設定Firebase_步驟.md》做一次設定，再將 firebaseConfig 填入呢個檔案同遊戲檔案頂部嘅 <code class="bg-slate-100 px-1 rounded">FIREBASE_CONFIG</code>。</p>
+</div>
+
+<!-- 登入 -->
+<div id="loginBox" class="hidden max-w-md mx-auto mt-24 bg-white rounded-3xl shadow-xl p-8 text-center">
+  <div class="text-5xl mb-2">🎮📊</div>
+  <h1 class="text-2xl font-black">學習遊戲數據後台</h1>
+  <p class="text-slate-500 font-bold mb-6">教師即時數據介面（全遊戲共用）</p>
+  <input id="pwInput" type="password" inputmode="numeric" placeholder="輸入教師密碼"
+    class="w-full border-2 border-indigo-200 rounded-2xl px-4 py-3.5 text-center text-xl font-black tracking-widest focus:outline-none focus:border-indigo-400">
+  <button id="loginBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black text-lg rounded-2xl py-3.5 shadow">進入</button>
+  <p id="loginErr" class="text-rose-500 font-bold mt-4 text-sm"></p>
+  <p class="text-slate-400 text-sm mt-4">入啱密碼先睇到學生數據。</p>
+</div>
+
+<!-- 主介面 -->
+<div id="dash" class="hidden max-w-6xl mx-auto p-4 sm:p-6">
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <h1 class="text-2xl font-black">🎮 全班即時數據</h1>
+    <span class="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow text-sm font-bold text-slate-500"><span class="livedot"></span>即時更新中</span>
+    <span class="flex-1"></span>
+    <span id="whoami" class="text-sm font-bold text-slate-500"></span>
+    <button id="csvBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-full px-4 py-2 shadow text-sm">⬇ 匯出 CSV</button>
+    <button id="logoutBtn" class="bg-white hover:bg-slate-50 font-bold rounded-full px-4 py-2 shadow text-sm">登出</button>
+  </div>
+
+  <div class="flex flex-wrap gap-3 mb-4 items-center">
+    <label class="font-bold text-slate-500 text-sm">遊戲</label>
+    <select id="gameFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+      <option value="">全部遊戲</option>
+    </select>
+    <label class="font-bold text-slate-500 text-sm">班別</label>
+    <select id="clsFilter" class="bg-white rounded-xl shadow px-3 py-2 font-bold">
+      <option value="">全部班別</option>
+    </select>
+    <span class="text-sm text-slate-400 font-bold">撳入任何一位學生，可以睇逐題記錄；⚡ = 答得異常快，可能亂撞。</span>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">學生場次</div><div id="stSessions" class="text-3xl font-black">0</div></div>
+    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">答題總數</div><div id="stAnswers" class="text-3xl font-black">0</div></div>
+    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">全班正確率</div><div id="stAcc" class="text-3xl font-black">—</div></div>
+    <div class="bg-white rounded-2xl shadow p-4"><div class="text-xs font-bold text-slate-400">平均反應時間</div><div id="stMs" class="text-3xl font-black">—</div></div>
+  </div>
+
+  <div id="studentList" class="space-y-3"></div>
+  <p id="emptyMsg" class="hidden text-center text-slate-400 font-bold py-10">暫時未有數據 — 學生開始玩之後，呢度會即時出現。</p>
+</div>
+
+<script>
+"use strict";
+/* ================= 設定（跟《設定Firebase_步驟.md》填） ================= */
+const FIREBASE_CONFIG = {   // 全遊戲共用同一個項目（cwc-leaning-web）
+  apiKey: "AIzaSyCQJvRB7aqvyU2n9LmM9uqF2sPeSdkDdDk",
+  authDomain: "cwc-leaning-web.firebaseapp.com",
+  projectId: "cwc-leaning-web",
+  storageBucket: "cwc-leaning-web.firebasestorage.app",
+  messagingSenderId: "173279937029",
+  appId: "1:173279937029:web:1d9ca43409a878b78ed26c",
+  measurementId: "G-NCPHZY8NYK"
+};
+const TEACHER_PASSWORD = "9668";   // 教師登入密碼（Nelson 指定）— 只係介面門閘，唔好用重要密碼
+const GAME_NAMES = { "zombie-math-3d": "🧟 逃出喪屍城 3D" };   // 新遊戲唔使加都得，會直接顯示佢嘅 GAME_ID
+const gameLabel = id => GAME_NAMES[id] || ("🎮 " + (id || "未命名遊戲"));
+
+const $ = id => document.getElementById(id);
+let db = null, allRows = [], unsub = null;
+
+if(!FIREBASE_CONFIG){
+  $("notConfigured").classList.remove("hidden");
+} else {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  firebase.auth().onAuthStateChanged(user => {
+    if(!user){
+      $("dash").classList.add("hidden");
+      $("loginBox").classList.remove("hidden");
+      if(unsub){ unsub(); unsub = null; }
+      return;
+    }
+    $("loginBox").classList.add("hidden");
+    $("dash").classList.remove("hidden");
+    $("whoami").textContent = "👩‍🏫 老師模式";
+    listen();
+  });
+  const tryLogin = ()=>{
+    $("loginErr").textContent = "";
+    if($("pwInput").value !== TEACHER_PASSWORD){
+      $("loginErr").textContent = "⚠️ 密碼唔啱，請再試。";
+      return;
+    }
+    // 密碼啱 → 匿名登入 Firebase（規則要求「已登入」先讀到數據）
+    firebase.auth().signInAnonymously()
+      .catch(e => $("loginErr").textContent = "登入失敗：" + e.message + "（請檢查 Firebase 有冇開「匿名」登入）");
+  };
+  $("loginBtn").addEventListener("click", tryLogin);
+  $("pwInput").addEventListener("keydown", e => { if(e.key === "Enter") tryLogin(); });
+  $("logoutBtn").addEventListener("click", ()=> firebase.auth().signOut());
+  $("gameFilter").addEventListener("change", render);
+  $("clsFilter").addEventListener("change", render);
+  $("csvBtn").addEventListener("click", exportCSV);
+}
+
+function rowTime(r){
+  if(r.cts && r.cts.toDate) return r.cts.toDate().getTime();
+  const t = Date.parse(r.t || "");
+  return isNaN(t) ? 0 : t;
+}
+function listen(){
+  if(unsub) return;
+  unsub = db.collection("rows").orderBy("cts", "desc").limit(600).onSnapshot(snap => {
+    allRows = snap.docs.map(d => d.data());
+    buildFilters();
+    render(true);
+  }, err => {
+    console.error(err);
+    $("emptyMsg").textContent = "讀取失敗：" + err.message;
+    $("emptyMsg").classList.remove("hidden");
+  });
+}
+function buildFilters(){
+  const gsel = $("gameFilter"), gcur = gsel.value;
+  const games = [...new Set(allRows.map(r => r.game).filter(Boolean))].sort();
+  gsel.innerHTML = '<option value="">全部遊戲</option>' + games.map(g => `<option value="${g}" ${g===gcur?"selected":""}>${gameLabel(g)}</option>`).join("");
+  const sel = $("clsFilter"), cur = sel.value;
+  const classes = [...new Set(allRows.map(r => r.cls).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">全部班別</option>' + classes.map(c => `<option ${c===cur?"selected":""}>${c}</option>`).join("");
+}
+function sessions(){
+  const map = new Map();
+  for(const r of allRows){
+    const key = (r.game || "") + "|" + (r.session || "") + "|" + (r.cls || "") + "|" + (r.sid || "");
+    if(!map.has(key)) map.set(key, { key, game: r.game || "", cls: r.cls || "—", sid: r.sid || "—", answers: [], session: null, last: 0 });
+    const s = map.get(key);
+    if(r.kind === "answer") s.answers.push(r);
+    if(r.kind === "session") s.session = r;
+    s.last = Math.max(s.last, rowTime(r));
+  }
+  const arr = [...map.values()];
+  for(const s of arr) s.answers.sort((a,b)=> (a.qn||0) - (b.qn||0));
+  return arr.sort((a,b)=> b.last - a.last);
+}
+function fmtClock(ts){
+  if(!ts) return "—";
+  const d = new Date(ts);
+  return d.toLocaleTimeString("zh-HK", { hour:"2-digit", minute:"2-digit" });
+}
+function render(flash){
+  const f = $("clsFilter").value, gf = $("gameFilter").value;
+  const list = sessions().filter(s => (!f || s.cls === f) && (!gf || s.game === gf));
+  const ans = list.flatMap(s => s.answers);
+  const right = ans.filter(a => a.ok).length;
+  $("stSessions").textContent = list.length;
+  $("stAnswers").textContent = ans.length;
+  $("stAcc").textContent = ans.length ? Math.round(right / ans.length * 100) + "%" : "—";
+  $("stMs").textContent = ans.length ? Math.round(ans.reduce((s,a)=> s + (a.ms||0), 0) / ans.length / 100) / 10 + " 秒" : "—";
+  $("emptyMsg").classList.toggle("hidden", list.length > 0);
+  $("studentList").innerHTML = list.map(s => {
+    const n = s.answers.length;
+    const r = s.answers.filter(a => a.ok).length;
+    const acc = n ? Math.round(r / n * 100) : 0;
+    const fast = s.answers.filter(a => (a.ms||0) < 800).length;
+    const playing = !s.session && (Date.now() - s.last < 90000);
+    const metric = s.session ? (s.session.kills != null ? "擊倒 " + s.session.kills : (s.session.score != null ? "分數 " + s.session.score : "")) : "";
+    const status = s.session
+      ? `<span class="bg-slate-200 text-slate-600 px-2.5 py-1 rounded-full text-xs font-black">✅ 已完成・${s.session.seconds || 0} 秒${metric ? "・" + metric : ""}</span>`
+      : (playing ? `<span class="bg-rose-100 text-rose-500 px-2.5 py-1 rounded-full text-xs font-black">🔴 玩緊</span>`
+                 : `<span class="bg-amber-100 text-amber-600 px-2.5 py-1 rounded-full text-xs font-black">⏸ 未完成</span>`);
+    const avg = n ? Math.round(s.answers.reduce((x,a)=> x + (a.ms||0), 0) / n) : 0;
+    const detail = s.answers.map(a =>
+      `<tr class="border-t border-slate-100 ${a.ok ? "" : "bg-rose-50"}">
+         <td class="py-1.5 pr-2 text-slate-400 font-bold">${a.qn}</td>
+         <td class="py-1.5 pr-2 font-bold">${a.q || ""}</td>
+         <td class="py-1.5 pr-2">${a.chosen}</td>
+         <td class="py-1.5 pr-2">${a.ans}</td>
+         <td class="py-1.5 pr-2">${a.ok ? "✅" : "❌"}</td>
+         <td class="py-1.5">${a.ms} ms ${(a.ms||0) < 800 ? "⚡" : ""}</td>
+       </tr>`).join("");
+    return `<div class="bg-white rounded-2xl shadow overflow-hidden">
+      <button class="w-full flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left hover:bg-slate-50" onclick="document.getElementById('d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}').classList.toggle('hidden')">
+        <span class="font-black text-lg">${s.cls} 班 ${s.sid} 號</span>
+        <span class="bg-indigo-100 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-black">${gameLabel(s.game)}</span>
+        ${status}
+        <span class="text-sm font-bold text-slate-500">答咗 ${n} 題・啱 ${r}・正確率 ${acc}%</span>
+        <span class="text-sm font-bold text-slate-500">平均反應 ${avg} ms</span>
+        ${fast ? `<span class="text-sm font-black text-amber-500">⚡ 快答 ${fast} 次</span>` : ""}
+        <span class="flex-1"></span>
+        <span class="text-xs font-bold text-slate-400">最後活動 ${fmtClock(s.last)}</span>
+      </button>
+      <div id="d_${s.key.replace(/[^a-zA-Z0-9]/g,'_')}" class="hidden px-4 pb-3">
+        <table class="w-full text-sm">
+          <tr class="text-left text-slate-400 text-xs"><th class="pr-2">#</th><th class="pr-2">題目</th><th class="pr-2">揀咗</th><th class="pr-2">答案</th><th class="pr-2">對錯</th><th>用時</th></tr>
+          ${detail || '<tr><td colspan="6" class="py-2 text-slate-400 font-bold">未有答題記錄</td></tr>'}
+        </table>
+      </div>
+    </div>`;
+  }).join("");
+  if(flash && list.length) $("studentList").firstElementChild?.classList.add("flash");
+}
+function exportCSV(){
+  const head = "遊戲,時間,班別,學號,場次,題號,題目,揀咗,正確答案,結果,用時(ms)\n";
+  const lines = allRows.filter(r => r.kind === "answer")
+    .slice().sort((a,b)=> rowTime(a) - rowTime(b))
+    .map(r => [r.game || "", r.t, r.cls, r.sid, r.session, r.qn, '"' + (r.q||"") + '"', r.chosen, r.ans, r.ok ? "啱" : "錯", r.ms].join(","));
+  const blob = new Blob(["\ufeff" + head + lines.join("\n")], { type:"text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "喪屍城全班記錄.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
