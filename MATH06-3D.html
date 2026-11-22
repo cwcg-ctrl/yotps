@@ -13,10 +13,11 @@
   #scene canvas{display:block;touch-action:none;cursor:grab;}
   #scene canvas:active{cursor:grabbing;}
   .pop{animation:pop .18s ease}@keyframes pop{0%{transform:scale(1.25)}100%{transform:scale(1)}}
+  .popC{animation:popC .18s ease}@keyframes popC{0%{transform:translateX(-50%) scale(1.25)}100%{transform:translateX(-50%) scale(1)}}
   .shake{animation:shake .3s ease}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
   .optBtn{transition:transform .08s ease, background .15s ease;}
   .optBtn:active{transform:scale(.94);}
-  .optWrong{background:#ffe4e6 !important;color:#fda4af !important;border-color:#fecdd3 !important;text-decoration:line-through;}
+  .optWrong{background:rgba(244,63,94,.28) !important;color:#fda4af !important;border-color:rgba(244,63,94,.55) !important;text-decoration:line-through;}
   .optRight{background:#34d399 !important;color:#fff !important;border-color:#34d399 !important;}
   #dmgFlash{position:fixed;inset:0;background:radial-gradient(ellipse at center, transparent 55%, rgba(244,63,94,.45) 100%);opacity:0;pointer-events:none;transition:opacity .12s;z-index:15;}
 </style>
@@ -28,88 +29,97 @@
 
 <div id="freezeFx" class="fixed inset-0 z-10 pointer-events-none bg-sky-300/20 opacity-0 transition-opacity duration-500"></div>
 <div id="toast" class="fixed left-1/2 top-[16%] -translate-x-1/2 z-30 pointer-events-none bg-slate-900/80 text-white font-black text-xl sm:text-2xl px-5 py-2.5 rounded-full shadow-2xl opacity-0 transition-opacity duration-300 whitespace-nowrap"></div>
+<div id="waveBanner" class="fixed inset-x-0 top-[30%] z-30 pointer-events-none opacity-0" style="transform:translateX(-100%);transition:transform .45s cubic-bezier(.2,.9,.25,1.15), opacity .3s;">
+  <div class="bg-gradient-to-r from-rose-700/90 via-rose-600/95 to-rose-700/90 text-white text-center py-3 sm:py-4 shadow-2xl border-y-4 border-rose-300/70">
+    <div class="font-black text-2xl sm:text-4xl tracking-widest">🧟 喪屍潮來臨！ 🧟</div>
+    <div class="font-bold text-sm sm:text-lg mt-1 text-rose-100">一大波喪屍湧緊過嚟 — 頂住呀！</div>
+  </div>
+</div>
 
 <!-- HUD -->
-<div id="hud" class="hidden fixed top-0 inset-x-0 z-20 flex items-start justify-between px-3 pt-3 pointer-events-none">
+<div id="hud" class="hidden fixed top-0 inset-x-0 z-20 flex items-start justify-between flex-wrap gap-y-2 px-3 pt-3 pointer-events-none">
   <div class="flex gap-2 flex-wrap">
-    <div id="hearts" class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-rose-500 shadow text-sm sm:text-base">❤️❤️❤️❤️❤️</div>
-    <div class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-slate-600 shadow text-sm sm:text-base">⏱ <span id="timeLabel">00:00</span></div>
-    <div class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-amber-500 shadow text-sm sm:text-base">⭐ 擊倒 <span id="killLabel">0</span></div>
-    <div class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-violet-500 shadow text-sm sm:text-base">🔫 武器 <span id="wpnLabel">Lv.1</span></div>
-    <div id="phaseLabel" class="bg-white/85 backdrop-blur px-3 py-1.5 rounded-full font-bold text-indigo-500 shadow text-sm sm:text-base">第 1 階段：加減熱身</div>
+    <div id="hearts" class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-rose-300 shadow text-sm sm:text-base whitespace-nowrap">❤️❤️❤️❤️❤️</div>
+    <div class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-slate-100 shadow text-sm sm:text-base">⏱ <span id="timeLabel">00:00</span></div>
+    <div class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-amber-300 shadow text-sm sm:text-base">⭐ 擊倒 <span id="killLabel">0</span></div>
+    <div class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-violet-300 shadow text-sm sm:text-base">🔫 武器 <span id="wpnLabel">Lv.1</span></div>
+    <div id="protLabel" class="hidden bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-emerald-300 shadow text-sm sm:text-base whitespace-nowrap">🪖 軍隊保護中：<span id="protSec">30</span> 秒</div>
+    <div id="phaseLabel" class="bg-slate-900/55 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full font-bold text-indigo-300 shadow text-sm sm:text-base">第 1 階段：加減熱身</div>
   </div>
-  <div class="flex gap-2 pointer-events-auto">
-    <button id="modeBtn" class="bg-white/85 backdrop-blur h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">☀️ 轉日頭</button>
-    <button id="rotBtn" class="bg-white/85 backdrop-blur h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">🔄 自動轉</button>
-    <button id="camBtn" class="bg-white/85 backdrop-blur h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">🎥 重置視角</button>
-    <button id="muteBtn" class="bg-white/85 backdrop-blur w-10 h-10 rounded-full shadow text-lg">🔊</button>
+  <div class="flex gap-2 pointer-events-auto shrink-0 ml-auto">
+    <button id="modeBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">☀️ 轉日頭</button>
+    <button id="rotBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">🔄 自動轉</button>
+    <button id="camBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 h-10 px-2 sm:px-3 rounded-full shadow text-xs sm:text-sm font-black text-slate-100 whitespace-nowrap shrink-0">🎥 重置視角</button>
+    <button id="muteBtn" class="bg-slate-900/55 backdrop-blur-md border border-white/15 w-10 h-10 rounded-full shadow text-lg shrink-0 flex items-center justify-center leading-none p-0">🔊</button>
   </div>
 </div>
 
 <!-- 卡彈提示 -->
-<div id="jamBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-rose-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl pop">🔫 卡彈！支槍要抖一抖…</div>
+<div id="jamBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-rose-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC">🔫 卡彈！支槍要抖一抖…</div>
+<div id="warnBanner" class="hidden fixed left-1/2 top-[16%] -translate-x-1/2 z-30 bg-amber-500 text-white font-black text-lg sm:text-2xl px-5 py-2.5 rounded-2xl shadow-2xl popC text-center whitespace-nowrap">⚠️ 唔好亂撞！用心諗清楚先好答<div class="text-sm sm:text-base font-bold mt-0.5">偵測到連續亂撞 — 今次卡彈 <span id="warnSec">3</span> 秒</div></div>
 
 <!-- 題目 + 四選一 -->
 <div id="panel" class="hidden fixed bottom-0 inset-x-0 z-20 px-3 pb-3">
-  <div id="panelCard" class="max-w-3xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl px-4 sm:px-6 pt-4 pb-3.5">
+  <div id="panelCard" class="max-w-3xl mx-auto bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl px-4 sm:px-6 pt-4 pb-3.5">
     <div class="flex items-baseline justify-center gap-2 flex-wrap">
-      <span id="question" class="text-3xl sm:text-4xl font-black text-slate-800 tracking-wide">? + ? =</span>
-      <span id="answerBox" class="text-3xl sm:text-4xl font-black text-indigo-500 border-b-4 border-indigo-300 min-w-[64px] text-center px-1">?</span>
+      <span id="question" class="text-3xl sm:text-4xl font-black text-white tracking-wide">? + ? =</span>
+      <span id="answerBox" class="text-3xl sm:text-4xl font-black text-indigo-300 border-b-4 border-indigo-300/50 min-w-[64px] text-center px-1">?</span>
     </div>
     <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3.5">
-      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="0">?</button>
-      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="1">?</button>
-      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="2">?</button>
-      <button class="optBtn bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-100 text-slate-800 font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm" data-i="3">?</button>
+      <button class="optBtn bg-white/10 hover:bg-white/20 border-2 border-white/15 text-white font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm backdrop-blur-sm" data-i="0">?</button>
+      <button class="optBtn bg-white/10 hover:bg-white/20 border-2 border-white/15 text-white font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm backdrop-blur-sm" data-i="1">?</button>
+      <button class="optBtn bg-white/10 hover:bg-white/20 border-2 border-white/15 text-white font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm backdrop-blur-sm" data-i="2">?</button>
+      <button class="optBtn bg-white/10 hover:bg-white/20 border-2 border-white/15 text-white font-black text-xl sm:text-2xl rounded-2xl py-3 sm:py-4 shadow-sm backdrop-blur-sm" data-i="3">?</button>
     </div>
-    <div class="text-center text-slate-400 text-xs sm:text-sm mt-2.5">撳啱答案嗰格先開到槍 🔫 答錯會卡彈，用心諗清楚先撳！（鍵盤 1–4 都揀得）</div>
+    <div class="text-center text-slate-300 text-xs sm:text-sm mt-2.5">撳啱答案嗰格先開到槍 🔫 答錯會卡彈，用心諗清楚先撳！（鍵盤 1–4 都揀得）</div>
   </div>
 </div>
 
 <!-- 開始畫面 -->
-<div id="startScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/25 backdrop-blur-[2px] px-4">
-  <div class="bg-white/95 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center">
+<div id="startScreen" class="fixed inset-0 z-40 flex bg-slate-900/25 backdrop-blur-[2px] px-4 overflow-y-auto">
+  <div class="bg-slate-900/70 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center m-auto">
     <div class="text-5xl mb-1">🧟 🔫 🏰</div>
-    <h1 class="text-3xl sm:text-4xl font-black text-slate-800">逃出喪屍城 <span class="text-indigo-500">3D</span></h1>
-    <p class="text-slate-500 font-bold mt-1">守城版・數學大作戰</p>
-    <div class="text-left bg-indigo-50 rounded-2xl p-4 mt-4 text-slate-600 text-sm sm:text-[15px] leading-relaxed">
+    <h1 class="text-3xl sm:text-4xl font-black text-white">逃出喪屍城 <span class="text-indigo-300">3D</span></h1>
+    <p class="text-slate-300 font-bold mt-1">守城版・數學大作戰</p>
+    <div class="text-left bg-white/10 rounded-2xl p-4 mt-4 text-slate-200 text-sm sm:text-[15px] leading-relaxed">
       🎯 撳啱答案開槍打喪屍，撳錯會卡彈，唔好亂撞。<br>
       ❤️ 喪屍埋身扣心，5 格用晒完場；冇受傷一段時間會慢慢回血。<br>
-      🐱 細貓、無人機同飛機會幫手，武器會越打越勁。<br>
+      🐱 細貓、無人機同飛機會幫手；武器要自己答啱題、親手打死喪屍先會升級。<br>
       🖐️ 拖動畫面轉角度，「自動轉」係電影鏡頭。
     </div>
     <div class="grid grid-cols-2 gap-3 mt-5 text-left">
       <div>
-        <label class="text-sm font-bold text-slate-500">班別</label>
-        <input id="clsInput" type="text" placeholder="例如：4A" class="mt-1 w-full border-2 border-indigo-200 rounded-xl px-3 py-2.5 text-lg font-bold text-slate-700 focus:outline-none focus:border-indigo-400">
+        <label class="text-sm font-bold text-slate-300">班別</label>
+        <input id="clsInput" type="text" placeholder="例如：4A" class="mt-1 w-full bg-white/10 border-2 border-white/20 rounded-xl px-3 py-2.5 text-lg font-bold text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-300">
       </div>
       <div>
-        <label class="text-sm font-bold text-slate-500">學號</label>
-        <input id="sidInput" type="text" inputmode="numeric" placeholder="例如：12" class="mt-1 w-full border-2 border-indigo-200 rounded-xl px-3 py-2.5 text-lg font-bold text-slate-700 focus:outline-none focus:border-indigo-400">
+        <label class="text-sm font-bold text-slate-300">學號</label>
+        <input id="sidInput" type="text" inputmode="numeric" placeholder="例如：12" class="mt-1 w-full bg-white/10 border-2 border-white/20 rounded-xl px-3 py-2.5 text-lg font-bold text-white placeholder:text-slate-400 focus:outline-none focus:border-indigo-300">
       </div>
     </div>
-    <button id="startBtn" class="mt-6 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-200 transition">開始守城 ▶</button>
-    <button id="guestBtn" class="mt-3 text-slate-400 underline text-sm font-bold">試玩模式（唔使輸入）</button>
+    <button id="startBtn" class="mt-6 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 transition">開始守城 ▶</button>
+    <button id="guestBtn" class="mt-3 text-slate-300 underline text-sm font-bold">試玩模式（唔使輸入）</button>
     <p class="text-xs text-slate-400 mt-3">答題記錄會傳送俾老師做分析（只記班別學號，唔記姓名）</p>
   </div>
 </div>
 
 <!-- 完場畫面 -->
-<div id="overScreen" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 backdrop-blur-[2px] px-4">
-  <div class="bg-white/95 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center">
+<div id="overScreen" class="hidden fixed inset-0 z-40 flex bg-slate-900/30 backdrop-blur-[2px] px-4 overflow-y-auto">
+  <div class="bg-slate-900/70 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center m-auto">
     <div class="text-5xl mb-1">🏰💥</div>
-    <h2 class="text-3xl font-black text-slate-800">城堡失守啦！</h2>
-    <p class="text-slate-500 font-bold mt-1">不過你已經好努力守住咗 💪</p>
+    <h2 class="text-3xl font-black text-white">城堡失守啦！</h2>
+    <p class="text-slate-300 font-bold mt-1">不過你已經好努力守住咗 💪</p>
     <div class="grid grid-cols-2 gap-3 mt-5 text-left">
-      <div class="bg-indigo-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⏱ 存活時間</div><div id="ovTime" class="text-2xl font-black text-slate-700">0:00</div></div>
-      <div class="bg-indigo-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⭐ 擊倒喪屍</div><div id="ovKills" class="text-2xl font-black text-slate-700">0</div></div>
-      <div class="bg-emerald-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">✅ 答啱</div><div id="ovRight" class="text-2xl font-black text-emerald-600">0</div></div>
-      <div class="bg-rose-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">❌ 答錯</div><div id="ovWrong" class="text-2xl font-black text-rose-500">0</div></div>
+      <div class="bg-white/10 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⏱ 存活時間</div><div id="ovTime" class="text-2xl font-black text-white">0:00</div></div>
+      <div class="bg-white/10 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">⭐ 擊倒喪屍</div><div id="ovKills" class="text-2xl font-black text-white">0</div></div>
+      <div class="bg-white/10 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">✅ 答啱</div><div id="ovRight" class="text-2xl font-black text-emerald-300">0</div></div>
+      <div class="bg-white/10 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">❌ 答錯</div><div id="ovWrong" class="text-2xl font-black text-rose-300">0</div></div>
     </div>
-    <div class="mt-4 bg-amber-50 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">🎯 準確率</div><div id="ovAcc" class="text-2xl font-black text-amber-600">—</div></div>
+    <div class="mt-4 bg-white/10 rounded-2xl p-3.5"><div class="text-xs font-bold text-slate-400">🎯 準確率</div><div id="ovAcc" class="text-2xl font-black text-amber-300">—</div></div>
+    <div id="ovAnalysis" class="mt-4 text-left"></div>
     <p id="sendStatus" class="text-xs text-slate-400 mt-3"></p>
-    <button id="againBtn" class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-200 transition">再守一次 🔄</button>
-    <button id="csvBtn" class="mt-3 text-slate-400 underline text-sm font-bold">下載今次記錄（CSV）</button>
+    <button id="againBtn" class="mt-4 w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xl font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-500/30 transition">再守一次 🔄</button>
+    <button id="csvBtn" class="mt-3 text-slate-300 underline text-sm font-bold">下載今次記錄（CSV）</button>
   </div>
 </div>
 
@@ -219,7 +229,8 @@ const sfxOver  = ()=>{ [440,349,293,220].forEach((f,i)=>beep(f,.25,"triangle",.0
 
 /* ================= 題目 ================= */
 const PHASE_NAMES = ["第 1 階段：加減熱身","第 2 階段：乘數加入","第 3 階段：四則大混戰"];
-function phaseOf(t){ return t < 30 ? 0 : (t < 75 ? 1 : 2); }
+function killPhase(){ return S.playerKills >= 25 ? 2 : (S.playerKills >= 10 ? 1 : 0); }   // 擊殺階段：只計主角親手擊殺（10 隻入第 2、25 隻入第 3）；幫手力度、出怪密度、喪屍血量跟呢個
+function phaseOf(t){ return Math.max(killPhase(), S.elapsed >= 90 ? 2 : 0); }   // 題目階段：90 秒強制入第 3 階段，防學生掛機淨答加減；淨係影響題目類型同階段牌
 function genQuestion(elapsed){
   const ph = phaseOf(elapsed);
   const ops = ph === 0 ? ["+","-"] : ph === 1 ? ["+","-","×"] : ["+","-","×","÷"];
@@ -251,20 +262,20 @@ const S = {
   playing:false, over:false, hearts:5, kills:0, right:0, wrong:0,
   elapsed:0, spawnTimer:1, jamUntil:0, qNo:0,
   q:null, qStart:0, lastTry:0, lockUntil:0,
-  weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30,
+  weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, protDone:false, playerKills:0,
   lastHurt:-99, regenT:0
 };
-const BREACH_R = 2.6, SPAWN_R = 25, HERO_Y = 1.56;
+const BREACH_R = 2.6, SPAWN_R = 25, HERO_Y = 1.69;
 </script>
 <script>
 "use strict";
 /* ================= 3D 場景 ================= */
 let scene, camera, renderer, hero, gunTip, clock;
-const zombies = [], bullets = [], particles = [], clouds = [];
+const zombies = [], bullets = [], particles = [], clouds = [], flashes = [];
 const fires = [];
 let police = null, sparkTipObj = null, sparkLight = null, toxicMat = null, smokeTex = null;
 let beaconMat = null, trafficMats = null, facadeTex = null, centerCar = null;
-const blinkers = [], neonMats = [], litter = [], steams = [];
+const blinkers = [], neonMats = [], litter = [], steams = [], hangSigns = [];
 let pedMats = null, birds = null, bannerMesh = null, catTail = null, bubbleTex = null;
 let rainGeo = null, rainPos = null, rainObj = null; const RAIN_N = 240;
 const windowFlames = [], seaFlames = [], columns = [], embers = [], bigLights = [];
@@ -273,7 +284,7 @@ const droneRotors = [], aircraft = [], trails = [];
 const compTimers = { cat: 1, drone: 2 };
 const grenades = [], bombs = [];
 let heroGun = null, toastTimer = 0;
-const COMP_INTERVALS = [[1.2, 2.4], [2.5, 5], [4.5, Infinity]];   // 三階段：貓 / 無人機開槍間隔（秒）
+const COMP_INTERVALS = [[1.2, 2.4], [2.2, 4], [3.5, 6]];   // 三階段：貓 / 無人機開槍間隔（秒）；後期都繼續幫手，等學生玩耐啲
 let facadeDay = null, hemiLight = null, sunLight = null, skylineMat = null;
 let nightMode = true, neonBase = 1.05;
 const buildingMats = [], glowMats = [], trimMats = [], cloudMats = [], glowLights = [];
@@ -296,7 +307,7 @@ function cyl(rt,rb,h,c,x,y,z,parent,seg,opts){
   m.position.set(x,y,z); m.castShadow = true; m.receiveShadow = true; (parent||scene).add(m); return m;
 }
 /* ================= 鏡頭（可自由轉角度 + 自動旋轉） ================= */
-function defaultRad(){ return innerWidth / innerHeight < .9 ? 68 : 52.5; }   // 直向（iPad 直放）自動拉遠啲，睇晒成個路口
+function defaultRad(){ return innerWidth / innerHeight < .9 ? 60 : 52.5; }   // 直向（iPad 直放）自動拉遠啲，睇晒成個路口
 const Cam = { az: 0, pol: .5, rad: 52.5, auto: false, autoAz: 0, autoRad: 52.5 };
 Cam.rad = defaultRad();
 function placeCamera(){
@@ -313,10 +324,9 @@ function placeCamera(){
 function setAutoRotate(on){
   Cam.auto = on;
   if(on){ Cam.autoAz = Cam.az; Cam.autoRad = Cam.rad; }   // 以而家嘅角度/距離做搖擺中心
-  $('rotBtn').classList.toggle('bg-indigo-500', on);
-  $('rotBtn').classList.toggle('text-white', on);
-  $('rotBtn').classList.toggle('bg-white/85', !on);
-  $('rotBtn').classList.toggle('text-slate-600', !on);
+  const rb = $('rotBtn');   // 開咗自動轉：淺色底，一眼睇得出係開；閂咗：清走 inline 樣式，回復深色玻璃（用 inline style 唔使等 Tailwind 即時生成 class）
+  rb.style.background = on ? "rgba(255,255,255,.88)" : "";
+  rb.style.color = on ? "#334155" : "";
 }
 function initCameraControls(){
   const el = renderer.domElement;
@@ -338,7 +348,7 @@ function initCameraControls(){
     } else if(ptrs.size === 2){
       const [p1, p2] = [...ptrs.values()];
       const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-      if(lastPinch > 0) Cam.rad = Math.min(80, Math.max(30, Cam.rad * (lastPinch / d)));
+      if(lastPinch > 0) Cam.rad = Math.min(64, Math.max(20, Cam.rad * (lastPinch / d)));
       lastPinch = d;
     }
   });
@@ -347,7 +357,7 @@ function initCameraControls(){
   el.addEventListener('pointercancel', endPtr);
   el.addEventListener('wheel', e=>{
     e.preventDefault();
-    Cam.rad = Math.min(80, Math.max(30, Cam.rad * (1 + e.deltaY * .001)));
+    Cam.rad = Math.min(64, Math.max(20, Cam.rad * (1 + e.deltaY * .001)));
     if(Cam.auto) setAutoRotate(false);
   }, { passive: false });
   document.addEventListener('keydown', e=>{
@@ -362,24 +372,30 @@ function initCameraControls(){
 }
 
 function buildCenterCar(){
+  // 主角企位：大裝甲車（取代舊的士），車頂甲板夠大，主角同細貓可以企鬆啲
   const g = new THREE.Group(); g.rotation.y = .5; scene.add(g);
-  box(2.5,.68,1.25, 0xc9a83a, 0, .58, 0, g);                            // 車身（啞黃的士色）
-  box(1.4,.6,1.15, 0xbfae9e, 0, 1.18, 0, g);                            // 車廂
-  box(1.44,.26,1.18, 0x46525e, 0, 1.24, 0, g, {roughness:.3});          // 玻璃帶
-  box(2.54,.14,1.29, 0x8f8578, 0, .3, 0, g);                             // 殘舊泵把
-  const wheelG = new THREE.CylinderGeometry(.34,.34,.22,14);
-  [[-.85,.6],[.85,.6],[-.85,-.6],[.85,-.6]].forEach(p=>{
-    const w = new THREE.Mesh(wheelG, mat(0x2c3038)); w.rotation.x = Math.PI/2;
-    w.position.set(p[0], .34, p[1]); w.castShadow = true; g.add(w);
+  const olive = 0x5c6650, dark = 0x46503e;
+  box(4.6,.55,2.5, dark, 0, .48, 0, g);                                  // 下車體
+  box(4.4,1.0,2.4, olive, 0, 1.05, 0, g);                                // 主車體
+  const nose = box(1.0,.8,2.2, olive, 2.55, .82, 0, g); nose.rotation.z = -.35;   // 斜車頭
+  box(4.5,.14,2.5, 0x6b7660, 0, 1.62, 0, g);                             // 車頂甲板（企位，頂 = 1.69）
+  const wheelG = new THREE.CylinderGeometry(.44,.44,.26,14);
+  [[-1.55,1.28],[0,1.3],[1.55,1.28],[-1.55,-1.28],[0,-1.3],[1.55,-1.28]].forEach(p=>{
+    const w = new THREE.Mesh(wheelG, mat(0x24282e)); w.rotation.x = Math.PI/2;
+    w.position.set(p[0], .44, p[1]); w.castShadow = true; g.add(w);
   });
-  box(.06,.14,.3, 0xffe9a8, 1.26, .66, -.35, g, {emissive:0x554411});   // 車頭燈
-  box(.06,.14,.3, 0xffe9a8, 1.26, .66, .35, g, {emissive:0x554411});
-  box(.06,.14,.3, 0xb8544a, -1.26, .66, -.35, g);                        // 尾燈
-  box(.06,.14,.3, 0xb8544a, -1.26, .66, .35, g);
-  box(1.5,.07,1.2, 0x6e6a5e, 0, 1.52, 0, g);                             // 車頂平台（主角企位）
+  box(.07,.16,.34, 0xffe9a8, 2.95, .78, -.6, g, {emissive:0x554411});    // 車頭燈
+  box(.07,.16,.34, 0xffe9a8, 2.95, .78, .6, g, {emissive:0x554411});
+  box(.07,.16,.3, 0xb8544a, -2.32, .8, -.7, g);                          // 尾燈
+  box(.07,.16,.3, 0xb8544a, -2.32, .8, .7, g);
+  const spare = new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.18,14), mat(0x24282e));
+  spare.rotation.z = Math.PI/2; spare.position.set(-2.36, 1.05, 0); spare.castShadow = true; g.add(spare);   // 後備轆
+  box(.9,.45,.7, 0x77815f, -1.7, 1.92, -.75, g);                         // 車頂儲物箱
+  box(.7,.35,.55, 0x6b7660, -1.65, 1.87, .8, g);
+  cyl(.02,.03, 1.7, 0x2f3530, -2.0, 2.4, -1.0, g, 6);                    // 天線
   beaconMat = new THREE.MeshStandardMaterial({ color:0x8a4a12, emissive:0xff8c1a, emissiveIntensity:.4, roughness:.4 });
   const bc = new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.16,10), beaconMat);
-  bc.position.set(-.62, 1.63, -.45); bc.castShadow = true; g.add(bc);    // 車頂警示燈（會脈衝）
+  bc.position.set(1.9, 1.78, -.95); bc.castShadow = true; g.add(bc);     // 車頂警示燈（會脈衝）
   scene.add(g);
   // 防守雜物（散喺車邊四角，唔圍圈）
   const crate1 = box(.85,.85,.85, 0x9a7d55, 2.9, .43, 2.2, scene); crate1.rotation.y = .4;
@@ -459,7 +475,7 @@ function buildHero(){
   box(.16,.42,.2, 0x5b4a68, 0, -.26, .08, gun);
   gunTip = new THREE.Object3D(); gunTip.position.set(0,.03,-1.25); gun.add(gunTip);
   heroGun = gun;
-  g.position.set(0, HERO_Y, 0);
+  g.position.set(-.5, HERO_Y, 0);
   scene.add(g);
   return g;
 }
@@ -498,7 +514,7 @@ function buildCompanionCat(){
   box(.1,.1,.4, 0xffd43b, 0, .03, -.8, gun);
   compGunTip = new THREE.Object3D(); compGunTip.position.set(0, .03, -1.05); gun.add(compGunTip);
   g.scale.setScalar(.62);
-  g.position.set(.65, HERO_Y, .04);   // 車頂平台前角斜對主角，唔再同主角重疊
+  g.position.set(1.35, HERO_Y, .55);   // 裝甲車車頂前角，同主角拉開距離，企鬆啲
   scene.add(g);
   return g;
 }
@@ -748,10 +764,10 @@ function buildShopSign(x, z, rotY, text, bg){
 function buildSkyline(){
   const m = mat(0x232a44, {roughness:1});
   skylineMat = m;
-  for(let i = 0; i < 15; i++){
-    const a = i / 15 * Math.PI * 2 + .2;
-    const r = 58 + (i % 4) * 5;
-    const h = 13 + ((i * 7) % 16);
+  for(let i = 0; i < 26; i++){
+    const a = i / 26 * Math.PI * 2 + .2;
+    const r = 62 + (i % 4) * 6;
+    const h = 14 + ((i * 7) % 20);
     const b = new THREE.Mesh(new THREE.BoxGeometry(8 + (i % 3) * 3, h, 8 + (i % 4) * 2), m);
     b.position.set(Math.cos(a) * r, h/2 - .5, Math.sin(a) * r);
     b.rotation.y = a + .3; scene.add(b);
@@ -1081,6 +1097,22 @@ function buildNeonSign(x, y, z, rotY, text, color, emissive){
   sign.position.set(x, y, z); sign.rotation.y = rotY; sign.castShadow = true; scene.add(sign);
   return sign;
 }
+function buildHangingSign(x, y, z, rotY, text, emissive){
+  // 舊香港式霓虹吊牌：支架臂由牆身伸出，招牌吊喺半空，會輕輕搖
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY; scene.add(g);
+  box(.09, .09, 1.9, 0x3a3f44, 0, 1.52, .9, g);
+  cyl(.03, .03, .5, 0x3a3f44, 0, 1.24, 1.18, g, 6);
+  cyl(.03, .03, .5, 0x3a3f44, 0, 1.24, 1.82, g, 6);
+  const tex = makeVerticalSignTexture(text);
+  const m = new THREE.MeshStandardMaterial({ map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.15, roughness:.5 });
+  m.emissive.setHex(emissive);
+  neonMats.push(m);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(.16, 2.7, .95), m);
+  sign.position.set(0, 0, 1.5); sign.castShadow = true; g.add(sign);
+  g.userData.ph = Math.random() * 7;
+  hangSigns.push(g);
+  return g;
+}
 function buildRoadPaint(x, z){
   const cv = document.createElement("canvas"); cv.width = 512; cv.height = 128;
   const cx = cv.getContext("2d");
@@ -1273,6 +1305,87 @@ function buildFireTruck(x, z, rotY){
   vehicleWheels(g, [-2.2, .4, 2.9], .98, .5);
   return g;
 }
+const turrets = [];
+function buildTank(x, z, rotY){
+  const g = new THREE.Group();
+  const olive = 0x5a6b3f, dark = 0x39432c;
+  box(.55, .6, 3.6, 0x2b2d30, -.82, .3, 0, g); box(.55, .6, 3.6, 0x2b2d30, .82, .3, 0, g);   // 履帶
+  box(2.1, .62, 3.5, olive, 0, .72, 0, g);                                                  // 車身
+  const nose = box(2.1, .5, 1.1, dark, 0, .58, 1.85, g); nose.rotation.x = -.5;             // 車頭斜面
+  const tur = new THREE.Group(); tur.position.set(0, 1.03, -.2); g.add(tur);               // 炮塔（會轉動）
+  cyl(.78, .88, .5, olive, 0, .25, 0, tur, 10);
+  const barrel = cyl(.09, .11, 2.2, dark, 0, .33, 1.25, tur, 8); barrel.rotation.x = Math.PI / 2;  // 炮管
+  turrets.push({ g: tur, ph: Math.random() * 7, spd: .45, amp: .85 });
+  box(.55, .24, .75, dark, -.48, 1.12, -1.45, g);                                           // 後備箱
+  ball(.15, 0xd8dee9, -.68, .8, 2.3, g, { emissive: 0x666644 }); ball(.15, 0xd8dee9, .68, .8, 2.3, g, { emissive: 0x666644 }); // 車頭燈
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  g.traverse(o => { if(o.isMesh) o.castShadow = true; });
+  scene.add(g);
+}
+function buildAPC(x, z, rotY){
+  const g = new THREE.Group();
+  const body = 0x67704c, dark = 0x3c4034;
+  box(2.1, 1.05, 3.9, body, 0, .95, 0, g);                                                  // 車身
+  const nose = box(2.1, .8, 1.1, body, 0, .76, 2.2, g); nose.rotation.x = -.42;             // 斜車頭
+  const tur = new THREE.Group(); tur.position.set(0, 1.45, -.6); g.add(tur);               // 炮塔（會轉動）
+  box(1.9, .5, 1.6, dark, 0, .25, 0, tur);                                                  // 炮塔座
+  const gun = cyl(.07, .07, 1.5, dark, 0, .37, .95, tur, 8); gun.rotation.x = Math.PI / 2 - .12;  // 機槍
+  turrets.push({ g: tur, ph: Math.random() * 7, spd: .6, amp: .5 });
+  for(const sx of [-1, 1]) for(const sz of [-1.25, 0, 1.25]){
+    const w = cyl(.44, .44, .3, 0x24262a, sx * 1.08, .44, sz, g, 12); w.rotation.z = Math.PI / 2;  // 六輪
+  }
+  box(.34, .3, .06, 0xd8dee9, -.65, .95, 2.68, g, { emissive: 0x555533 }); box(.34, .3, .06, 0xd8dee9, .65, .95, 2.68, g, { emissive: 0x555533 });
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  g.traverse(o => { if(o.isMesh) o.castShadow = true; });
+  scene.add(g);
+}
+function buildCheckpoint(x, z, rotY){
+  const g = new THREE.Group();
+  const barrier = lx => {
+    box(1.8, .75, .45, 0xb9bdc2, lx, .55, 0, g);                                            // 混凝土路障
+    box(1.84, .2, .49, 0xe8762c, lx, .84, 0, g);                                            // 橙色頂
+    box(.16, .35, .5, 0x8f959b, lx - .6, .17, 0, g); box(.16, .35, .5, 0x8f959b, lx + .6, .17, 0, g);
+  };
+  const sandbags = (lx, lz) => {
+    const c = 0x8a7f5c;
+    box(1.2, .3, .55, c, lx, .15, lz, g); box(1.0, .3, .5, c, lx + .08, .44, lz, g); box(.7, .28, .45, c, lx, .72, lz, g);
+  };
+  barrier(-5.1); barrier(5.1);
+  sandbags(-3.8, .8); sandbags(3.8, -.8);
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  g.traverse(o => { if(o.isMesh) o.castShadow = true; });
+  scene.add(g);
+}
+function buildSoldier(){
+  const g = new THREE.Group();
+  const uni = 0x4a6741, helm = 0x3d5a34;
+  box(.13, .3, .13, 0x3a4a33, -.11, .15, 0, g); box(.13, .3, .13, 0x3a4a33, .11, .15, 0, g);   // 腳
+  box(.36, .44, .22, uni, 0, .52, 0, g);                                                       // 身
+  box(.2, .26, .08, 0x5d4a2f, 0, .56, -.16, g);                                                // 背囊
+  ball(.21, 0xffd9b3, 0, .93, 0, g);                                                           // 頭
+  const hm = ball(.245, helm, 0, 1.0, 0, g); hm.scale.y = .62;                                 // 頭盔
+  box(.52, .07, .52, helm, 0, .95, 0, g);                                                      // 盔邊
+  box(.09, .09, .62, 0x2f3336, .15, .6, .28, g);                                               // 槍（向前）
+  const tip = new THREE.Object3D(); tip.position.set(.15, .6, .64); g.add(tip);
+  g.scale.setScalar(3.1);                                                                      // 巨人兵（主角兩倍有多）
+  return { g, tip };
+}
+let soldiers = [];
+function spawnProtection(){
+  for(const s of soldiers) scene.remove(s.g);
+  soldiers = [];
+  for(let i = 0; i < 8; i++){
+    const ang = i / 8 * Math.PI * 2 + Math.PI / 8 + (Math.random() * .9 - .45);   // 排位散啲，唔好咁整齊
+    const rad = 4.8 + Math.random() * 2.6;
+    const s = buildSoldier();
+    s.ang = ang; s.rad = rad; s.timer = .3 + i * .13; s.retreat = false;
+    s.g.position.set(Math.cos(ang) * rad, 0, Math.sin(ang) * rad);
+    s.g.rotation.y = Math.atan2(Math.cos(ang), Math.sin(ang)) + (Math.random() * .7 - .35);
+    scene.add(s.g); soldiers.push(s);
+  }
+  S.protDone = false;
+  $("protLabel").classList.remove("hidden");
+}
 function makeSmokeColumn(x, z, baseY){
   const sprites = [];
   for(let i = 0; i < 14; i++){
@@ -1415,6 +1528,13 @@ function initScene(){
   roadV.position.y = .02; roadV.receiveShadow = true; scene.add(roadV);
   const roadH = new THREE.Mesh(new THREE.BoxGeometry(84, .04, 11), roadM);
   roadH.position.y = .02; roadH.receiveShadow = true; scene.add(roadH);
+  // 大街向外延伸，城市一路伸展出去（拉遠都唔會見到吉地）
+  for(const s of [-1, 1]){
+    const ev = new THREE.Mesh(new THREE.BoxGeometry(11, .04, 40), roadM);
+    ev.position.set(0, .02, s * 62); ev.receiveShadow = true; scene.add(ev);
+    const eh = new THREE.Mesh(new THREE.BoxGeometry(40, .04, 11), roadM);
+    eh.position.set(s * 62, .02, 0); eh.receiveShadow = true; scene.add(eh);
+  }
   // 四個街角行人路（升起少少）
   const padM = mat(0x3d4359, {roughness:1});
   groundRefs.pad = padM;
@@ -1460,6 +1580,44 @@ function initScene(){
   buildBuilding(-16, -31.5, 8, 8, 14, 0xb4ac9e, { tank:true });
   buildBuilding(-15, 30.5, 7, 7, 7, 0xaeb6ba, {});
   buildBuilding(31, 16, 7, 8, 11, 0xb8b0a2, { antenna:true, beacon:true });
+  // 外圍建築群（zoom 到最出都成個城市滿滿哋）
+  buildBuilding(44, -12, 8, 8, 13, 0xb2aa9c, { tank:true });
+  buildBuilding(46, 14, 9, 8, 16, 0xa8b0ae, { antenna:true, beacon:true });
+  buildBuilding(-45, -14, 8, 9, 14, 0xbcb2a0, { antenna:true });
+  buildBuilding(-44, 13, 9, 8, 12, 0xb0aa9c, { tank:true });
+  buildBuilding(13, -45, 8, 8, 15, 0xaeb6ba, { beacon:true });
+  buildBuilding(-14, -46, 9, 8, 12, 0xb6b0a2, {});
+  buildBuilding(12, 45, 8, 9, 14, 0xbab0a0, { tank:true });
+  buildBuilding(-13, 44, 8, 8, 17, 0xa6aeb4, { antenna:true, beacon:true });
+  buildBuilding(40, 38, 10, 10, 18, 0xb0aa9c, { antenna:true });
+  buildBuilding(-40, 39, 10, 9, 15, 0xbcb2a0, { tank:true });
+  buildBuilding(41, -39, 9, 10, 16, 0xaeb2a6, { beacon:true });
+  buildBuilding(-41, -40, 10, 10, 19, 0xb4ac9e, { antenna:true });
+  buildBuilding(56, -30, 9, 9, 14, 0xa8b0ae, {});
+  buildBuilding(-56, 28, 9, 8, 13, 0xc0b4a8, {});
+  buildBuilding(28, 56, 8, 9, 15, 0xb2a89c, { tank:true });
+  buildBuilding(-29, -56, 9, 9, 12, 0xadb5b9, {});
+  buildTree(36, 6.5, 1.1); buildTree(-36, -6.5, 1); buildTree(6.5, 36, .95); buildTree(-6.5, -36, 1.05);
+  buildTree(34, -30, 1); buildDeadTree(-34, 30, .95); buildTree(30, 34, 1.1); buildDeadTree(-30, -34, 1);
+  buildRubble(37, 22); buildRubble(-37, -22); buildRubble(22, -37);
+  // 外圍第二圈（填埋剩低啲窿）
+  buildBuilding(57, 32, 9, 9, 15, 0xb6b0a2, { tank:true });
+  buildBuilding(58, -8, 9, 8, 12, 0xaeb6ba, {});
+  buildBuilding(57, -34, 9, 9, 17, 0xb0aa9c, { antenna:true, beacon:true });
+  buildBuilding(-57, -30, 9, 9, 14, 0xbcb2a0, { tank:true });
+  buildBuilding(-58, 6, 8, 9, 13, 0xbab0a0, {});
+  buildBuilding(-57, 48, 10, 9, 16, 0xa6aeb4, { antenna:true });
+  buildBuilding(30, -58, 9, 9, 14, 0xb2a89c, {});
+  buildBuilding(-32, 58, 9, 9, 15, 0xadb5b9, { beacon:true });
+  buildBuilding(8, 58, 8, 8, 12, 0xc0b4a8, { tank:true });
+  buildBuilding(50, 50, 10, 10, 20, 0xb4ac9e, { antenna:true, beacon:true });
+  buildBuilding(-50, -50, 10, 10, 18, 0xa8b0ae, { tank:true });
+  buildBuilding(-50, 52, 10, 9, 14, 0xb6b0a2, {});
+  buildBuilding(52, -50, 9, 10, 16, 0xaeb2a6, { antenna:true });
+  buildBuilding(38, -22, 8, 8, 11, 0xcabfa8, {});
+  buildBuilding(-36, 20, 8, 8, 12, 0xb2aa9c, { tank:true });
+  buildBuilding(20, 36, 8, 8, 13, 0xaeb6ba, {});
+  buildBuilding(-24, -38, 8, 8, 11, 0xbcb2a0, {});
   // 廣告牌（渋谷味）
   buildBillboard(-9.35, 7.6, -15.5, Math.PI/2, "喪屍拉麵", "#8a3324", "#f5e8d0", "ZOMBIE RAMEN");
   buildBillboard(14, 5.6, 10.85, Math.PI, "藥妝 24H", "#31517a", "#eaf2ff", "DRUG STORE");
@@ -1469,8 +1627,8 @@ function initScene(){
     y: new THREE.MeshStandardMaterial({ color:0x4a3a10, emissive:0xffb020, emissiveIntensity:.15, roughness:.4 }),
     g: new THREE.MeshStandardMaterial({ color:0x14401c, emissive:0x2aff5a, emissiveIntensity:.15, roughness:.4 })
   };
-  buildTrafficLight(6.9, -6.9); buildTrafficLight(-6.9, -6.9);
-  buildTrafficLight(6.9, 6.9); buildTrafficLight(-6.9, 6.9);
+  buildTrafficLight(9.8, -11.8); buildTrafficLight(-6.9, -6.9);
+  buildTrafficLight(6.9, 6.9); buildTrafficLight(-9.8, 11.8);
   // 街道傢俬
   buildVending(6.6, -12.5, -.4);
   buildVending(-12.8, 6.6, Math.PI/2 + .2);
@@ -1485,12 +1643,12 @@ function initScene(){
   buildCone(-8.8, -4.4, false); buildCone(3.1, 12.8, true); buildCone(-3.4, -12.2, false);
   buildCone(13.8, -3.2, false); buildCone(-12.6, 10.4, true);
   // 沿街街燈（有兩盞歪咗）
-  [[6.4,-24],[-6.4,-13],[6.4,13.5],[-6.4,24],[13,-6.4],[-13,6.4],[24,6.4],[-24,-6.4]].forEach((p, i)=>{
+  [[6.4,-24],[-6.4,-13],[6.4,13.5],[-6.4,24],[13,-6.4],[-13,6.4],[24,6.4],[-24,-6.4],[6.4,-38],[-6.4,38],[38,-6.4],[-38,6.4],[18,6.4],[-18,6.4]].forEach((p, i)=>{
     buildLamp(p[0], p[1], i === 1 ? .13 : (i === 5 ? -.1 : 0));
   });
   // 行人路樹（生 + 枯）
-  buildTree(7.6, 7.6, 1); buildTree(-7.6, -7.6, 1.1); buildTree(7.6, -7.6, .95);
-  buildDeadTree(-7.6, 7.6, 1); buildDeadTree(20.5, 7.4, .9); buildTree(-20.5, -7.4, 1.05);
+  buildTree(7.6, 7.6, 1); buildTree(-7.6, -7.6, 1.1); buildTree(11.5, -6.8, .95);
+  buildDeadTree(-11.5, 6.8, 1); buildDeadTree(20.5, 7.4, .9); buildTree(-20.5, -7.4, 1.05);
   // 廢車（沿街泊/撞爛）
   buildWreckCar(0xa8765e, -3.9, -17, .08, false);
   buildWreckCar(0x7e8894, 17, 3.4, Math.PI/2 + .15, false);
@@ -1516,7 +1674,7 @@ function initScene(){
   buildFire(-7.5, 19, .7);            // 南街火頭
   buildFire(26.5, 2.5, .9);           // 東街遠處火頭
   buildPoliceCar(9.8, 3.0, -2.4);     // 警車（東街近路口打斜停）
-  buildPowerPole(7.4, -9);            // 漏電嗰支（東街）
+  buildPowerPole(4.6, -13.5);         // 漏電嗰支（北街東側）
   buildToxicCorner(21.5, 8.5);        // 化學桶 + 毒液氹（東南街角）
   // ===== 再加細節：地鐵站/天橋/巴士/攤位傢俬 =====
   pedMats = {
@@ -1526,7 +1684,7 @@ function initScene(){
   buildSubway(10.8, 10.8, -Math.PI * .75);
   buildSubway(-10.2, -10.2, Math.PI / 4);
   buildFootbridge(-17);
-  buildPedSignal(6.3, -6.3); buildPedSignal(-6.3, 6.3);
+  buildPedSignal(5.2, -5.2); buildPedSignal(-5.2, 5.2);   // 移入少少，避開坦克/裝甲車個斜車頭
   buildBus(-19, 3.4, Math.PI/2 + .12);
   buildPostBox(12.9, -6.9);
   buildPhoneBooth(-7.4, -12.9, .3);
@@ -1542,6 +1700,15 @@ function initScene(){
   buildNeonSign(-16.5, 6.5, -11.2, 0, "電玩", 0, 0xb26bff);
   buildNeonSign(9, 3.1, 18.8, 0, "網吧", 0, 0x4dff88);
   buildNeonSign(-10.55, 4.2, 11.5, Math.PI/2, "夜宵", 0, 0xff7847);
+  // 舊香港霓虹吊牌（伸出街面嗰種）
+  buildHangingSign(10.2, 5.2, 14.5, -Math.PI/2, "茶餐廳", 0xff4d6d);
+  buildHangingSign(11.2, 5.6, -14.5, -Math.PI/2, "雲吞麵", 0x4dff88);
+  buildHangingSign(-12.2, 4.8, 13.2, Math.PI/2, "大押", 0xffb03a);
+  buildHangingSign(-11.2, 5.4, -14.5, Math.PI/2, "麻雀館", 0xb26bff);
+  buildHangingSign(29, 5, -10.2, Math.PI, "涼茶舖", 0x4dd8e6);
+  buildHangingSign(-21, 4.6, 17, 0, "金行", 0xffd94d);
+  buildHangingSign(-19.7, 5.2, -11, Math.PI/2, "髮廊", 0xff7847);
+  buildHangingSign(21, 4.9, -18, Math.PI, "藥房", 0x3affd1);
   buildRoadPaint(0, -12.8);
   buildBanner(-12.8, 0);
   birds = buildBirds();
@@ -1572,6 +1739,12 @@ function initScene(){
   buildTruck(-30, -3.8, .12, 0xc7b299, 0x8a9e7a);
   buildAmbulance(4.3, -25, Math.PI/2 + .1);
   buildFireTruck(22, -4.2, Math.PI + .18);
+  buildTank(8.2, -8.2, -Math.PI / 4);          // 東北角坦克，炮口向路口
+  buildAPC(-8.2, 8.2, Math.PI * .75);          // 西南角裝甲車
+  buildCheckpoint(14.5, 0, Math.PI / 2);       // 東街檢查站
+  buildCheckpoint(-14.5, 0, Math.PI / 2);      // 西街檢查站
+  buildCheckpoint(0, 14.5, 0);                 // 南街檢查站
+  buildCheckpoint(0, -14.5, 0);                // 北街檢查站
   buildNobori(8.7, 25.1, "便利店", "#1f4d3a");
   buildNobori(13.3, 25.1, "特價", "#c23b31");
   // ===== 天台火災 + 居民呼救 =====
@@ -1606,6 +1779,28 @@ function initScene(){
   });
 }
 /* ================= 玩法邏輯 ================= */
+function doSpawn(){
+  // 難度曲線：出怪間隔隨時間收窄（2.4 秒 → 最快 0.5 秒），去到 3 分半鐘先收滿到最密，
+  // 等一般學生最少玩到約 2 分半鐘；高擊殺階段再密啲；2 分半後有時一波出兩隻（同場上限 55 隻）
+  let interval = Math.max(.5, 2.4 - S.elapsed * .009);
+  const ph = killPhase();
+  if(ph >= 2) interval *= .82; else if(ph >= 1) interval *= .92;
+  S.spawnTimer = interval;
+  let n = 1;
+  if(S.elapsed > 150 && Math.random() < .4) n++;
+  for(let i = 0; i < n && zombies.length < 55; i++) spawnZombie();
+}
+let waveTimer = 0;
+function triggerWave(){
+  // 喪屍潮：打橫 banner 掃入嚟警告（停約 3 秒先掃走），同時一口氣湧入一大波喪屍
+  const el = $('waveBanner');
+  el.style.opacity = 1; el.style.transform = "translateX(0)";
+  clearTimeout(waveTimer);
+  waveTimer = setTimeout(()=>{ el.style.opacity = 0; el.style.transform = "translateX(100%)"; }, 3000);
+  const n = 10 + (Math.random() * 4 | 0);
+  for(let i = 0; i < n && zombies.length < 55; i++) spawnZombie();
+  S.nextWave = S.elapsed + 35 + Math.random() * 30;   // 下一波：35–65 秒後隨機再嚟
+}
 function spawnZombie(){
   const g = buildZombieMesh();
   // 由四條大街湧入（隨機揀一條街，橫向喺路闊範圍內）
@@ -1614,9 +1809,9 @@ function spawnZombie(){
   const px = av[0] !== 0 ? av[0]*SPAWN_R : jit;
   const pz = av[1] !== 0 ? av[1]*SPAWN_R : jit;
   const ang = Math.atan2(pz, px), rad = Math.hypot(px, pz);
-  const hp = (phaseOf(S.elapsed) >= 1 && Math.random() < .35) ? 2 : 1;
+  const hp = (killPhase() >= 1 && Math.random() < .35) ? 2 : 1;
   g.userData = { ang, rad, hp,
-                 spd: 1.65 + Math.random()*.5 + S.elapsed*.006,
+                 spd: 1.65 + Math.random()*.5 + Math.min(S.elapsed*.0086, 1.8),
                  ph: Math.random()*7, dead:false, body: g.userData.body };
   if(hp > 1){ g.userData.badge = makeBadge(hp); g.add(g.userData.badge); }
   g.position.set(Math.cos(ang)*g.userData.rad, 0, Math.sin(ang)*g.userData.rad);
@@ -1630,28 +1825,41 @@ function nearestZombie(){
 function shoot(target, dmg){
   sfxShoot();
   const from = new THREE.Vector3(); gunTip.getWorldPosition(from);
+  muzzleFlash(from);   // 主角開槍都有槍口火光（同士兵一樣）
   const tp = target.position.clone(); tp.y = 1.5;
   const m = ball(.17, 0xffe14d, from.x, from.y, from.z, scene, { emissive:0xaa7700, roughness:.3 });
   m.castShadow = false;
-  bullets.push({ m, target, speed: 62, dmg: dmg || 1 });
+  bullets.push({ m, target, speed: 62, dmg: dmg || 1, player: true });
 }
 function nearestZombies(n){
   return zombies.filter(z=>!z.userData.dead).sort((a,b)=>a.userData.rad - b.userData.rad).slice(0, n);
 }
 function playerShoot(){
+  if(S.weapon >= 3){
+    // Lv.3 機關槍：答啱一題，連射 4 發，分別瞄準最埋身嗰 4 隻（每發傷害 2，一擊必殺）
+    const ts = nearestZombies(4);
+    if(!ts.length) return;
+    for(let i = 0; i < 4; i++){
+      const t = ts[i % ts.length];
+      setTimeout(()=>{
+        if(!S.playing || S.over || t.userData.dead) return;
+        shoot(t, 2);
+      }, i * 65);
+    }
+    return;
+  }
   const n = S.weapon >= 2 ? 2 : 1;          // Lv.2 起雙發
-  const dmg = S.weapon >= 3 ? 2 : 1;        // Lv.3 重炮雙倍傷害
-  for(const t of nearestZombies(n)) shoot(t, dmg);
+  for(const t of nearestZombies(n)) shoot(t, 1);
 }
 function checkWeaponUpgrade(){
-  const w = S.kills >= 30 ? 3 : (S.kills >= 12 ? 2 : 1);
+  const w = S.playerKills >= 12 ? 3 : (S.playerKills >= 5 ? 2 : 1);
   if(w > S.weapon){
     S.weapon = w; updateHUD();
     if(heroGun){
       heroGun.scale.setScalar(1 + (w - 1) * .2);
       heroGun.children[0].material.color.set(w >= 3 ? 0xffd43b : 0x845ef7);
     }
-    showToast(w >= 3 ? "🔫 武器升級 Lv.3：雙發重炮！" : "🔫 武器升級 Lv.2：雙發射擊！");
+    showToast(w >= 3 ? "🔫 武器升級 Lv.3：機關槍！答啱一題掃射四隻！" : "🔫 武器升級 Lv.2：雙發射擊！");
   }
 }
 function showToast(txt){
@@ -1723,15 +1931,45 @@ function autoActions(dt){
 function companionShoot(tip, target, color){
   sfxShoot();
   const from = new THREE.Vector3(); tip.getWorldPosition(from);
+  muzzleFlash(from);   // 同伴（細貓/無人機）開槍都有槍口火光
   const m = ball(.14, color, from.x, from.y, from.z, scene, { emissive: 0x555555, roughness:.3 });
   m.castShadow = false;
   bullets.push({ m, target, speed: 62 });
 }
-function damageZombie(z, dmg){
+function muzzleFlash(pos){
+  const m = ball(.34, 0xffe9a8, pos.x, pos.y, pos.z, scene, { emissive: 0xffb03a, roughness: 1 });
+  m.castShadow = false;
+  m.material.transparent = true;
+  flashes.push({ m, life: .09 });
+}
+function soldierShoot(s){
+  let tgt = null, bd = 15;
+  for(const z of zombies){
+    if(z.userData.dead) continue;
+    const d = z.position.distanceTo(s.g.position);
+    if(d < bd){ bd = d; tgt = z; }
+  }
+  const from = new THREE.Vector3(); s.tip.getWorldPosition(from);
+  muzzleFlash(from);
+  sfxShoot();
+  const m = ball(.15, 0xaef29a, from.x, from.y, from.z, scene, { emissive: 0x555555, roughness: .3 });
+  m.castShadow = false;
+  if(tgt){
+    s.g.rotation.y = Math.atan2(tgt.position.x - s.g.position.x, tgt.position.z - s.g.position.z);
+    bullets.push({ m, target: tgt, speed: 62 });
+  } else {
+    // 冇喪屍都照開槍，向住自己面向嘅方向打
+    const dir = new THREE.Vector3(0, 0, 1).applyEuler(s.g.rotation).setY(0).normalize();
+    bullets.push({ m, dirV: dir, speed: 55, life: .45 });
+  }
+}
+function damageZombie(z, dmg, byPlayer){
   z.userData.hp -= (dmg || 1); sfxHit();
   burst(z.position.clone().setY(1.6), 0xc0f299);
   if(z.userData.hp <= 0){
-    z.userData.dead = true; S.kills++; updateHUD(); checkWeaponUpgrade();
+    z.userData.dead = true; S.kills++;
+    if(byPlayer){ S.playerKills++; checkWeaponUpgrade(); }   // 武器升級只計自己答啱題親手打死嘅
+    updateHUD();
     z.userData.dying = .28;
   } else {
     if(z.userData.badge){ z.remove(z.userData.badge); z.userData.badge = makeBadge(z.userData.hp); z.add(z.userData.badge); }
@@ -1753,13 +1991,13 @@ function breach(z){
 function fmt(t){ const s = Math.floor(t); return String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0"); }
 function updateHUD(){
   $('hearts').textContent = S.hearts > 0 ? "❤️".repeat(S.hearts) + "🖤".repeat(5 - S.hearts) : "🖤🖤🖤🖤🖤";
-  $('killLabel').textContent = S.kills;
+  $('killLabel').textContent = S.playerKills;   // 顯示只計自己親手擊殺
   $('wpnLabel').textContent = "Lv." + S.weapon;
   $('timeLabel').textContent = fmt(S.elapsed);
 }
 function showQuestion(){
   S.q = genQuestion(S.elapsed); S.qNo++;
-  S.qStart = performance.now(); S.lastTry = S.qStart;
+  S.qStart = performance.now(); S.lastTry = S.qStart; S.qPicked = false;
   $('question').textContent = S.q.text;
   $('answerBox').textContent = "?";
   $('answerBox').classList.remove("pop"); void $('answerBox').offsetWidth; $('answerBox').classList.add("pop");
@@ -1772,6 +2010,59 @@ function showQuestion(){
 function setOptionsEnabled(on){
   document.querySelectorAll(".optBtn").forEach(b=>{ if(!b.classList.contains("optWrong")) b.disabled = !on; });
 }
+/* ================= 速算小貼士 + 錯題分析 ================= */
+const TABLE_TIPS = {
+  2: "2 嘅乘數表：即係雙倍 — 7×2 就係 7+7",
+  3: "3 嘅乘數表：逐個加上去 — 4×3 即係 4+4+4",
+  4: "4 嘅乘數表：雙倍再雙倍 — 6×4：6→12→24",
+  5: "5 嘅乘數表：答案尾數一定係 5 或 0，而且係 10 表嘅一半",
+  6: "6 嘅乘數表：記住 6×7=42「六七四十二」、6×8=48「六八四十八」",
+  7: "7 嘅乘數表：7×8=56 — 口訣「五六七八」，5、6、7、8 排埋一齊！",
+  8: "8 嘅乘數表：雙倍三次 — 7×8：7→14→28→56",
+  9: "9 嘅乘數表：9×7 = 10×7 − 7 = 63，減一減就得"
+};
+const OP_TIPS = {
+  "+": "加數：湊十法 — 47+8，先 +3 湊到 50，再 +5 = 55",
+  "-": "減數：拆數法 — 52−27，先減 20 得 32，再減 7 = 25",
+  "×": "乘數：拆開嚟乘 — 7×6 = 7×5 + 7 = 42",
+  "÷": "除數：諗返乘法 — 56÷7，諗 7×幾 = 56"
+};
+const OP_NAMES = { "+": "加數", "-": "減數", "×": "乘數", "÷": "除數" };
+function analysisData(){
+  const byOp = { "+": 0, "-": 0, "×": 0, "÷": 0 }, byTable = {};
+  for(const m of (S.mistakes || [])){
+    byOp[m.op]++;
+    if(m.op === "×"){ byTable[m.a] = (byTable[m.a] || 0) + 1; byTable[m.b] = (byTable[m.b] || 0) + 1; }
+    if(m.op === "÷"){ byTable[m.b] = (byTable[m.b] || 0) + 1; }
+  }
+  const total = (S.mistakes || []).length;
+  const worstOp = total ? Object.keys(byOp).sort((x, y) => byOp[y] - byOp[x])[0] : null;
+  const tEnt = Object.entries(byTable).sort((x, y) => y[1] - x[1])[0];
+  return { total, byOp, worstOp,
+           weakTable: (tEnt && tEnt[1] > 0) ? Number(tEnt[0]) : null,
+           weakTableCount: (tEnt && tEnt[1] > 0) ? tEnt[1] : 0 };
+}
+function analysisText(){
+  // 一句講晒嘅分析摘要：完場顯示同傳返老師後台都用佢
+  const ad = analysisData();
+  if(!ad.total) return "冇答錯";
+  const parts = Object.keys(ad.byOp).filter(k => ad.byOp[k] > 0).map(k => `${OP_NAMES[k]}錯 ${ad.byOp[k]} 次`);
+  return parts.join("・") + (ad.weakTable ? `｜弱點：${ad.weakTable} 的乘數表` : "");
+}
+function buildAnalysis(){
+  if(!S.mistakes || !S.mistakes.length)
+    return `<div class="bg-white/10 rounded-2xl p-3.5 font-bold text-emerald-300">🌟 錯題分析：全程冇答錯過，勁！</div>`;
+  const ad = analysisData();
+  let html = `<div class="bg-white/10 rounded-2xl p-3.5">
+    <div class="text-xs font-bold text-slate-400">📊 錯題分析（共答錯 ${ad.total} 次）</div>
+    <div class="font-bold text-slate-100 mt-1">${Object.keys(ad.byOp).filter(k => ad.byOp[k] > 0).map(k => `${OP_NAMES[k]}錯 ${ad.byOp[k]} 次`).join("・")}</div>
+    <div class="font-bold text-violet-300 mt-1">錯得最多：${OP_NAMES[ad.worstOp]}</div>`;
+  if(ad.weakTable) html += `<div class="font-bold text-rose-300 mt-1">🎯 乘數表弱點：${ad.weakTable} 的乘數表（涉及嘅題錯咗 ${ad.weakTableCount} 次）</div>
+    <div class="text-sm font-bold text-slate-300 mt-1">💡 ${TABLE_TIPS[ad.weakTable] || OP_TIPS["×"]}</div>`;
+  else html += `<div class="text-sm font-bold text-slate-300 mt-1">💡 ${OP_TIPS[ad.worstOp]}</div>`;
+  return html + `</div>`;
+}
+
 function pickOption(btn){
   if(!S.playing || S.over) return;
   const now = performance.now();
@@ -1779,9 +2070,12 @@ function pickOption(btn){
   const chosen = parseInt(btn.dataset.val, 10);
   const ok = chosen === S.q.ans;
   const ms = Math.round(now - S.lastTry); S.lastTry = now;
+  const firstPick = !S.qPicked; S.qPicked = true;
+  const qMs = Math.round(now - S.qStart);   // 由題目出現到第一次㩒嘅時間（判斷有冇亂撞用）
   DataLog.row({ kind:"answer", t:new Date().toISOString(), cls:DataLog.cls, sid:DataLog.sid,
                 session:S.sessionId, qn:S.qNo, q:S.q.text.replace(" =",""), chosen, ans:S.q.ans, ok:ok?1:0, ms });
   if(ok){
+    if(firstPick) S.guessStreak = Math.max(0, (S.guessStreak || 0) - 1);   // 第一㩒啱：唔一次過清零，逐題慢慢回復（減 1）；同題試到啱嗰啲唔計
     S.right++;
     btn.classList.add("optRight");
     $('answerBox').textContent = chosen;
@@ -1791,13 +2085,23 @@ function pickOption(btn){
     setTimeout(()=>{ if(S.playing && !S.over) showQuestion(); }, 300);
   } else {
     S.wrong++;
+    S.mistakes.push({ op: S.q.op, a: S.q.a, b: S.q.b, chosen, ans: S.q.ans });
     btn.classList.add("optWrong"); btn.disabled = true;
     sfxJam();
-    S.jamUntil = now + 1200;
+    // 防亂撞：每題第一次㩒就錯、而且快過 800ms（同後台 ⚡ 標準一致）= 撞題 +1；唔係撞（慢慢諗過先錯）就 −1 慢慢回復；累積夠 3 次就加重卡彈 + 出警告
+    if(firstPick) S.guessStreak = (qMs < 800) ? (S.guessStreak || 0) + 1 : Math.max(0, (S.guessStreak || 0) - 1);
+    let jamMs = 1200;
+    if(S.guessStreak >= 3) jamMs = Math.min(3000 + (S.guessStreak - 3) * 500, 5000);
+    S.jamUntil = now + jamMs;
     setOptionsEnabled(false);
-    $('jamBanner').classList.remove('hidden');
+    if(jamMs > 1200){
+      $('warnSec').textContent = (jamMs / 1000).toFixed(jamMs % 1000 ? 1 : 0);
+      $('warnBanner').classList.remove('hidden');
+    } else {
+      $('jamBanner').classList.remove('hidden');
+    }
     $('panelCard').classList.remove('shake'); void $('panelCard').offsetWidth; $('panelCard').classList.add('shake');
-    setTimeout(()=>{ $('jamBanner').classList.add('hidden'); if(S.playing && !S.over) setOptionsEnabled(true); }, 1200);
+    setTimeout(()=>{ $('jamBanner').classList.add('hidden'); $('warnBanner').classList.add('hidden'); if(S.playing && !S.over) setOptionsEnabled(true); }, jamMs);
   }
 }
 
@@ -1805,9 +2109,9 @@ function pickOption(btn){
 function startGame(cls, sid){
   DataLog.start(cls, sid);
   Object.assign(S, { playing:true, over:false, hearts:5, kills:0, right:0, wrong:0,
-                     elapsed:0, spawnTimer:1.0, jamUntil:0, qNo:0, lockUntil:0,
-                     weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30,
-                     lastHurt:-99, regenT:0 });
+                     elapsed:0, spawnTimer:1.0, nextWave:145 + Math.random()*15, phaseWarned:false, phaseJumped:false, jamUntil:0, qNo:0, lockUntil:0,
+                     weapon:1, grenadeT:8, freezeT:0, freezeCd:20, healCd:30, playerKills:0,
+                     lastHurt:-99, regenT:0, mistakes:[], tipT:0, guessStreak:0, qPicked:false });
   if(heroGun){ heroGun.scale.setScalar(1); heroGun.children[0].material.color.set(0xff922b); }
   for(const g of grenades) scene.remove(g.m);
   grenades.length = 0;
@@ -1821,18 +2125,23 @@ function startGame(cls, sid){
   $('panel').classList.remove('hidden');
   placeCamera();
   updateHUD(); showQuestion();
+  spawnProtection();
+  showToast("🪖 新手保護期：軍隊會保護你 30 秒！");
 }
 function gameOver(){
   S.over = true; S.playing = false; sfxOver();
   $('ovTime').textContent = fmt(S.elapsed);
-  $('ovKills').textContent = S.kills;
+  $('ovKills').textContent = S.playerKills;   // 完場顯示都只計自己親手擊殺
   $('ovRight').textContent = S.right;
   $('ovWrong').textContent = S.wrong;
   const tot = S.right + S.wrong;
   $('ovAcc').textContent = tot ? Math.round(S.right / tot * 100) + "%" : "—";
+  $('ovAnalysis').innerHTML = buildAnalysis();
+  const ad = analysisData();
   DataLog.row({ kind:"session", t:new Date().toISOString(), cls:DataLog.cls, sid:DataLog.sid,
                 session:S.sessionId, seconds:Math.round(S.elapsed), kills:S.kills,
-                right:S.right, wrong:S.wrong, acc: tot ? Math.round(S.right / tot * 100) : 0 });
+                right:S.right, wrong:S.wrong, acc: tot ? Math.round(S.right / tot * 100) : 0,
+                weakOp: ad.worstOp, weakTable: ad.weakTable, analysis: analysisText() });
   DataLog.flush();
   $('sendStatus').textContent = (DATA_ENDPOINT || FIREBASE_CONFIG) ? "📤 記錄已傳送俾老師" : "（試玩模式：記錄未傳送，可以下載 CSV）";
   $('panel').classList.add('hidden');
@@ -1851,12 +2160,13 @@ function animate(){
     const blend = Math.min(1, dt * 1.4);
     Cam.az  += ((Cam.autoAz + Math.sin(t * .13) * .5) - Cam.az) * blend;
     Cam.pol += ((.62 + Math.sin(t * .17) * .19) - Cam.pol) * blend;
-    Cam.rad += ((Cam.autoRad * (1 + Math.sin(t * .15 + 1.3) * .16)) - Cam.rad) * blend;
+    Cam.rad += ((Math.min(64, Cam.autoRad * (1 + Math.sin(t * .15 + 1.3) * .16))) - Cam.rad) * blend;
   }
   placeCamera();
   for(const c of clouds){ c.position.x += dt * .35; if(c.position.x > 55) c.position.x = -55; }
   // 車頂警示燈脈衝 + 交通燈循環（綠→黃→紅）
   if(beaconMat) beaconMat.emissiveIntensity = 1.6 + Math.sin(t * 5) * 1.4;
+  for(const tt of turrets) tt.g.rotation.y = Math.sin(t * tt.spd + tt.ph) * tt.amp;   // 坦克/裝甲車炮塔慢慢轉動巡邏
   if(trafficMats){
     const cyc = t % 6;
     trafficMats.g.emissiveIntensity = cyc < 3.4 ? 2.4 : .12;
@@ -1965,6 +2275,7 @@ function animate(){
   }
   // 霓虹招牌（偶爾接觸不良閃一閃）
   neonMats.forEach((m, i)=>{ m.emissiveIntensity = Math.random() < .05 ? neonBase * .25 : neonBase + Math.sin(t * 3 + i * 2) * .12; });
+  for(const g of hangSigns) g.rotation.x = Math.sin(t * .9 + g.userData.ph) * .05;   // 吊牌輕輕搖
   // 天台航空警示燈
   blinkers.forEach(b=>{ b.mat.emissiveIntensity = Math.sin(t * 2.2 + b.ph) > .55 ? 3 : .1; });
   // 渠蓋蒸氣
@@ -2017,8 +2328,10 @@ function animate(){
   if(S.playing && !S.over){
     S.elapsed += dt;
     S.spawnTimer -= dt;
-    const interval = Math.max(.8, 2.4 - S.elapsed * .014);
-    if(S.spawnTimer <= 0){ spawnZombie(); S.spawnTimer = interval; }
+    if(S.spawnTimer <= 0) doSpawn();
+    if(S.elapsed >= (S.nextWave || 1e9)) triggerWave();   // 約 2 分半開始，隨機出現喪屍潮
+    if(!S.phaseWarned && S.elapsed >= 80 && killPhase() < 2){ S.phaseWarned = true; showToast("⏰ 10 秒後進入第 3 階段：乘除挑戰！"); }
+    if(!S.phaseJumped && S.elapsed >= 90){ S.phaseJumped = true; if(killPhase() < 2) showToast("🚀 第 3 階段：乘除挑戰，頂住！"); }
     $('phaseLabel').textContent = PHASE_NAMES[phaseOf(S.elapsed)];
     updateHUD();
     autoActions(dt);
@@ -2054,8 +2367,34 @@ function animate(){
     for(const r of droneRotors) r.rotation.y += dt * 42;
     if(target) drone.rotation.y = Math.atan2(target.position.x - drone.position.x, target.position.z - drone.position.z) + Math.PI;
   }
+  // 新手保護期：軍隊圍住玩家射擊，30 秒後撤退
+  if(soldiers.length){
+    if(S.playing && !S.over){
+      if(!S.protDone && S.elapsed >= 30){
+        S.protDone = true;
+        for(const s of soldiers) s.retreat = true;
+        $("protLabel").classList.add("hidden");
+        showToast("🪖 保護期完結，軍隊撤退！靠你自己啦！");
+      }
+      if(!S.protDone){
+        $("protSec").textContent = Math.max(0, Math.ceil(30 - S.elapsed));
+        for(const s of soldiers){
+          s.timer -= dt;
+          if(s.timer <= 0){ s.timer = .7 + Math.random() * .5; soldierShoot(s); }
+        }
+      }
+    }
+    for(let i = soldiers.length - 1; i >= 0; i--){
+      const s = soldiers[i];
+      if(s.retreat){
+        s.rad += dt * 7;
+        s.g.position.set(Math.cos(s.ang) * s.rad, Math.abs(Math.sin(t * 9 + i)) * .09, Math.sin(s.ang) * s.rad);
+        if(s.rad > 27){ scene.remove(s.g); soldiers.splice(i, 1); }
+      }
+    }
+  }
   if(S.playing && !S.over && target && compGunTip && droneTip){
-    const iv = COMP_INTERVALS[phaseOf(S.elapsed)];
+    const iv = COMP_INTERVALS[killPhase()];
     compTimers.cat -= dt;
     if(compTimers.cat <= 0){ compTimers.cat = iv[0]; companionShoot(compGunTip, target, 0x7be0ff); }
     if(iv[1] !== Infinity){
@@ -2147,9 +2486,23 @@ function animate(){
       if(u.rad < BREACH_R){ breach(z); }
     }
   }
+  // 槍口火光
+  for(let i = flashes.length - 1; i >= 0; i--){
+    const f = flashes[i];
+    f.life -= dt;
+    f.m.scale.setScalar(1 + Math.max(0, .09 - f.life) * 22);
+    f.m.material.opacity = Math.max(0, f.life / .09);
+    if(f.life <= 0){ scene.remove(f.m); flashes.splice(i, 1); }
+  }
   // 子彈
   for(let i = bullets.length - 1; i >= 0; i--){
     const b = bullets[i];
+    if(b.dirV){
+      b.m.position.addScaledVector(b.dirV, b.speed * dt);
+      b.life -= dt;
+      if(b.life <= 0 || b.m.position.length() > 60){ scene.remove(b.m); bullets.splice(i, 1); }
+      continue;
+    }
     const tp = (b.target && !b.target.userData.dead)
       ? b.target.position.clone().setY(1.5)
       : b.m.position.clone().add(new THREE.Vector3(0,0,-1));
@@ -2157,7 +2510,7 @@ function animate(){
     const dist = dir.length();
     const step = b.speed * dt;
     if(dist <= Math.max(1.0, step)){
-      if(b.target && !b.target.userData.dead) damageZombie(b.target, b.dmg || 1);
+      if(b.target && !b.target.userData.dead) damageZombie(b.target, b.dmg || 1, b.player);
       scene.remove(b.m); bullets.splice(i, 1); continue;
     }
     b.m.position.add(dir.normalize().multiplyScalar(step));
