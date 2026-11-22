@@ -34,11 +34,13 @@
   <div class="text-5xl mb-2">🎮📊</div>
   <h1 class="text-2xl font-black">學習遊戲數據後台</h1>
   <p class="text-slate-500 dark:text-slate-400 font-bold mb-6">教師即時數據介面（全遊戲共用）</p>
-  <input id="pwInput" type="password" inputmode="numeric" placeholder="輸入教師密碼"
-    class="w-full border-2 border-indigo-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl px-4 py-3.5 text-center text-xl font-black tracking-widest focus:outline-none focus:border-indigo-400">
-  <button id="loginBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black text-lg rounded-2xl py-3.5 shadow">進入</button>
+  <input id="emailInput" type="email" autocomplete="username" placeholder="老師電郵"
+    class="w-full border-2 border-indigo-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl px-4 py-3.5 text-center text-lg font-bold focus:outline-none focus:border-indigo-400">
+  <input id="pwInput" type="password" autocomplete="current-password" placeholder="密碼"
+    class="mt-3 w-full border-2 border-indigo-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl px-4 py-3.5 text-center text-lg font-bold focus:outline-none focus:border-indigo-400">
+  <button id="loginBtn" class="mt-3 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black text-lg rounded-2xl py-3.5 shadow">登入</button>
   <p id="loginErr" class="text-rose-500 font-bold mt-4 text-sm"></p>
-  <p class="text-slate-400 text-sm mt-4">入啱密碼先睇到學生數據。</p>
+  <p class="text-slate-400 text-sm mt-4">用老師帳號登入先睇到學生數據。</p>
 </div>
 
 <!-- 主介面 -->
@@ -114,7 +116,6 @@ const FIREBASE_CONFIG = {   // 全遊戲共用同一個項目（cwc-leaning-web�
   appId: "1:173279937029:web:1d9ca43409a878b78ed26c",
   measurementId: "G-NCPHZY8NYK"
 };
-const TEACHER_PASSWORD = "9668";   // 教師登入密碼（Nelson 指定）— 只係介面門閘，唔好用重要密碼
 const GAME_NAMES = { "zombie-math-3d": "🧟 逃出喪屍城 3D", "science60-flight": "🧪 香港科學探索城" };   // 新遊戲唔使加都得，會直接顯示佢嘅 GAME_ID
 const gameLabel = id => GAME_NAMES[id] || ("🎮 " + (id || "未命名遊戲"));
 
@@ -136,21 +137,27 @@ if(!FIREBASE_CONFIG){
     }
     $("loginBox").classList.add("hidden");
     $("dash").classList.remove("hidden");
-    $("whoami").textContent = "👩‍🏫 老師模式";
+    $("whoami").textContent = "👩‍🏫 " + (user.email || "老師模式");
     listen();
   });
   const tryLogin = ()=>{
     $("loginErr").textContent = "";
-    if($("pwInput").value !== TEACHER_PASSWORD){
-      $("loginErr").textContent = "⚠️ 密碼唔啱，請再試。";
-      return;
-    }
-    // 密碼啱 → 匿名登入 Firebase（規則要求「已登入」先讀到數據）
-    firebase.auth().signInAnonymously()
-      .catch(e => $("loginErr").textContent = "登入失敗：" + e.message + "（請檢查 Firebase 有冇開「匿名」登入）");
+    const email = $("emailInput").value.trim();
+    const pw = $("pwInput").value;
+    if(!email || !pw){ $("loginErr").textContent = "⚠️ 請輸入電郵同密碼。"; return; }
+    // 真帳號登入（Firebase Authentication）— 規則只准老師本人個 UID 讀/刪數據，唔再靠寫喺檔案入面嘅 PIN
+    $("loginBtn").disabled = true;
+    $("loginBtn").textContent = "登入中…";
+    firebase.auth().signInWithEmailAndPassword(email, pw)
+      .catch(e => {
+        const m = { "auth/invalid-credential": "⚠️ 電郵或密碼唔啱，請再試。", "auth/user-not-found": "⚠️ 搵唔到呢個帳號。", "auth/wrong-password": "⚠️ 電郵或密碼唔啱，請再試。", "auth/invalid-email": "⚠️ 電郵格式唔啱。", "auth/too-many-requests": "⚠️ 試得太多次，請等一陣再試。", "auth/operation-not-allowed": "⚠️ Firebase 未啟用「電郵/密碼」登入，請去 Firebase 後台開啟。" };
+        $("loginErr").textContent = m[e.code] || ("登入失敗：" + e.message);
+      })
+      .finally(()=>{ $("loginBtn").disabled = false; $("loginBtn").textContent = "登入"; });
   };
   $("loginBtn").addEventListener("click", tryLogin);
   $("pwInput").addEventListener("keydown", e => { if(e.key === "Enter") tryLogin(); });
+  $("emailInput").addEventListener("keydown", e => { if(e.key === "Enter") tryLogin(); });
   $("logoutBtn").addEventListener("click", ()=> firebase.auth().signOut());
   $("themeBtn").addEventListener("click", ()=> applyTheme(!document.documentElement.classList.contains("dark")));
   applyTheme(document.documentElement.classList.contains("dark"), true);
@@ -212,7 +219,7 @@ function listen(){
     render(true);
   }, err => {
     console.error(err);
-    $("emptyMsg").textContent = "讀取失敗：" + err.message;
+    $("emptyMsg").textContent = err.code === "permission-denied" ? "⛔ 此帳號沒有存取權限（規則只准老師帳號讀取數據）。" : "讀取失敗：" + err.message;
     $("emptyMsg").classList.remove("hidden");
   });
 }
