@@ -172,7 +172,7 @@
     <div class="max-w-xl w-full">
         <div class="glass-panel shadow-2xl p-6 md:p-8">
             
-            <header class="text-center mb-6 shrink-0">
+            <header class="text-center mb-3 shrink-0">
                 <div class="avatar-container mb-3">
                     <a href="https://cwcg-ctrl.github.io/yotps/teacher.html" target="_blank" title="教師後台">
                         <img src="IMG_6905.PNG" alt="張Sir">
@@ -182,16 +182,22 @@
                     張Sir的學習遊戲站
                 </h1>
                 <div class="h-1 w-12 bg-indigo-500 mx-auto rounded-full opacity-80"></div>
+                <div class="mt-2">
+                    <button onclick="document.getElementById('qrModal').classList.remove('hidden')" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-white/70 border border-slate-200 rounded-full px-3 py-1.5 shadow-sm active:scale-95 transition">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M18 18h3v3h-3z"/></svg>
+                        分享 QR Code
+                    </button>
+                </div>
             </header>
 
             <!-- 最新上載（最多 3 個） -->
             <div class="mb-4 shrink-0">
-                <div class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2 px-1">最新上載</div>
+                <div class="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1 px-1">最新上載</div>
                 <div class="space-y-2">
                     <a href="https://cwcg-ctrl.github.io/yotps/SCIENCE60.html" target="_blank" 
                        onclick="trackGameClick('香港科學探索城')"
-                       class="link-card latest-glow flex items-center p-3.5 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border-2 border-teal-300 shadow-sm group">
-                        <div class="icon-box w-11 h-11 bg-teal-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
+                       class="link-card latest-glow flex items-center p-3 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border-2 border-teal-300 shadow-sm group">
+                        <div class="icon-box w-10 h-10 bg-teal-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
                             🧪
                         </div>
                         <div class="ml-3">
@@ -206,8 +212,8 @@
                     </a>
                     <a href="https://cwcg-ctrl.github.io/yotps/THERMAL.html" target="_blank" 
                        onclick="trackGameClick('冷縮熱脹 3D 互動科學實驗室')"
-                       class="link-card latest-glow flex items-center p-3.5 rounded-xl bg-white/60 border border-white shadow-sm group">
-                        <div class="icon-box w-11 h-11 bg-orange-500 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-orange-200">
+                       class="link-card latest-glow flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                        <div class="icon-box w-10 h-10 bg-orange-500 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-orange-200">
                             🌡️
                         </div>
                         <div class="ml-3">
@@ -222,8 +228,8 @@
                     </a>
                     <a href="https://cwcg-ctrl.github.io/yotps/MATH06-3D.html" target="_blank" 
                        onclick="trackGameClick('逃出喪屍城 3D')"
-                       class="link-card latest-glow flex items-center p-3.5 rounded-xl bg-white/60 border border-white shadow-sm group">
-                        <div class="icon-box w-11 h-11 bg-rose-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
+                       class="link-card latest-glow flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                        <div class="icon-box w-10 h-10 bg-rose-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
                             🧟
                         </div>
                         <div class="ml-3">
@@ -240,17 +246,17 @@
             </div>
 
             <!-- 內容列表區塊，加入滾動功能以應對更多遊戲 -->
-            <div class="space-y-3 overflow-y-auto px-1 custom-scrollbar flex-grow pb-4">
+            <div class="space-y-2 overflow-y-auto px-1 custom-scrollbar flex-grow pb-4">
                 
                 <!-- 遊戲 01 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH01.html" target="_blank" 
                    onclick="trackGameClick('數學拔河')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-amber-400 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-amber-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-amber-400 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-amber-200">
                         🏆
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-amber-600 transition-colors">數學拔河</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-amber-600 transition-colors">數學拔河</div>
                         <div class="text-xs text-slate-500">趣味競技，提升心算與邏輯</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-amber-400 transition-colors shrink-0">
@@ -263,12 +269,12 @@
                 <!-- 遊戲 02 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH06.html" target="_blank" 
                    onclick="trackGameClick('逃出喪屍城')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-rose-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-rose-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
                         🧟
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-rose-600 transition-colors">逃出喪屍城</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-rose-600 transition-colors">逃出喪屍城</div>
                         <div class="text-xs text-slate-500">限時數學速算，開拓生存之路</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-rose-500 transition-colors shrink-0">
@@ -281,12 +287,12 @@
                 <!-- 遊戲 02 續：3D 版 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH06-3D.html" target="_blank" 
                    onclick="trackGameClick('逃出喪屍城 3D')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-rose-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-rose-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-rose-200">
                         🧟
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-rose-600 transition-colors">逃出喪屍城 3D</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-rose-600 transition-colors">逃出喪屍城 3D</div>
                         <div class="text-xs text-slate-500">3D 守城・答題射喪屍</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-rose-500 transition-colors shrink-0">
@@ -299,12 +305,12 @@
                 <!-- 遊戲 03 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH02.html" target="_blank" 
                    onclick="trackGameClick('魔法藥水實驗室')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-purple-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-purple-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-purple-500 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-purple-200">
                         🧪
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-purple-600 transition-colors">魔法藥水實驗室</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-purple-600 transition-colors">魔法藥水實驗室</div>
                         <div class="text-xs text-slate-500">解開分數之謎，調配藥水</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-purple-500 transition-colors shrink-0">
@@ -317,12 +323,12 @@
                 <!-- 遊戲 04 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH03.html" target="_blank" 
                    onclick="trackGameClick('幾何公式大挑戰')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-teal-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-teal-500 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
                         📐
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-teal-600 transition-colors">幾何公式大挑戰</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-teal-600 transition-colors">幾何公式大挑戰</div>
                         <div class="text-xs text-slate-500">掌握圖形奧秘，挑戰計算</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-teal-500 transition-colors shrink-0">
@@ -335,12 +341,12 @@
                 <!-- 遊戲 05 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH04.html" target="_blank" 
                    onclick="trackGameClick('星際小數大冒險')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-indigo-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-indigo-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-indigo-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-indigo-200">
                         🚀
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">星際小數大冒險</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">星際小數大冒險</div>
                         <div class="text-xs text-slate-500">穿梭星際軌道，挑戰小數</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0">
@@ -353,12 +359,12 @@
                 <!-- 遊戲 06 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH05.html" target="_blank" 
                    onclick="trackGameClick('怪獸廚房')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-emerald-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-emerald-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-emerald-500 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-emerald-200">
                         👾
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-emerald-600 transition-colors">怪獸廚房</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-emerald-600 transition-colors">怪獸廚房</div>
                         <div class="text-xs text-slate-500">找出最小公分母，餵食怪獸</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-emerald-500 transition-colors shrink-0">
@@ -371,12 +377,12 @@
                 <!-- 遊戲 07 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH07.html" target="_blank" 
                    onclick="trackGameClick('星際物流:空間保衛戰')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-cyan-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-cyan-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-cyan-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-cyan-200">
                         📦
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-cyan-600 transition-colors">星際物流:空間保衛戰</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-cyan-600 transition-colors">星際物流:空間保衛戰</div>
                         <div class="text-xs text-slate-500">精準計算貨物體積，完美裝載星際運輸船</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-cyan-500 transition-colors shrink-0">
@@ -389,12 +395,12 @@
                 <!-- 遊戲 08 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/MATH08.html" target="_blank" 
                    onclick="trackGameClick('羅馬競技場:密碼對決')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-orange-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-orange-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-orange-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-orange-200">
                         🏛️
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-orange-600 transition-colors">羅馬競技場:密碼對決</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-orange-600 transition-colors">羅馬競技場:密碼對決</div>
                         <div class="text-xs text-slate-500">學習羅馬數字，解開古老競技場的密碼</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-orange-500 transition-colors shrink-0">
@@ -407,12 +413,12 @@
                 <!-- 遊戲 09 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/SCIENCE60.html" target="_blank" 
                    onclick="trackGameClick('香港科學探索城')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-teal-600 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-teal-600 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-teal-200">
                         🧪
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-teal-600 transition-colors">香港科學探索城</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-teal-600 transition-colors">香港科學探索城</div>
                         <div class="text-xs text-slate-500">60 格 3D 科學飛行棋</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-teal-500 transition-colors shrink-0">
@@ -425,12 +431,12 @@
                 <!-- 遊戲 10 -->
                 <a href="https://cwcg-ctrl.github.io/yotps/THERMAL.html" target="_blank" 
                    onclick="trackGameClick('冷縮熱脹 3D 互動科學實驗室')"
-                   class="link-card flex items-center p-4 rounded-xl bg-white/60 border border-white shadow-sm group">
-                    <div class="icon-box w-12 h-12 bg-orange-500 text-white text-xl rounded-lg flex items-center justify-center shadow-lg shadow-orange-200">
+                   class="link-card flex items-center p-3 rounded-xl bg-white/60 border border-white shadow-sm group">
+                    <div class="icon-box w-10 h-10 bg-orange-500 text-white text-lg rounded-lg flex items-center justify-center shadow-lg shadow-orange-200">
                         🌡️
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-800 text-lg group-hover:text-orange-600 transition-colors">冷縮熱脹 3D 互動科學實驗室</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-800 text-base group-hover:text-orange-600 transition-colors">冷縮熱脹 3D 互動科學實驗室</div>
                         <div class="text-xs text-slate-500">熱脹冷縮互動實驗</div>
                     </div>
                     <div class="ml-auto text-slate-300 group-hover:text-orange-500 transition-colors shrink-0">
@@ -440,23 +446,23 @@
                     </div>
                 </a>
                 <!-- 敬請期待 10 -->
-                <div class="link-card flex items-center p-4 rounded-xl bg-slate-50/50 border border-dashed border-slate-300 opacity-80 cursor-not-allowed">
-                    <div class="icon-box w-12 h-12 bg-slate-300 text-white text-xl rounded-lg flex items-center justify-center shadow-md">
+                <div class="link-card flex items-center p-3 rounded-xl bg-slate-50/50 border border-dashed border-slate-300 opacity-80 cursor-not-allowed">
+                    <div class="icon-box w-10 h-10 bg-slate-300 text-white text-lg rounded-lg flex items-center justify-center shadow-md">
                         🔒
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-400 text-lg">敬請期待</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-400 text-base">敬請期待</div>
                         <div class="text-xs text-slate-400">全新數學冒險正在開發中...</div>
                     </div>
                 </div>
 
                 <!-- 敬請期待 10 -->
-                <div class="link-card flex items-center p-4 rounded-xl bg-slate-50/50 border border-dashed border-slate-300 opacity-80 cursor-not-allowed">
-                    <div class="icon-box w-12 h-12 bg-slate-300 text-white text-xl rounded-lg flex items-center justify-center shadow-md">
+                <div class="link-card flex items-center p-3 rounded-xl bg-slate-50/50 border border-dashed border-slate-300 opacity-80 cursor-not-allowed">
+                    <div class="icon-box w-10 h-10 bg-slate-300 text-white text-lg rounded-lg flex items-center justify-center shadow-md">
                         🔒
                     </div>
-                    <div class="ml-4">
-                        <div class="font-bold text-slate-400 text-lg">敬請期待</div>
+                    <div class="ml-3">
+                        <div class="font-bold text-slate-400 text-base">敬請期待</div>
                         <div class="text-xs text-slate-400">更多好玩的挑戰即將登場</div>
                     </div>
                 </div>
@@ -470,6 +476,37 @@
             </div>
         </div>
     </div>
+
+    <!-- QR Code 彈窗 -->
+    <div id="qrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs text-center">
+            <div class="font-extrabold text-slate-800 text-lg mb-1">張Sir的學習遊戲站</div>
+            <p class="text-xs text-slate-400 mb-4">用手機掃描 QR Code，即刻開啟網頁</p>
+            <div class="w-56 h-56 mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 198 198" class="segno"><g transform="scale(6)"><path fill="#fff" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#0f172a" d="M2 2.5h7m2 0h1m1 0h1m2 0h1m4 0h1m2 0h7m-29 1h1m5 0h1m1 0h1m2 0h3m3 0h3m2 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m2 0h3m3 0h1m4 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h2m1 0h2m4 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m4 0h1m2 0h1m1 0h2m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m3 0h3m1 0h2m3 0h1m2 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-18 1h2m2 0h1m1 0h1m1 0h2m-21 1h1m1 0h1m1 0h1m1 0h1m2 0h3m4 0h3m5 0h1m2 0h1m-28 1h1m1 0h1m2 0h1m1 0h3m2 0h2m1 0h1m4 0h4m1 0h1m2 0h1m-29 1h2m2 0h6m2 0h1m1 0h1m2 0h1m3 0h1m1 0h1m2 0h3m-28 1h1m5 0h1m2 0h2m1 0h2m1 0h2m1 0h1m7 0h1m-22 1h1m3 0h2m2 0h4m1 0h4m2 0h1m1 0h2m-26 1h1m3 0h1m1 0h2m3 0h1m5 0h3m2 0h1m2 0h1m-29 1h2m4 0h6m1 0h1m4 0h1m3 0h2m1 0h1m1 0h2m-28 1h5m2 0h2m2 0h1m4 0h2m1 0h1m1 0h2m1 0h1m1 0h1m-23 1h2m1 0h1m2 0h2m4 0h1m2 0h3m2 0h1m1 0h2m-26 1h2m6 0h1m1 0h1m2 0h1m3 0h1m1 0h1m2 0h2m1 0h1m-29 1h1m1 0h5m1 0h3m3 0h1m1 0h2m2 0h4m3 0h2m-28 1h1m1 0h1m1 0h1m1 0h1m1 0h2m2 0h3m1 0h2m1 0h2m3 0h1m1 0h1m-28 1h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h1m2 0h8m-17 1h2m2 0h1m1 0h1m1 0h1m2 0h2m3 0h1m1 0h3m-29 1h7m2 0h1m1 0h3m2 0h2m1 0h2m1 0h1m1 0h2m1 0h2m-29 1h1m5 0h1m2 0h1m5 0h6m3 0h2m1 0h2m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h3m4 0h1m2 0h5m3 0h1m-29 1h1m1 0h3m1 0h1m4 0h3m2 0h1m1 0h2m4 0h1m1 0h3m-29 1h1m1 0h3m1 0h1m1 0h3m1 0h3m3 0h2m1 0h1m1 0h3m2 0h1m-29 1h1m5 0h1m3 0h1m3 0h1m1 0h6m2 0h1m2 0h1m-28 1h7m1 0h1m1 0h2m1 0h5m1 0h2m3 0h1m2 0h2"/></g></svg>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-4 break-all">https://cwcg-ctrl.github.io/yotps/</p>
+            <div class="mt-4 flex items-center justify-center gap-2">
+                <button onclick="showQRFull()" class="px-5 py-2 rounded-full bg-indigo-500 text-white text-sm font-bold shadow active:scale-95 transition">全螢幕</button>
+                <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="px-5 py-2 rounded-full bg-white text-slate-500 border border-slate-200 text-sm font-bold shadow-sm active:scale-95 transition">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code 全螢幕 -->
+    <div id="qrFull" class="hidden fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center p-6 cursor-pointer" onclick="hideQRFull()">
+        <div class="font-extrabold text-slate-800 text-xl md:text-2xl mb-4">張Sir的學習遊戲站</div>
+        <div class="w-[74vmin] h-[74vmin] max-w-[620px] max-h-[620px]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 198 198" class="segno"><g transform="scale(6)"><path fill="#fff" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#0f172a" d="M2 2.5h7m2 0h1m1 0h1m2 0h1m4 0h1m2 0h7m-29 1h1m5 0h1m1 0h1m2 0h3m3 0h3m2 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m2 0h3m3 0h1m4 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h2m1 0h2m4 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m4 0h1m2 0h1m1 0h2m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m3 0h3m1 0h2m3 0h1m2 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-18 1h2m2 0h1m1 0h1m1 0h2m-21 1h1m1 0h1m1 0h1m1 0h1m2 0h3m4 0h3m5 0h1m2 0h1m-28 1h1m1 0h1m2 0h1m1 0h3m2 0h2m1 0h1m4 0h4m1 0h1m2 0h1m-29 1h2m2 0h6m2 0h1m1 0h1m2 0h1m3 0h1m1 0h1m2 0h3m-28 1h1m5 0h1m2 0h2m1 0h2m1 0h2m1 0h1m7 0h1m-22 1h1m3 0h2m2 0h4m1 0h4m2 0h1m1 0h2m-26 1h1m3 0h1m1 0h2m3 0h1m5 0h3m2 0h1m2 0h1m-29 1h2m4 0h6m1 0h1m4 0h1m3 0h2m1 0h1m1 0h2m-28 1h5m2 0h2m2 0h1m4 0h2m1 0h1m1 0h2m1 0h1m1 0h1m-23 1h2m1 0h1m2 0h2m4 0h1m2 0h3m2 0h1m1 0h2m-26 1h2m6 0h1m1 0h1m2 0h1m3 0h1m1 0h1m2 0h2m1 0h1m-29 1h1m1 0h5m1 0h3m3 0h1m1 0h2m2 0h4m3 0h2m-28 1h1m1 0h1m1 0h1m1 0h1m1 0h2m2 0h3m1 0h2m1 0h2m3 0h1m1 0h1m-28 1h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h1m2 0h8m-17 1h2m2 0h1m1 0h1m1 0h1m2 0h2m3 0h1m1 0h3m-29 1h7m2 0h1m1 0h3m2 0h2m1 0h2m1 0h1m1 0h2m1 0h2m-29 1h1m5 0h1m2 0h1m5 0h6m3 0h2m1 0h2m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h3m4 0h1m2 0h5m3 0h1m-29 1h1m1 0h3m1 0h1m4 0h3m2 0h1m1 0h2m4 0h1m1 0h3m-29 1h1m1 0h3m1 0h1m1 0h3m1 0h3m3 0h2m1 0h1m1 0h3m2 0h1m-29 1h1m5 0h1m3 0h1m3 0h1m1 0h6m2 0h1m2 0h1m-28 1h7m1 0h1m1 0h2m1 0h5m1 0h2m3 0h1m2 0h2"/></g></svg>
+        </div>
+        <p class="text-sm text-slate-400 mt-4">用手機掃描 QR Code，即刻開啟網頁</p>
+        <button onclick="hideQRFull()" class="mt-5 px-6 py-2.5 rounded-full bg-slate-800 text-white text-sm font-bold shadow-lg active:scale-95 transition">✕ 離開全螢幕</button>
+    </div>
+    <script>
+    function showQRFull(){ var f = document.getElementById('qrFull'); f.classList.remove('hidden'); if(f.requestFullscreen){ f.requestFullscreen().catch(function(){}); } }
+    function hideQRFull(){ document.getElementById('qrFull').classList.add('hidden'); if(document.fullscreenElement){ document.exitFullscreen(); } }
+    document.addEventListener('fullscreenchange', function(){ if(!document.fullscreenElement){ document.getElementById('qrFull').classList.add('hidden'); } });
+    </script>
 
 </body>
 </html>
